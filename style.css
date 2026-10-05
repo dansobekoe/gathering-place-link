@@ -1,0 +1,266 @@
+/* Gathering Place — the public "is it open?" page.
+   The same mark and the same navy as the portal itself, over a soft mesh rather than a
+   plain background, so a person who has seen the portal recognises this as the same
+   place. One card, one decision on it: go in, or wait. */
+
+:root {
+  --accent: #085088;
+  --accent-2: #1870c0;
+  --accent-sky: #5bc0f8;
+  --ink: #0f172a;
+  --ink-2: #475569;
+  --ink-fine: #55617a;
+  --glass: rgba(255, 255, 255, .72);
+  --glass-line: rgba(255, 255, 255, .85);
+  --shadow: 0 22px 50px -26px rgba(6, 32, 58, .55);
+  --live: #12a150;
+  --wait: #b8860b;
+  --off: #64748b;
+  --font: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+          "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #6cbcf5;
+    --accent-2: #9ad6fb;
+    --ink: #eaeefb;
+    --ink-2: #aab5d0;
+    --ink-fine: #a8b6d6;
+    --glass: rgba(19, 30, 48, .74);
+    --glass-line: rgba(146, 173, 205, .22);
+    --shadow: 0 22px 50px -22px rgba(0, 0, 0, .7);
+    --wait: #e0b23c;
+    --off: #8fa0bb;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  color: var(--ink);
+  background:
+    radial-gradient(72rem 44rem at 12% -10%, rgba(24, 112, 192, .30), transparent 62%),
+    radial-gradient(56rem 40rem at 96% 8%, rgba(91, 192, 248, .26), transparent 60%),
+    radial-gradient(60rem 52rem at 50% 116%, rgba(8, 80, 136, .26), transparent 64%),
+    linear-gradient(178deg, #f4f8fd, #e8f0f9 58%, #dfe9f5);
+  background-attachment: fixed;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background:
+      radial-gradient(72rem 44rem at 12% -10%, rgba(24, 112, 192, .34), transparent 62%),
+      radial-gradient(56rem 40rem at 96% 8%, rgba(43, 96, 158, .30), transparent 60%),
+      radial-gradient(60rem 52rem at 50% 116%, rgba(8, 48, 84, .52), transparent 64%),
+      linear-gradient(178deg, #0a1120, #0c1526 58%, #0a1322);
+  }
+}
+
+.shell {
+  width: min(30rem, 100% - 2.5rem);
+  margin: 0 auto;
+  padding: 2.25rem 0 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  font-size: 1.06rem;
+  font-weight: 650;
+  letter-spacing: .012em;
+  color: var(--ink);
+}
+
+.brand img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.card {
+  padding: 1.6rem 1.5rem 1.4rem;
+  border-radius: 20px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+
+@supports not (backdrop-filter: blur(2px)) {
+  .card { background: var(--surface, #fff); }
+}
+
+@media (prefers-color-scheme: dark) {
+  @supports not (backdrop-filter: blur(2px)) {
+    .card { background: #121d30; }
+  }
+}
+
+.eyebrow {
+  margin: 0 0 1.1rem;
+  font-size: .69rem;
+  font-weight: 650;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-fine);
+}
+
+.lamp {
+  width: 11px;
+  height: 11px;
+  margin: 0 0 .85rem;
+  border-radius: 50%;
+  background: var(--off);
+  box-shadow: 0 0 0 5px rgba(100, 116, 139, .16);
+  transition: background .3s ease, box-shadow .3s ease;
+}
+
+.lamp.is-live {
+  background: var(--live);
+  box-shadow: 0 0 0 5px rgba(18, 161, 80, .18);
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+.lamp.is-wait {
+  background: var(--wait);
+  box-shadow: 0 0 0 5px rgba(184, 134, 11, .18);
+}
+
+.lamp.is-off { background: var(--off); }
+
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 5px rgba(18, 161, 80, .18); }
+  50% { box-shadow: 0 0 0 9px rgba(18, 161, 80, .07); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lamp.is-live { animation: none; }
+  .lamp, .enter { transition: none; }
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 6.4vw, 1.95rem);
+  line-height: 1.18;
+  letter-spacing: -.018em;
+  font-weight: 680;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.note {
+  margin: .7rem 0 0;
+  font-size: .925rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.enter {
+  display: block;
+  margin-top: 1.35rem;
+  padding: .95rem 1.1rem;
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 1.02rem;
+  font-weight: 640;
+  letter-spacing: .005em;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 14px 26px -14px rgba(8, 80, 136, .7);
+}
+
+.enter:hover { filter: brightness(1.06); }
+.enter:active { transform: translateY(1px); }
+
+/* A dim plate for the case where a link exists but is not answering: the door is still
+   offered, because the check can be wrong on a slow phone network. */
+.enter.is-dim {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid currentColor;
+  box-shadow: none;
+}
+
+.quiet {
+  margin-top: .8rem;
+  padding: .5rem .2rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: .87rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-decoration-color: rgba(71, 85, 105, .35);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.quiet:hover { color: var(--accent); }
+
+.stamp {
+  margin: 1.15rem 0 0;
+  padding-top: .9rem;
+  border-top: 1px solid rgba(71, 85, 105, .16);
+  font-size: .76rem;
+  line-height: 1.5;
+  color: var(--ink-fine);
+}
+
+.help {
+  padding: 1.1rem 1.2rem 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .40);
+  border: 1px solid rgba(255, 255, 255, .6);
+}
+
+@media (prefers-color-scheme: dark) {
+  .help {
+    background: rgba(146, 173, 205, .08);
+    border-color: rgba(146, 173, 205, .16);
+  }
+}
+
+.help h2 {
+  margin: 0 0 .45rem;
+  font-size: .72rem;
+  font-weight: 680;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-fine);
+}
+
+.help p { margin: 0 0 .6rem; font-size: .875rem; line-height: 1.6; color: var(--ink-2); }
+.help p:last-child { margin-bottom: 0; }
+.help .fine { font-size: .82rem; }
+
+footer {
+  font-size: .76rem;
+  line-height: 1.6;
+  color: var(--ink-fine);
+  text-align: center;
+}
+
+a:focus-visible, button:focus-visible {
+  outline: 3px solid var(--accent-2);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+@media (max-width: 30rem) {
+  .shell { padding-top: 1.5rem; }
+  .card { padding: 1.35rem 1.15rem 1.15rem; }
+}
