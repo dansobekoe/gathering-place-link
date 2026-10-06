@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://beaver-voters-well-proceeds.trycloudflare.com","updated_at":"2026-10-06T16:20:11Z"};
+window.GATHERING_PLACE = {"url":"https://ministry-basename-length-tested.trycloudflare.com","updated_at":"2026-10-06T17:20:41Z"};
