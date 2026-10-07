@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://raised-kerry-indicate-murray.trycloudflare.com","updated_at":"2026-10-07T01:03:45Z"};
+window.GATHERING_PLACE = {"url":"https://computer-broadcast-scale-belts.trycloudflare.com","updated_at":"2026-10-07T18:13:00Z"};
