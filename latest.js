@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://bulk-inspection-wagner-visitors.trycloudflare.com","updated_at":"2026-10-09T06:23:35Z"};
+window.GATHERING_PLACE = {"url":"https://genesis-confidence-larger-apollo.trycloudflare.com","updated_at":"2026-10-10T22:10:31Z"};
