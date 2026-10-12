@@ -9,6 +9,14 @@ const CoursesPage = (() => {
   const { el, toast, icon, fmtTime, WEEKDAYS, CATEGORIES, empty, coverTile } = UI;
   const metaFlex = "display:flex;gap:8px;align-items:center;margin-top:4px";
 
+  /* The words a certificate line may name; the printer swaps each one for that member's
+     own when it prints. The authority for this list is `cert_layout.PLACEHOLDERS` in the
+     backend, and a smoke check keeps the two in step — a chip here that the printer does
+     not know would type a literal brace onto somebody's certificate. */
+  const CERT_WORDS = ["{name}", "{course}", "{grade}", "{category}", "{skills}", "{date}",
+                      "{instructor}", "{leader}", "{stake}", "{place}"];
+  const CERT_TEXT_MAX = 600;   // likewise cert_layout.MAX_BODY_TEXT
+
   async function mount(target) {
     const user = API.getUser();
     const ctx = App.ctx();
@@ -466,6 +474,13 @@ const CoursesPage = (() => {
       const placeOut = el("input", { disabled: "true", placeholder: "Follows the room",
                                      value: editing ? (course.gathering_place_name || "") : "" });
       const instrSel = el("select");
+      /* Whether the teacher list really arrived. Until it does the select can only say
+         "unassigned", and whoever runs the place may open this form to write one sentence
+         on the certificates without thinking about teachers at all — a save made in that
+         silence would hand the class to nobody. So an assignment the form could not show
+         is left exactly where it was. */
+      let teachersShown = false;
+      const teacherNote = el("div", { class: "meta" }, "");
       const cap = el("input", { type: "number",
         value: String(editing ? course.capacity : 25), min: "1" });
       const capHint = el("div", { class: "meta" }, "Choose a room to see how large this class may be.");
@@ -498,6 +513,15 @@ const CoursesPage = (() => {
       const skillsTA = el("textarea", { rows: "3",
         placeholder: "Pattern drafting\nMachine operation\nFabric selection" },
         editing && course.skills ? course.skills : "");
+      /* The sentence printed under a graduate's name. A gathering place can write one
+         line for all its classes, and one line cannot say both "valuable techniques as
+         a Caterer" and "as a Web Designer", so a class may write its own and this is it.
+         Blank means the place's line is used instead — see `Course.cert_text`. */
+      const certTA = el("textarea", { rows: "3", id: "course-cert-text",
+        maxlength: String(CERT_TEXT_MAX),
+        placeholder: "e.g. For demonstrating dedication to the {course} program, and for " +
+          "the techniques you have shown as a caterer." },
+        editing && course.cert_text ? course.cert_text : "");
 
       roomSel.appendChild(el("option", { value: "" }, "Choose a room…"));
       const roomIndex = new Map();          // room_id -> { name, capacity, place }
@@ -595,7 +619,8 @@ const CoursesPage = (() => {
         ]),
         el("div", { class: "field" }, [el("label", {}, "Gathering place"), placeOut])]));
       if (canManage) {
-        card.appendChild(el("div", { class: "field" }, [el("label", {}, "Instructor"), instrSel]));
+        card.appendChild(el("div", { class: "field" }, [
+          el("label", {}, "Instructor"), instrSel, teacherNote]));
       } else {
         /* A teacher opening a class opens it for themselves, so there is nothing to
            choose here — and no second name to choose wrongly. */
@@ -618,6 +643,45 @@ const CoursesPage = (() => {
         el("div", { class: "meta" },
           "One skill per line — each one is printed on the student's certificate.")]));
 
+      // ---------- the sentence on this class's certificates ----------
+      const certCount = el("span", { class: "cert-count" }, "");
+      const certNote = el("div", { class: "meta" }, "");
+      const sayWhatTheLineDoes = () => {
+        // counted the way the portal counts it: the line is printed as one paragraph, so
+        // the newlines a long sentence forces take up no room on the certificate
+        const used = certTA.value.trim().split(/\s+/).join(" ").length;
+        certCount.textContent = `${used} of ${CERT_TEXT_MAX}`;
+        certNote.textContent = used
+          ? "This is the line that will stand under a graduate's name at the end of this "
+            + "class, instead of the gathering place's own line."
+          : "Nothing written yet, so the gathering place's line prints for this class. "
+            + "Write one when this class needs saying in its own words.";
+      };
+      const putWord = (ph) => {
+        const at = certTA.selectionStart == null ? certTA.value.length : certTA.selectionStart;
+        const end = certTA.selectionEnd == null ? at : certTA.selectionEnd;
+        certTA.value = certTA.value.slice(0, at) + ph + certTA.value.slice(end);
+        certTA.focus();
+        certTA.setSelectionRange(at + ph.length, at + ph.length);
+        sayWhatTheLineDoes();
+      };
+      certTA.addEventListener("input", sayWhatTheLineDoes);
+      sayWhatTheLineDoes();
+      card.appendChild(el("div", { class: "field" }, [
+        el("div", { class: "cert-body-head" }, [
+          el("label", { for: "course-cert-text" }, "The line on their certificate"),
+          certCount,
+        ]),
+        certTA,
+        certNote,
+        el("div", { class: "cert-words" },
+          CERT_WORDS.map(ph => el("button", { class: "cert-word", type: "button",
+            title: `Put ${ph} into the line`, onclick: () => putWord(ph) }, ph))),
+        el("div", { class: "meta", style: "margin-top:8px" },
+          "A word between braces is filled in with that member's own when the certificate "
+          + "prints — {name} becomes the graduate, {course} this class."),
+      ]));
+
       const save = el("button", { class: "btn", onclick: submit },
         [icon(editing ? "check" : "plus", 17), editing ? "Save changes" : "Create class"]);
       card.appendChild(el("div", { class: "actions", style: "margin-top:14px" }, [
@@ -638,10 +702,16 @@ const CoursesPage = (() => {
           return toast("The class cannot finish before it starts", "err");
         }
         const room = roomIndex.get(+roomSel.value);
+        // A manager who never saw the teacher list is not asked to choose a teacher: the
+        // class keeps the one it has. Choosing "unassigned" from a list that did arrive is
+        // a real choice and is sent as one.
+        const kept = editing ? (course.instructor_id || null) : null;
         const payload = {
           term_id: activeTerm.id,
           room_id: +roomSel.value,
-          instructor_id: canManage && instrSel.value ? +instrSel.value : null,
+          instructor_id: !canManage ? null
+            : instrSel.value ? +instrSel.value
+            : teachersShown || !editing ? null : kept,
           title: title.value.trim(), category: cat.value,
           description: editing ? course.description : null,
           capacity: Math.min(+cap.value || room.capacity, room.capacity),
@@ -651,6 +721,8 @@ const CoursesPage = (() => {
           course_start_date: cstart.value || null, course_end_date: cend.value || null,
           skills: skillsTA.value.split("\n").map(s => s.trim()).filter(Boolean).join("\n")
             || null,
+          // blank means "use the gathering place's line", which is what null says
+          cert_text: certTA.value.trim() || null,
         };
         save.disabled = true;
         try {
@@ -667,14 +739,33 @@ const CoursesPage = (() => {
 
       if (canManage) {
         // only whoever runs the place picks another teacher; a teacher has no choice to make
+        teacherNote.textContent = "Reading who may teach…";
         API.get(`/api/stakes/${stakeId}/members?role=instructor`).then(members => {
           instrSel.innerHTML = "";
           instrSel.appendChild(el("option", { value: "" },
             "Unassigned — open for an instructor to claim"));
           members.forEach(m => instrSel.appendChild(
             el("option", { value: String(m.user_id) }, m.name)));
-          if (editing && course.instructor_id) instrSel.value = String(course.instructor_id);
-        }).catch(e => toast(e.message, "err"));
+          teachersShown = true;
+          if (editing && course.instructor_id) {
+            const wanted = String(course.instructor_id);
+            /* The teacher is named even when they are not on this list: a class handed to
+               somebody who has since left the instructor role is still taught by them, and
+               a form that could not say so would un-teacher the class on the next save. */
+            if (![...instrSel.options].some(o => o.value === wanted)) {
+              instrSel.appendChild(el("option", { value: wanted },
+                course.instructor_name || "The teacher it has now"));
+            }
+            instrSel.value = wanted;
+          }
+          teacherNote.textContent = "";
+        }).catch(e => {
+          teacherNote.textContent = editing && course.instructor_id
+            ? "The list of teachers did not arrive, so this form cannot choose one. Saving "
+              + "will keep the class with the teacher it has."
+            : "The list of teachers did not arrive — reload the page to choose one.";
+          toast(e.message, "err");
+        });
       }
       return sec;
     }
