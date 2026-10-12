@@ -227,7 +227,7 @@ const CertDesign = (() => {
     const chips = new Map();
     const rows = new Map();
     let stage, art, img, frame, guideV, guideH, readout, statusLine, noticeBox, headLine,
-        styleCheck, bodyBox, countLine, trayBox, memberSelect, tryButton, resizeStop,
+        styleCheck, bodyBox, countLine, trayBox, memberSelect, tryButton, tryNote, resizeStop,
         timer = null, pendingBefore = null, saving = false, queued = false;
 
     const id = () => ctx.stakeId;
@@ -465,6 +465,7 @@ const CertDesign = (() => {
       paintGuides();
       renderTray();
       if (countLine) countLine.textContent = `${(S.layout.body_text || "").length} of ${data.max_body_text || 600} characters used`;
+      paintTryNote();
     }
 
     // ---------- the ladder: one row per line the certificate can carry ----------
@@ -691,6 +692,12 @@ const CertDesign = (() => {
         bodyBox,
         el("div", { class: "cert-hint" }, "Tap a word to put it in the line wherever the caret " +
           "stands. The portal swaps in the real name, class or date when it prints."),
+        /* This line covers the classes that have not written a sentence of their own. One
+           line cannot say both "valuable techniques as a Caterer" and "as a Web Designer",
+           so a class may write its own in Classes, and that one prints for its graduates. */
+        el("div", { class: "cert-hint" }, "This is what prints for the classes that have not " +
+          "written a line of their own. A class can write its own — under the class itself, " +
+          "in Classes — and when it has, its words go on that class's certificates instead."),
         words,
       ]);
     }
@@ -877,9 +884,24 @@ const CertDesign = (() => {
       return el("div", { class: "cert-try" }, [
         el("div", { class: "cert-sec" }, "See one before anyone is handed it"),
         el("div", { class: "cert-try-row" }, [memberSelect, load, tryButton]),
+        tryNote = el("div", { class: "cert-hint" }, ""),
         el("div", { class: "cert-hint" }, "A sample prints now with the lines as they stand and " +
           "issues nothing. Its square does not scan as a real certificate, on purpose."),
       ]);
+    }
+
+    /* A class that wrote its own sentence prints that sentence under the name, not the line
+       typed here. A leader who tries one member and sees different words than the box above
+       would otherwise be left guessing, so the screen says it as soon as such a member is
+       chosen — and says nothing at all for the classes that use this place's line. */
+    function paintTryNote() {
+      if (!tryNote) return;
+      const m = S.pick;
+      tryNote.textContent = m && m.own_wording
+        ? `${m.name} finished ${m.course}, and that class writes its own line. The sample below `
+          + "prints the class's words, not the line above; it is written under the class itself."
+        : "";
+      tryNote.hidden = !tryNote.textContent;
     }
 
     async function fetchMembers(btn) {
@@ -1087,7 +1109,8 @@ const CertDesign = (() => {
              certificate itself never prints a brace. */
           el("div", { class: "cert-hint" },
             "Where a word stands between braces the portal puts in that member's own — " +
-            "the certificate never shows a brace."),
+            "the certificate never shows a brace. A class that has written a line of its " +
+            "own prints that line for its graduates instead of this one."),
         ]));
       }
       root.appendChild(el("div", { class: "cert-work" }, [
