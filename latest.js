@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://sherman-wesley-marshall-believed.trycloudflare.com","updated_at":"2026-10-12T20:45:16Z"};
+window.GATHERING_PLACE = {"url":"https://entrepreneurs-lol-holiday-lap.trycloudflare.com","updated_at":"2026-10-12T21:10:51Z"};
