@@ -1261,3 +1261,224 @@ tbody tr.is-today td { background: var(--accent-soft); }
 #pwa-banner .pwa-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #pwa-banner .pwa-actions { display: flex; gap: 8px; }
 #pwa-banner .pwa-actions .btn { width: auto; flex: 1; padding: 9px 14px; font-size: 13.5px; }
+
+/* ============================================================
+   Placing a place's own certificate
+   ----------------
+   The one screen in the portal where somebody is shown a finished sheet and given handles.
+   The work area is a pair: the artwork on the left, big enough to judge by eye, and the
+   ladder of lines on the right. A phone gets them one under the other, the sheet first,
+   because the sheet is what the whole screen is for.
+
+   The paper itself stays light. Night mode is a room, not an X-ray: a certificate being
+   placed has to look like the one that will come out of the printer, and that one is on
+   white paper whatever the time of day.
+   ============================================================ */
+.cert-head-line { display: flex; flex-direction: column; gap: 3px; margin-bottom: 4px; }
+.cert-head-name { font-size: 17px; font-weight: 800; letter-spacing: -.025em; color: var(--ink); }
+.cert-head-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline;
+                  font-size: 12.5px; color: var(--ink-fine); }
+.cert-sep { color: var(--ink-3); }
+.cert-loading { padding: 18px; font-size: 13.5px; color: var(--ink-2); }
+
+/* Advice that only appears when there is something to advise about — a new sheet of a
+   different shape, a design switched on before its artwork was filed. */
+.cert-notice { display: none; margin: 10px 0 0; padding: 11px 13px; border-radius: var(--r-md);
+               font-size: 13px; line-height: 1.5;
+               background: var(--warn-bg); color: var(--warn-ink);
+               border: 1px solid rgba(180, 83, 9, .28); }
+.cert-notice.is-on { display: block; }
+
+.cert-card { background: var(--surface); border: 1px solid var(--hairline);
+             border-radius: var(--r-lg); box-shadow: var(--shadow-1); padding: 16px;
+             margin-bottom: 14px; }
+.cert-sec { font-size: 11.5px; font-weight: 700; letter-spacing: .075em; text-transform: uppercase;
+            color: var(--ink-2); margin-bottom: 11px; }
+.cert-hint { font-size: 12.5px; line-height: 1.5; color: var(--ink-fine); margin-top: 8px; }
+.cert-plain { font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+
+/* The two panes. The ladder keeps a floor of its own width so the sheet is never squeezed
+   below the size a name can be read at; under that the pair simply stacks. */
+.cert-work { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; }
+@media (min-width: 980px) {
+  .cert-work { grid-template-columns: minmax(0, 1.35fr) minmax(330px, .8fr); }
+  .cert-col-stage { position: sticky; top: 14px; }
+}
+.cert-col-ladder { min-width: 0; }
+
+/* ---------------- The sheet ---------------- */
+.cert-paper { background: var(--surface); border: 1px solid var(--hairline);
+              border-radius: var(--r-lg); box-shadow: var(--shadow-1); padding: 14px; }
+.cert-stage { position: relative; width: 100%; aspect-ratio: 841.89 / 595.28; overflow: hidden;
+              background: #fff; border-radius: var(--r-md);
+              box-shadow: inset 0 0 0 1px var(--hairline), 0 2px 10px rgba(15, 23, 42, .06); }
+/* A place that prints on the portal's own design is shown the portal's own sheet, frame and
+   all, so what is being placed is what will come out. */
+.cert-stage[data-style="builtin"] { background: linear-gradient(180deg, var(--mesh-top), #fff 55%); }
+.cert-stage[data-style="builtin"]::after { content: ""; position: absolute; inset: 14px;
+              border: 1px solid var(--accent-line); border-radius: 4px;
+              pointer-events: none; opacity: .5; }
+.cert-art { position: absolute; inset: 0; }
+.cert-stage-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill;
+                  display: block; user-select: none; -webkit-user-drag: none; }
+/* The plate for a place that has not uploaded yet. It says what belongs here, in the words
+   of the person who has to supply it, and keeps the sheet the size it will be. */
+.cert-frame { position: absolute; inset: 0; display: flex; flex-direction: column;
+              align-items: center; justify-content: center; gap: 7px; text-align: center;
+              padding: 22px; color: var(--ink-3);
+              background: repeating-linear-gradient(135deg, transparent 0 12px,
+                                                    var(--hover) 12px 13px); }
+.cert-frame-t { font-size: 14px; font-weight: 700; color: var(--ink-2); }
+.cert-frame-s { font-size: 12.5px; line-height: 1.5; max-width: 42ch; color: var(--ink-fine); }
+
+/* A line, held by the point that is stored. The plate under the words is the portal's, not
+   the certificate's: it lifts the words off whatever artwork is behind them so a 9-point
+   place name can still be read while it is placed, and it is not printed. */
+.cert-chip { position: absolute; top: 0; left: 0; max-width: 100%;
+             padding: 2px 7px; border-radius: 7px; line-height: 1.28; text-align: center;
+             white-space: pre-wrap; overflow-wrap: anywhere;
+             background: rgba(255, 255, 255, .74); border: 1px solid rgba(148, 163, 184, .45);
+             box-shadow: 0 1px 4px rgba(15, 23, 42, .1);
+             -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+             touch-action: none; transition: box-shadow .12s, border-color .12s; }
+.cert-edit .cert-chip { cursor: grab; }
+.cert-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cert-chip.is-selected { border-color: var(--accent);
+             box-shadow: 0 0 0 2px var(--accent-glow), 0 3px 12px rgba(15, 23, 42, .16); }
+.cert-stage.is-dragging .cert-chip { cursor: grabbing; }
+/* The square is a picture rather than a line, and is placed by its centre, so it is drawn
+   as one box with a word in it instead of a piece of text. */
+.cert-chip-code { display: grid; place-items: center; padding: 0;
+             background: rgba(255, 255, 255, .8); }
+.cert-qr { font-size: 9px; font-weight: 800; letter-spacing: .06em; color: var(--ink-2); }
+
+/* The two hairlines a placement is judged against, and the numbers it was set to. */
+.cert-guide { position: absolute; display: none; pointer-events: none;
+              border-color: var(--accent); opacity: .75; }
+.cert-guide-v { top: 0; bottom: 0; width: 0; border-left: 1px dashed; }
+.cert-guide-h { left: 0; right: 0; height: 0; border-top: 1px dashed; }
+.cert-guide.is-on { display: block; }
+.cert-stage-foot { display: flex; justify-content: space-between; align-items: baseline;
+                   gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+.cert-readout { font-size: 12px; color: var(--ink-fine); font-variant-numeric: tabular-nums; }
+
+/* ---------------- Which design, and the colour of the words ---------------- */
+.cert-style-row, .cert-row-name, .cert-tray-item label { display: flex; align-items: center;
+             gap: 9px; cursor: pointer; min-width: 0;
+             font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.cert-style-row input, .cert-row-name input, .cert-tray-item input { flex: none;
+             width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
+.cert-pagecolor { display: flex; align-items: center; gap: 9px; margin-top: 12px;
+                  font-size: 13px; color: var(--ink-2); }
+.cert-pagecolor label { margin-right: auto; }
+.cert-row-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.cert-row-buttons .btn { width: auto; }
+
+/* ---------------- The ladder: every line the certificate can carry ---------------- */
+.cert-ladder { display: flex; flex-direction: column; gap: 7px; }
+.cert-row { background: var(--subcard-bg); border: 1px solid var(--hairline);
+            border-radius: var(--r-md); padding: 9px 11px;
+            transition: border-color .12s, background .12s; }
+.cert-row.is-selected { border-color: var(--accent-line);
+            background: linear-gradient(180deg, var(--accent-soft), var(--subcard-bg)); }
+.cert-row-top { display: flex; align-items: center; gap: 10px; }
+.cert-row-top .cert-row-name { flex: 1; min-width: 0; }
+.cert-row-name span { overflow-wrap: anywhere; }
+.cert-state { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+              color: var(--ink-3); white-space: nowrap; }
+.cert-state.is-on { color: var(--ok-ink); }
+.cert-pick { flex: none; width: auto; }
+/* A line's controls open only for the chosen one. Twelve rows left open would be a form and
+   not a certificate; one at a time reads as the ladder it is. The boxes leave the tab order
+   with the drawer, so a keyboard never walks through a closed row. */
+.cert-row-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 10px;
+                   max-height: 0; overflow: hidden; visibility: hidden; opacity: 0;
+                   transition: max-height .18s ease, opacity .18s ease; }
+.cert-row.is-selected .cert-row-detail { max-height: 340px; visibility: visible; opacity: 1;
+                   margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--hairline); }
+.cert-ctl { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cert-ctl > label { font-size: 11.5px; font-weight: 600; color: var(--ink-fine); }
+.cert-ctl-where { grid-column: 1 / -1; }
+.cert-pair { display: flex; gap: 8px; }
+.cert-pair .cert-num { flex: 1; min-width: 0; }
+.cert-num, .cert-ctl select { width: 100%; font: inherit; font-size: 13px; color: var(--ink);
+              background: var(--field); border: 1px solid var(--hairline);
+              border-radius: var(--r-sm); padding: 7px 9px; }
+.cert-num:focus-visible, .cert-ctl select:focus-visible { outline: 2px solid var(--accent);
+              outline-offset: 1px; border-color: var(--accent-line); }
+.cert-ink { display: flex; align-items: center; gap: 7px; }
+.cert-ink .btn { width: auto; }
+.cert-swatch { width: 42px; height: 30px; padding: 2px; cursor: pointer;
+               border: 1px solid var(--hairline); border-radius: var(--r-sm);
+               background: var(--field); }
+.cert-row-plain { font-size: 12px; color: var(--ink-fine); margin-top: 4px;
+                  font-variant-numeric: tabular-nums; }
+.cert-row.is-read .cert-row-top { align-items: flex-start; justify-content: space-between; }
+
+/* The lines that are switched off live here, where they can be put back on without hunting
+   through the ladder for a tick box that has been folded away. */
+.cert-tray { margin-top: 13px; padding: 12px; border: 1px dashed var(--hairline);
+             border-radius: var(--r-md); background: var(--subcard-bg); }
+.cert-tray .cert-sec { margin-bottom: 8px; }
+.cert-tray-list { display: flex; flex-direction: column; gap: 6px; }
+.cert-tray-item { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.cert-tray-item label { flex: 1; min-width: 0; }
+.cert-tray-item .btn { width: auto; flex: none; }
+
+/* ---------------- A line of your own ---------------- */
+.cert-body textarea { width: 100%; font: inherit; font-size: 13.5px; line-height: 1.55;
+              color: var(--ink); background: var(--field); border: 1px solid var(--hairline);
+              border-radius: var(--r-md); padding: 10px 11px; resize: vertical; }
+.cert-body textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px;
+              border-color: var(--accent-line); }
+.cert-body-head { display: flex; align-items: baseline; justify-content: space-between;
+                  gap: 10px; margin-bottom: 7px; }
+.cert-body-head label { font-size: 13px; font-weight: 700; color: var(--ink); }
+.cert-count { font-size: 11.5px; color: var(--ink-fine); font-variant-numeric: tabular-nums; }
+.cert-words { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.cert-word { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+             font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer;
+             background: var(--accent-soft); border: 1px solid var(--accent-line);
+             border-radius: 999px; padding: 4px 10px; }
+.cert-word:hover { filter: brightness(1.05); }
+
+/* ---------------- Try one ---------------- */
+.cert-try { margin-top: 14px; }
+.cert-try-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cert-try-row select { flex: 1; min-width: 170px; font: inherit; font-size: 13px;
+              color: var(--ink); background: var(--field); border: 1px solid var(--hairline);
+              border-radius: var(--r-md); padding: 9px 10px; }
+.cert-try-row .btn { width: auto; flex: none; }
+
+/* ---------------- The foot: what the portal just did ---------------- */
+.cert-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+             flex-wrap: wrap; margin-top: 4px; padding-top: 12px;
+             border-top: 1px solid var(--hairline); }
+.cert-foot .cert-hint { margin-top: 0; }
+.cert-status { font-size: 12.5px; font-weight: 700; color: var(--ink-fine);
+               font-variant-numeric: tabular-nums; }
+.cert-status.is-ok { color: var(--ok-ink); }
+.cert-status.is-err { color: var(--danger-ink); }
+
+/* ---------------- The whole sheet, opened for a leader who wants room ---------------- */
+.cert-overlay { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column;
+                background: var(--glass-strong); animation: fade .18s ease;
+                -webkit-backdrop-filter: blur(22px) saturate(165%);
+                backdrop-filter: blur(22px) saturate(165%); }
+/* While it is open the page behind holds still: a drag that starts on the sheet must not
+   scroll the stake page underneath it. */
+body.cert-is-open { overflow: hidden; }
+.cert-overlay-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+                    border-bottom: 1px solid var(--hairline); background: var(--surface); }
+.cert-overlay-bar .btn { width: auto; margin-left: auto; flex: none; }
+.cert-overlay-t { font-size: 15.5px; font-weight: 800; letter-spacing: -.02em; color: var(--ink);
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cert-overlay-body { flex: 1; overflow: auto; padding: 18px; -webkit-overflow-scrolling: touch; }
+.cert-overlay-body > .cert { max-width: 1320px; margin: 0 auto; }
+@media (max-width: 700px) {
+  .cert-overlay-body { padding: 12px; }
+  .cert-card, .cert-paper { padding: 12px; }
+  /* On a phone the sheet is placed with a thumb and the numbers are typed, so a row's
+     controls sit one under the other where two columns would be unreadable. */
+  .cert-row-detail { grid-template-columns: 1fr; }
+}
