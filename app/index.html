@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#085088" />
+  <title>Gathering Place Portal</title>
+  <!-- Every address below is relative, not rooted. The portal serves this page from the
+       top of its own domain, where "assets/..." lands on /assets/...; the fixed public
+       page serves the same file from a folder of its own, where the same word lands one
+       level down. Rooted paths would point at the wrong place in one of the two, and a
+       relative path is correct in both because the app changes screens by hash — the
+       address of this document never moves while it is open. -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/img/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Gathering Place" />
+  <script src="assets/js/theme.js?v=63"></script>
+  <link rel="icon" type="image/png" href="assets/img/logo.png?v=63" />
+  <link rel="stylesheet" href="assets/css/style.css?v=63" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="app">
+    <div class="splash">Loading Gathering Place…</div>
+  </div>
+  <div id="toast-host" aria-live="polite" aria-atomic="false"></div>
+  <div id="announce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <!-- The QR decoder loads on demand from qr.js — only the check-in camera reads codes. -->
+  <script src="assets/js/vendor/qrcode.min.js"></script>
+  <script src="assets/js/api.js?v=63"></script>
+  <script src="assets/js/ui.js?v=63"></script>
+  <script src="assets/js/context.js?v=63"></script>
+  <script src="assets/js/qr.js?v=63"></script>
+  <script src="assets/js/pages/legal.js?v=63"></script>
+  <script src="assets/js/pages/auth.js?v=63"></script>
+  <script src="assets/js/pages/dashboard.js?v=63"></script>
+  <script src="assets/js/pages/classes.js?v=63"></script>
+  <script src="assets/js/pages/messages.js?v=63"></script>
+  <script src="assets/js/pages/stake.js?v=63"></script>
+  <script src="assets/js/pages/courses.js?v=63"></script>
+  <script src="assets/js/pages/attendance.js?v=63"></script>
+  <script src="assets/js/pages/profile.js?v=63"></script>
+  <script src="assets/js/pages/record.js?v=63"></script>
+  <script src="assets/js/pages/checkin.js?v=63"></script>
+  <script src="assets/js/pages/analytics.js?v=63"></script>
+  <script src="assets/js/pages/study.js?v=63"></script>
+  <script src="assets/js/pages/admin.js?v=63"></script>
+  <script src="assets/js/pwa.js?v=63"></script>
+  <script src="assets/js/app.js?v=63"></script>
+</body>
+</html>
