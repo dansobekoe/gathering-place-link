@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://experts-viii-contacting-organisation.trycloudflare.com","updated_at":"2026-10-12T18:34:58Z"};
+window.GATHERING_PLACE = {"url":"https://involvement-television-secret-ruth.trycloudflare.com","updated_at":"2026-10-12T19:03:46Z"};
