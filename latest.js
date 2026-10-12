@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://significance-postcards-pastor-tires.trycloudflare.com","updated_at":"2026-10-12T19:11:04Z"};
+window.GATHERING_PLACE = {"url":"https://sherman-wesley-marshall-believed.trycloudflare.com","updated_at":"2026-10-12T20:45:16Z"};
