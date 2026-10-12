@@ -194,6 +194,19 @@ h1 {
   box-shadow: none;
 }
 
+/* Today's tunnel address, written as a line rather than a second button: one way in to
+   choose, and the other one there for whoever asks. It is the address that changes every
+   evening, which is exactly why the sentence says so. */
+.spare {
+  margin: .85rem 0 0;
+  font-size: .8rem;
+  line-height: 1.55;
+  color: var(--ink-fine);
+  text-align: center;
+}
+
+.spare a { color: var(--accent); font-weight: 600; }
+
 .quiet {
   margin-top: .8rem;
   padding: .5rem .2rem;
