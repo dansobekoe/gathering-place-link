@@ -11,14 +11,35 @@
   var RECHECK_S = 60;
   var TUNNEL = /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/;
 
+  /* The door this page opens. It is a folder of this same address, not the tunnel, and
+     that is the whole point: a browser remembers an installed app by the address it came
+     from, so an icon made from a tunnel dies the evening that tunnel is handed to a
+     stranger. The app in this folder reads the tunnel's address for itself. */
+  var APP = 'app/';
+
   var lamp = document.getElementById('lamp');
   var head = document.getElementById('headline');
   var note = document.getElementById('note');
   var enter = document.getElementById('enter');
+  var spare = document.getElementById('spare');
+  var spareLink = document.getElementById('sparelink');
   var again = document.getElementById('again');
   var stamp = document.getElementById('stamp');
 
   var timer = null;
+
+  /* iPhone is the one phone whose browser gives no install button of its own, so there
+     the instructions have to name Safari's Share menu instead of Android's. */
+  (function () {
+    var how = document.getElementById('installhow');
+    if (!how) return;
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (ios) {
+      how.textContent = 'Open the portal above, then tap the Share button — the box with ' +
+        'the arrow, at the bottom of Safari — and choose “Add to Home Screen”.';
+    }
+  })();
 
   function when(iso) {
     var d = new Date(iso);
@@ -35,13 +56,21 @@
     head.textContent = title;
     note.textContent = body;
     if (url) {
-      enter.href = url;
+      // The main door is the app, which lives at this page's own address and so can be
+      // installed and kept. Today's tunnel is still offered underneath it, for whoever
+      // wants it once — and it is the address that changes every evening.
+      enter.href = APP;
       enter.className = dim ? 'enter is-dim' : 'enter';
-      enter.textContent = dim ? 'Try the portal anyway' : 'Enter the portal';
+      enter.textContent = dim ? 'Open it anyway' : 'Open the Gathering Place';
       enter.hidden = false;
+      spareLink.href = url;
+      // When nothing is answering at the tunnel, a link to it is not a way in.
+      spare.hidden = !!dim;
     } else {
       enter.hidden = true;
       enter.removeAttribute('href');
+      spare.hidden = true;
+      spareLink.removeAttribute('href');
     }
   }
 
