@@ -118,18 +118,19 @@ const StakePage = (() => {
       ]));
     }
 
-    content.appendChild(await placesSection(stakeId_, runs));
+    const places = await API.get(`/api/stakes/${stakeId_}/places`);
+    content.appendChild(await placesSection(stakeId_, runs, places));
     content.appendChild(await termsSection(stakeId_, runs));
     content.appendChild(await peopleSection(stakeId_, paper, writes));
     content.appendChild(await wardsSection(stakeId_, word));
     if (runs) content.appendChild(settingsSection(stakeId_, dash.stake, paper));
+    content.appendChild(certSection(stakeId_, places, paper));
     UI.render(target, UI.shell("stake", content, App.nav(), ctx));
   }
 
-  async function placesSection(stakeId, runs) {
+  async function placesSection(stakeId, runs, places) {
     const wrap = el("div");
     wrap.appendChild(el("div", { class: "sec-title" }, "Gathering places & rooms"));
-    const places = await API.get(`/api/stakes/${stakeId}/places`);
     const card = el("div", { class: "card" });
     if (!places.length) card.appendChild(empty(runs ? "No gathering places yet — add your first below."
                                                     : "No gathering places have been registered yet.", "pin"));
@@ -788,6 +789,41 @@ const StakePage = (() => {
           } catch (e) { toast(e.message, "err"); }
         }}, "Save")]),
     ]));
+    wrap.appendChild(card);
+    return wrap;
+  }
+
+  /* One line per gathering place, because that is how a certificate is decided: the
+     designer draws a sheet for *this* place, and the Portal Admin places the lines on it.
+     Leaders open it to see why a name came out where it did — the placement is theirs to
+     read, the artwork and the positions are the portal admin's to set. */
+  function certSection(stakeId, places, paper) {
+    const wrap = el("div");
+    wrap.appendChild(el("div", { class: "sec-title" }, "Certificates"));
+    const card = el("div", { class: "card" });
+    if (!places.length) card.appendChild(empty("No gathering places yet.", "pin"));
+    for (const p of places) {
+      const own = p.cert_style === "custom" && p.cert_design_url;
+      card.appendChild(el("div", { class: "list-item" }, [
+        el("div", { class: "grow" }, [
+          el("div", { class: "title" }, p.name),
+          el("div", { class: "meta" }, own
+            ? "Prints on the artwork this place uploaded, where the lines were placed."
+            : "Prints on the portal's own certificate design."),
+        ]),
+        el("span", { class: "pill " + (own ? "blue" : "grey") }, own ? "Own design" : "Portal design"),
+        el("button", { class: "btn secondary sm", title: "Certificate for " + p.name,
+          onclick: () => CertDesign.openOverlay({
+            stakeId, place: p, canEdit: paper,
+            // Only re-render the page once the work is put away: the designer floats above
+            // this card, and a refresh while it is open would rebuild the page under it.
+            onClose: (changed) => { if (changed) refresh(stakeId); } }) },
+          [icon("file", 15), paper ? "Place the lines" : "Look inside"]),
+      ]));
+    }
+    if (!paper) card.appendChild(el("div", { class: "meta", style: "padding:12px 16px 6px" },
+      "Only the Portal Admin can put a design up or move a line. Ask for a sample before "
+      + "the awards night, not after."));
     wrap.appendChild(card);
     return wrap;
   }
