@@ -498,19 +498,35 @@ const UI = (() => {
     const cls = "av " + (size === "sm" || size === "lg" ? size : "md");
     // The name is written beside this face wherever it appears, so the picture itself
     // is decoration to a screen reader rather than a second copy of the same words.
-    if (url) return el("span", { class: cls + " has-img" },
-      [el("img", { src: API.abs(url), alt: "", loading: "lazy" })]);
-    return el("span", { class: cls }, initials(name));
+    if (!url) return el("span", { class: cls }, initials(name));
+    const box = el("span", { class: cls + " has-img" });
+    const pic = el("img", { src: API.abs(url), alt: "", loading: "lazy", decoding: "async" });
+    /* A record can name a picture the disk no longer holds — an account cleared by hand,
+       a folder moved to another machine — and then the browser shows a torn icon inside a
+       circle, or nothing at all. The initials this person would have had without a photo
+       are put back in its place, so a lost file reads as a member rather than as a hole
+       in the page, and nobody is asked to explain a picture they never lost. */
+    pic.addEventListener("error", () => {
+      box.classList.remove("has-img");
+      box.textContent = initials(name);
+    }, { once: true });
+    box.appendChild(pic);
+    return box;
   }
   /* One class picture, drawn the same way in every list that shows one.
      No picture, no box: a class nobody has photographed reads as plain text rather than as
      a broken image, and nothing on the page blames the teacher for a thing they were never
      asked to do. The picture is given an empty alt because the class title always sits
      beside it, exactly as a face does — and because the portal collects no caption, so any
-     words written here would be a guess about a photograph I cannot see. */
+     words written here would be a guess about a photograph I cannot see.
+     A picture that fails to arrive is taken out of the row rather than left as a broken
+     frame: the list is then drawn exactly as it would have been with no picture at all. */
   function coverTile(url) {
     if (!url) return null;
-    return el("img", { class: "ct", src: API.abs(url), alt: "", loading: "lazy", decoding: "async" });
+    const pic = el("img", { class: "ct", src: API.abs(url), alt: "", loading: "lazy",
+                            decoding: "async" });
+    pic.addEventListener("error", () => { pic.style.display = "none"; }, { once: true });
+    return pic;
   }
   function personName(u) {
     return (u && (u.display_name || u.full_name || u.name)) || "";
@@ -597,8 +613,28 @@ const UI = (() => {
   }
 
   // ---- app shell: persistent sidebar, off-canvas drawer + bottom dock ----
+  /* The account menu, kept for the whole portal rather than for one shell.
+     Only one can be open, it owns the listeners that close it, and it is put away before
+     any other screen is built — so a page change can never leave a menu on the screen with
+     nothing left to dismiss it. */
+  let accountMenu = null;
+  function closeAccountMenu(restore) {
+    if (!accountMenu) return;
+    const m = accountMenu;
+    accountMenu = null;
+    m.detach();
+    m.node.remove();
+    if (!m.button) return;
+    m.button.setAttribute("aria-expanded", "false");
+    /* Only a menu that was put away without being used gives its focus back. A line that
+       was chosen has already gone to another screen, and pulling focus to the chip would
+       leave a keyboard reader behind on a button that is no longer on the page. */
+    if (restore && document.contains(m.button)) m.button.focus();
+  }
+
   /* ctx = { stake, stakes, unread } — stake switcher and the message badge */
   function shell(activeNav, contentNode, navItems, ctx) {
+    closeAccountMenu();
     const user = API.getUser() || {};
     const items = navItems || App.nav();
     // pages that predate the context switcher still get the stake list + badge
@@ -666,29 +702,76 @@ const UI = (() => {
     ]);
     root.appendChild(topbar);
 
-    // avatar menu
-    let menu = null;
-    function closeMenu() { if (menu) { menu.remove(); menu = null; } }
+    // ---------- the account menu ----------
+    /* One menu for the whole portal, and it comes and goes with its own listeners.
+       Each shell used to keep its own copy and register "click anywhere closes it" with
+       `{ once: true }`, which unbound the listener the first time anything on the page was
+       clicked — menu open or not. After a couple of page changes the chip on the bar could
+       still be clicked but nothing could put its menu away, and the old shells stayed
+       listening behind the new one. Opening now binds, closing unbinds, and Escape or
+       turning to another page puts the menu away the way a person expects. */
+    avatarBtn.setAttribute("aria-haspopup", "true");
+    avatarBtn.setAttribute("aria-expanded", "false");
     avatarBtn.addEventListener("click", e => {
+      // the chip's own click must not reach the document listener that closes the menu
       e.stopPropagation();
-      if (menu) return closeMenu();
-      menu = el("div", { class: "menu" }, [
+      if (accountMenu) closeAccountMenu(true); else openAccountMenu();
+    });
+    function openAccountMenu() {
+      const menu = el("div", { class: "menu", role: "menu", "aria-label": "Account" }, [
         el("div", { class: "mhead" }, user.email || ""),
         menuItem("user", "My profile", () => { location.hash = "#/profile"; }),
         isStudent(user) ? menuItem("chart", "My attendance", () => { location.hash = "#/record"; }) : null,
         user.is_super_admin ? menuItem("shield", "Portal control", () => { location.hash = "#/admin"; }) : null,
         menuItem("mail", "Messages", () => { location.hash = "#/messages"; }),
+        // offered only to the roles that are given the page in the sidebar, so the menu and
+        // the navigation bar can never disagree about who owns certificates
+        items.some(i => i.key === "certificates")
+          ? menuItem("award", "Certificates", () => { location.hash = "#/certificates"; }) : null,
         menuItem("globe", "Study", () => { location.hash = "#/study"; }),
         // The documents are reachable from inside the portal, not only from the
         // sign-in screen — a policy you leave to read is a policy nobody reads.
         menuItem("file", "Privacy and terms", () => { location.hash = "#/privacy"; }),
         menuItem("logout", "Sign out", signOut, true),
       ]);
+      const onOutside = () => closeAccountMenu(false);
+      const onKey = e => {
+        if (e.key === "Escape") { e.stopPropagation(); closeAccountMenu(true); }
+      };
+      const onPage = () => closeAccountMenu(false);
+      /* A menu you can only leave with a mouse is not a menu. The list takes its first row
+         as soon as it opens, and the arrows walk it, so the account chip is usable from a
+         keyboard on a laptop in the same way it is from a thumb on a phone. */
+      const onNav = e => {
+        const rows = [...menu.querySelectorAll("button")];
+        if (!rows.length) return;
+        const at = rows.indexOf(document.activeElement);
+        const step = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : null;
+        if (step === null && e.key !== "Home" && e.key !== "End") return;
+        e.preventDefault();
+        const next = e.key === "Home" ? rows[0] : e.key === "End" ? rows[rows.length - 1]
+          : rows[(at + step + rows.length) % rows.length];
+        next.focus();
+      };
+      document.addEventListener("click", onOutside);
+      document.addEventListener("keydown", onKey);
+      window.addEventListener("hashchange", onPage);
+      menu.addEventListener("keydown", onNav);
       topbar.appendChild(menu);
-    });
-    document.addEventListener("click", closeMenu, { once: true });
+      avatarBtn.setAttribute("aria-expanded", "true");
+      const first = menu.querySelector("button");
+      if (first) first.focus();
+      accountMenu = { node: menu, button: avatarBtn,
+                      detach: () => {
+                        document.removeEventListener("click", onOutside);
+                        document.removeEventListener("keydown", onKey);
+                        window.removeEventListener("hashchange", onPage);
+                        menu.removeEventListener("keydown", onNav);
+                      } };
+    }
     function menuItem(ic, label, fn, danger) {
-      return el("button", { class: danger ? "danger" : "", onclick: () => { closeMenu(); fn(); } },
+      return el("button", { class: danger ? "danger" : "", role: "menuitem",
+        onclick: () => { closeAccountMenu(false); fn(); } },
         [icon(ic, 17), label]);
     }
     function isStudent(u) {
@@ -832,6 +915,7 @@ const UI = (() => {
   }
 
   return { el, render, esc, toast, announce, icon, shell, modal, confirm: confirmDialog,
+           closeAccountMenu,
            empty, loading, WEEKDAYS, CATEGORIES, ROLES, roleLabel, fmtTime, fmtDate,
            opensLabel, startsAt, hoursText,
            logAction, logDetail, logKind,
