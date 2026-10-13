@@ -228,7 +228,10 @@ const CertDesign = (() => {
     const rows = new Map();
     let stage, art, img, frame, guideV, guideH, readout, statusLine, noticeBox, headLine,
         styleCheck, bodyBox, countLine, trayBox, memberSelect, tryButton, tryNote, resizeStop,
-        timer = null, pendingBefore = null, saving = false, queued = false;
+        timer = null, pendingBefore = null, saving = false, queued = false, torn = false,
+        // the sentence being typed, and the burst it belongs to, kept so leaving mid-typing
+        // still puts the words on file — see destroy()
+        bodyTimer = null, bodyBefore = null;
 
     const id = () => ctx.stakeId;
     const placeId = () => (ctx.place || {}).id;
@@ -489,14 +492,20 @@ const CertDesign = (() => {
         ]),
       ]);
       return { node, sync(spot) {
-        // written fresh each time, so a row never carries a second copy of its own numbers
-        node.replaceChildren(el("div", { class: "cert-row-top" }, [
+        // written fresh each time, so a row never carries a second copy of its own numbers.
+        // A line that is off gets no second row at all — the words "not on this certificate"
+        // above it already say that, and a row left empty is read as a fault, not as a choice.
+        const kids = [el("div", { class: "cert-row-top" }, [
           el("span", { class: "cert-row-name" }, spec.label),
           el("span", { class: "cert-state" + (spot.on ? " is-on" : "") },
             spot.on ? "On the certificate" : "Not on this certificate"),
-        ]), spot.on ? el("div", { class: "cert-row-plain" },
-          `${round(spot.x * 100, 2)}% across, ${round(spot.y * 100, 2)}% down · ${spot.size} pt` +
-          (spot.max_w ? ` · a line ${round(spot.max_w * 100, 0)}% of the page wide` : "")) : null);
+        ])];
+        if (spot.on) {
+          kids.push(el("div", { class: "cert-row-plain" },
+            `${round(spot.x * 100, 2)}% across, ${round(spot.y * 100, 2)}% down · ${spot.size} pt` +
+            (spot.max_w ? ` · a line ${round(spot.max_w * 100, 0)}% of the page wide` : "")));
+        }
+        node.replaceChildren(...kids);
       } };
     }
 
@@ -667,7 +676,6 @@ const CertDesign = (() => {
         "aria-label": "A line of your own",
         placeholder: "e.g. For completing {course} with the grade of {grade}." });
       bodyBox.value = S.layout.body_text || "";
-      let bodyTimer = null;
       bodyBox.addEventListener("input", () => {
         const before = snapshot();
         S.layout.body_text = bodyBox.value;
@@ -678,7 +686,9 @@ const CertDesign = (() => {
         repaint();
         rows.forEach((row, k) => row.sync(f(k), k === S.selected));
         clearTimeout(bodyTimer);
-        bodyTimer = setTimeout(() => schedule(before), 700);   // typing is one edit, not forty
+        bodyBefore = before;
+        bodyTimer = setTimeout(() => { bodyTimer = null; bodyBefore = null; schedule(before); },
+                               700);   // typing is one edit, not forty
       });
       const words = el("div", { class: "cert-words" }, (data.placeholders || []).map(ph =>
         el("button", { class: "cert-word", type: "button", title: `Put ${ph} into the line`,
@@ -1173,7 +1183,25 @@ const CertDesign = (() => {
         paintGuides();
       },
       destroy() {
-        clearTimeout(timer);
+        /* Nothing here is saved on a Save button, so leaving the screen is the one moment a
+           held edit could be lost. A dragged line waits 350 ms for the next move and a typed
+           sentence waits 700 ms after the last key — grouping, not hesitating. Work held in
+           either window is the person's own, so it goes off now rather than being thrown away
+           with the timers; the portal takes one request at a time either way. */
+        if (torn) return;
+        torn = true;
+        if (timer) { clearTimeout(timer); timer = null; }
+        if (bodyTimer) {
+          clearTimeout(bodyTimer);
+          bodyTimer = null;
+          if (bodyBefore !== null && pendingBefore === null) pendingBefore = bodyBefore;
+          bodyBefore = null;
+        }
+        if (canEdit && pendingBefore !== null) {
+          const held = pendingBefore;
+          pendingBefore = null;
+          save(held);
+        }
         if (resizeStop) resizeStop.disconnect();
         if (S.objectUrl) URL.revokeObjectURL(S.objectUrl);
       },
@@ -1193,82 +1221,48 @@ const CertDesign = (() => {
     return work;
   }
 
-  const alive = new WeakMap();     // which screen stands in which host, so a re-mount tidies up
+  /* The one placement screen the portal is showing, and the number of the screen it asked
+     for. A sheet keeps a save timer and a watcher on its own width, both of which belong to
+     the sheet that is on the screen — and moving from one gathering place to another builds
+     a new screen in a new card, so a record kept per card would leave the last place's
+     watchers running behind it. The router calls stop() when the page changes, and a mount
+     that arrives late behind a newer one is thrown away rather than allowed to take over. */
+  let onScreen = null;
+  let asking = 0;
 
   function mount(host, ctx) {
     if (!host) return Promise.resolve(null);
-    const previous = alive.get(host);
-    if (previous) previous.destroy();
+    if (onScreen) { onScreen.destroy(); onScreen = null; }
+    const mine = ++asking;
     host.innerHTML = "";
     host.appendChild(el("div", { class: "cert-loading" }, "Getting the certificate ready…"));
     return renderInto(host, ctx).then(work => {
       if (!work) { host.innerHTML = ""; return null; }
-      alive.set(host, work);
+      if (mine !== asking) { work.destroy(); return null; }   // a newer sheet took its place
+      onScreen = work;
       return work;
     });
   }
 
-  /* The designer opened full screen, for a leader who wants the whole page for themselves:
-     its own scroll column, one close button, and Escape doing what the button says.
-
-     Whoever opened it is told when it shuts, and whether anything was actually placed while
-     it was open — a list line that says "Own design" is only worth redrawing after a change,
-     and a screen merely looked around in should not send the page fetching again. */
-  function openOverlay(ctx) {
-    const bar = el("div", { class: "cert-overlay-bar" });
-    const inner = el("div", { class: "cert-overlay-body" });
-    const holder = el("div", { class: "cert-overlay", role: "dialog", "aria-modal": "true",
-                               "aria-label": "Certificate for " + ((ctx.place || {}).name || "this place"),
-                               tabindex: "-1" },
-                      [bar, inner]);
-    const close = el("button", { class: "btn ghost icon-only", type: "button",
-                                 "aria-label": "Close the certificate designer",
-                                 title: "Close", onclick: () => shut() }, [icon("x", 18)]);
-    bar.appendChild(el("div", { class: "cert-overlay-t" },
-      "Certificate for " + ((ctx.place || {}).name || "this place")));
-    bar.appendChild(close);
-    document.body.appendChild(holder);
-    document.body.classList.add("cert-is-open");
-    document.addEventListener("keydown", onKey);
-    const opener = document.activeElement;
-    holder.focus();
-
-    let work = null;
-    let closed = false;
-    let changed = false;
-    // The screen reports every save; this only turns the report into the flag shut() sends.
-    const ours = Object.assign({}, ctx, {
-      onChange: () => {
-        changed = true;
-        if (typeof ctx.onChange === "function") ctx.onChange();
-      },
-    });
-    renderInto(inner, ours).then(built => {
-      /* Closed before the screen was even ready — the usual answer on a tunnel that is
-         taking its time. Nothing may be left running behind a dialog that is gone. */
-      if (closed) { if (built) built.destroy(); return; }
-      work = built;
-    });
-
-    function onKey(e) {
-      if (e.key === "Escape") { e.stopPropagation(); shut(); }
-    }
-    function shut() {
-      if (closed) return;
-      closed = true;
-      document.removeEventListener("keydown", onKey);
-      document.body.classList.remove("cert-is-open");
-      if (work) work.destroy();
-      holder.remove();
-      if (typeof ctx.onClose === "function") ctx.onClose(changed);
-      if (opener && document.contains(opener) && typeof opener.focus === "function") opener.focus();
-    }
-    return { close: shut };
+  /* Put the screen away and stop it working behind the page: the same tidy-up the screen
+     does for itself, and the reason the router calls this before it swaps the view. */
+  function stop() {
+    asking++;                       // anything still on its way in is no longer wanted
+    if (!onScreen) return;
+    const work = onScreen;
+    onScreen = null;
+    work.destroy();
   }
+
+  /* The designer used to be able to open full screen over the page that called it. That is
+     what a leader mistook for a broken screen: a sheet with no address of its own, reached
+     from one row on one card and closed with a cross. It is a page now — Certificates, in the
+     navigation bar — so the floating window and its close button are gone, and the screen
+     that stays is the one the router tidies up with stop(). */
 
   return {
     mount,
-    openOverlay,
+    stop,
     stageToLayout,
     DEFAULT_FRACTIONS: DEFAULT_POSITIONS,
     API_PATHS,
