@@ -18,6 +18,7 @@ const App = (() => {
     classes: () => ClassesPage.mount(root()),
     checkin: () => CheckinPage.mount(root()),
     messages: p => MessagesPage.mount(root(), p[0]),
+    certificates: p => CertificatesPage.mount(root(), p[0] ? +p[0] : null),
     analytics: p => AnalyticsPage.mount(root(), p[0]),
     admin: () => AdminPage.mount(root()),
     profile: () => ProfilePage.mount(root()),
@@ -59,6 +60,15 @@ const App = (() => {
       items.push({ key: "classes", href: "#/classes", icon: "list", label: "Classes", group: "Overview" });
     }
     items.push({ key: "messages", href: "#/messages", icon: "mail", label: "Messages", group: "Overview" });
+    /* Certificates come straight after Messages, because that is where a leader looks once
+       an awards night is being planned: the sheet each place prints on, and where the
+       member's name, class and date land on it. It is offered to the people whose certificate
+       paperwork it is — a member never places a line — and it stays out of the phone dock so
+       the four everyday buttons are the four that were there before. */
+    if (monitor && s.id) {
+      items.push({ key: "certificates", href: "#/certificates", icon: "award",
+                   label: "Certificates", group: "Overview", secondary: true });
+    }
     /* Everyone in a gathering place reads the catalogue: a student to search it and enrol,
        an instructor to claim what is open, a leader to see what is on offer. */
     if (s.id || isAdmin) {
@@ -109,6 +119,8 @@ const App = (() => {
   /* One way out, from the shell, the account menu and the consent gate. */
   function signOut(why) {
     gateUp = false;
+    // the account menu is the thing a person was last holding when the session ended
+    UI.closeAccountMenu();
     API.clear();
     Ctx.clear();
     document.body.classList.remove("drawer-open");
@@ -131,6 +143,10 @@ const App = (() => {
     if (typeof AttendancePage !== "undefined") AttendancePage.stop();
     if (typeof ClassesPage !== "undefined") ClassesPage.stop();
     if (typeof StudyPage !== "undefined") StudyPage.stop();
+    /* The certificate sheet keeps a save timer and a watcher on its own width, and holds any
+       placement made in the last moment. Leaving the page must not lose that work or leave it
+       running behind whatever comes next. */
+    if (typeof CertDesign !== "undefined") CertDesign.stop();
 
     const hash = location.hash.replace(/^#\/?/, "");
     const [first, ...params] = hash.split("/");
@@ -180,7 +196,8 @@ const App = (() => {
     if (name === "login") { homeFor(); return; }
 
     // pages that need a stake in view fall back to the onboarding hub
-    if (["home", "courses", "course", "attendance", "classes", "stake", "analytics", "messages"]
+    if (["home", "courses", "course", "attendance", "classes", "stake", "analytics",
+         "messages", "certificates"]
         .includes(name) && !shellCtx.stake && !shellCtx.user.is_super_admin) {
       if (name !== "stake") { location.hash = "#/stake"; return; }
     }
