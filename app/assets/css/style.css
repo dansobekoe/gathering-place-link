@@ -1460,23 +1460,11 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .cert-status.is-ok { color: var(--ok-ink); }
 .cert-status.is-err { color: var(--danger-ink); }
 
-/* ---------------- The whole sheet, opened for a leader who wants room ---------------- */
-.cert-overlay { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column;
-                background: var(--glass-strong); animation: fade .18s ease;
-                -webkit-backdrop-filter: blur(22px) saturate(165%);
-                backdrop-filter: blur(22px) saturate(165%); }
-/* While it is open the page behind holds still: a drag that starts on the sheet must not
-   scroll the stake page underneath it. */
-body.cert-is-open { overflow: hidden; }
-.cert-overlay-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px;
-                    border-bottom: 1px solid var(--hairline); background: var(--surface); }
-.cert-overlay-bar .btn { width: auto; margin-left: auto; flex: none; }
-.cert-overlay-t { font-size: 15.5px; font-weight: 800; letter-spacing: -.02em; color: var(--ink);
-                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cert-overlay-body { flex: 1; overflow: auto; padding: 18px; -webkit-overflow-scrolling: touch; }
-.cert-overlay-body > .cert { max-width: 1320px; margin: 0 auto; }
+/* ---------------- The sheet on a small screen ----------------
+   The placement screen used to be able to open full screen over the page that called it.
+   It is a page of its own now — Certificates, in the navigation bar — so the floating
+   window is gone and only the phone rules below are left standing. */
 @media (max-width: 700px) {
-  .cert-overlay-body { padding: 12px; }
   .cert-card, .cert-paper { padding: 12px; }
   /* On a phone the sheet is placed with a thumb and the numbers are typed, so a row's
      controls sit one under the other where two columns would be unreadable. */
