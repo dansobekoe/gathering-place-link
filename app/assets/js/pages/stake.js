@@ -796,7 +796,11 @@ const StakePage = (() => {
   /* One line per gathering place, because that is how a certificate is decided: the
      designer draws a sheet for *this* place, and the Portal Admin places the lines on it.
      Leaders open it to see why a name came out where it did — the placement is theirs to
-     read, the artwork and the positions are the portal admin's to set. */
+     read, the artwork and the positions are the portal admin's to set.
+
+     Each row goes to the Certificates page rather than opening a window here: a sheet with
+     handles on it deserves an address of its own, and the same page is one tap away in the
+     navigation bar. */
   function certSection(stakeId, places, paper) {
     const wrap = el("div");
     wrap.appendChild(el("div", { class: "sec-title" }, "Certificates"));
@@ -812,12 +816,8 @@ const StakePage = (() => {
             : "Prints on the portal's own certificate design."),
         ]),
         el("span", { class: "pill " + (own ? "blue" : "grey") }, own ? "Own design" : "Portal design"),
-        el("button", { class: "btn secondary sm", title: "Certificate for " + p.name,
-          onclick: () => CertDesign.openOverlay({
-            stakeId, place: p, canEdit: paper,
-            // Only re-render the page once the work is put away: the designer floats above
-            // this card, and a refresh while it is open would rebuild the page under it.
-            onClose: (changed) => { if (changed) refresh(stakeId); } }) },
+        el("a", { class: "btn secondary sm", href: "#/certificates/" + p.id,
+                  title: "Certificate for " + p.name },
           [icon("file", 15), paper ? "Place the lines" : "Look inside"]),
       ]));
     }
