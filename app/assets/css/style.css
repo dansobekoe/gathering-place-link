@@ -1470,3 +1470,118 @@ tbody tr.is-today td { background: var(--accent-soft); }
      controls sit one under the other where two columns would be unreadable. */
   .cert-row-detail { grid-template-columns: 1fr; }
 }
+
+/* ---------------- Marking attendance ----------------
+   The one screen a teacher uses while the class is still talking to him, so it is built for
+   a thumb and a glance rather than as a form. Three rules carry it:
+
+   - The name owns the row's remaining width and wraps. A control that has its own intrinsic
+     width — a select, most of all — used to take that space and cut names down to "G… N…".
+   - A mark is a button, never a field. A bordered box filled with the lowercase word
+     "present" reads as an answer somebody has already typed, so it is the one thing this
+     sheet must not look like. The chosen mark wears the colour the rest of the portal gives
+     it (the same green pill a session list shows); the rest stay quiet and grey.
+   - Nobody is marked until somebody chooses. An open row says so in words, the bar counts
+     the answers, and a row left out is ringed, not guessed at. */
+.mark-sheet { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.mark-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  flex: none;
+  padding: 11px 13px; border-radius: var(--r-md);
+  background: var(--subcard-bg); border: 1px solid var(--hairline);
+}
+.mark-bar-l { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.mark-bar-r { display: flex; gap: 7px; flex-wrap: wrap; }
+.mark-count { font-size: 13.5px; font-weight: 700; color: var(--ink);
+              font-variant-numeric: tabular-nums; }
+.mark-count.is-full { color: var(--ok-ink); }
+.mark-tally { display: flex; gap: 6px; flex-wrap: wrap; }
+.mark-tick { font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+             font-variant-numeric: tabular-nums; }
+.mark-tick.ok { background: var(--ok-bg); color: var(--ok-ink); }
+.mark-tick.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.mark-tick.info { background: var(--info-bg); color: var(--info-ink); }
+.mark-tick.danger { background: var(--danger-bg); color: var(--danger-ink); }
+
+/* Thirty names do not fit in a dialog, and a sheet that runs off the bottom of the screen
+   hides half the class. The list scrolls in its own well, under the bar that stays in view.
+   It takes the height the dialog has left rather than a fixed one, because the dialog is
+   capped by the screen: on a short laptop window a 52vh list inside an 86vh dialog pushed
+   the Save button below the fold, and a sheet whose own confirm button is off-screen is a
+   sheet the teacher scrolls past and gives up on. */
+.mark-list {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding: 0 2px;
+  border: 1px solid var(--hairline); border-radius: var(--r-md); background: var(--glass);
+}
+.mark-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px; align-items: center;
+  padding: 11px 11px; border-bottom: 1px solid var(--hairline);
+}
+.mark-row:last-child { border-bottom: none; }
+.mark-who { min-width: 0; }
+.mark-name { font-size: 14.5px; font-weight: 600; color: var(--ink); letter-spacing: -.01em;
+             line-height: 1.35; overflow-wrap: anywhere; }
+.mark-meta { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+             font-size: 12.5px; color: var(--ink-fine); margin-top: 2px; }
+/* The state of a row that has no answer yet is said in words, not left to a colour. It is a
+   status, so it wears the same dot vocabulary as the marks themselves: a chosen mark fills its
+   dot, an open row leaves its ring empty. Shouting the same two words in capitals ten rows
+   running is what makes a screen look assembled by nobody in particular. */
+.mark-need { display: none; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600;
+             color: var(--warn-ink); }
+.mark-need::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none;
+                     border: 1.5px solid currentColor; }
+.mark-row:not(.is-marked) .mark-need { display: inline-flex; }
+/* Two colours, two messages: amber says the row is still open, red says a save was refused
+   because of it. A refused row therefore rings in the red it is explained by, not in a second
+   amber that would read as the same quiet note it carried before the tap. */
+.mark-row.is-missing { background: var(--danger-wash); }
+.mark-row.is-missing .mark-seg { outline: 2px solid var(--danger-ink); outline-offset: 3px;
+                                 border-radius: 12px; }
+
+.mark-seg { display: grid; grid-auto-flow: column; gap: 6px; flex: none; }
+.mark-opt {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+  min-width: 58px; min-height: 38px; padding: 8px 10px; border-radius: 11px; cursor: pointer;
+  background: transparent; border: 1px solid var(--hairline); white-space: nowrap;
+  transition: background .14s, color .14s, border-color .14s, transform .12s;
+}
+.mark-opt:hover { background: var(--hover); color: var(--ink); }
+.mark-opt:active { transform: scale(.97); }
+.mark-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* A chosen mark carries a dot of its own colour: a second signal besides the word, for a
+   screen read in poor light or at arm's length on a projector. */
+.mark-opt.on::before { content: ""; width: 8px; height: 8px; border-radius: 50%;
+                       background: currentColor; flex: none; }
+.mark-opt.ok.on { background: var(--ok-bg); color: var(--ok-ink); border-color: var(--ok-bg); }
+.mark-opt.warn.on { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-bg); }
+.mark-opt.info.on { background: var(--info-bg); color: var(--info-ink); border-color: var(--info-bg); }
+.mark-opt.danger.on { background: var(--danger-bg); color: var(--danger-ink); border-color: var(--danger-bg); }
+
+.mark-warn { display: none; flex: none; font-size: 13px; line-height: 1.5; color: var(--danger-ink);
+             background: var(--danger-bg); border: 1px solid var(--danger-bg);
+             border-radius: var(--r-md); padding: 11px 13px; }
+.mark-warn.show { display: block; }
+
+/* The dialog stops growing at the top and bottom of the screen and hands what is left to the
+   names, so the count bar and the buttons are always on the sheet that they describe. */
+.modal.mark-modal { display: flex; flex-direction: column; overflow: hidden; }
+.modal.mark-modal .mhead, .modal.mark-modal .mactions { flex: none; }
+
+/* On a phone the four choices cannot sit beside a name and keep both readable, so the row
+   turns into a card: the person on top, the whole mark strip across beneath, each choice a
+   comfortable tap. Every state stays reachable without the sheet scrolling sideways. */
+@media (max-width: 620px) {
+  .modal.mark-modal { max-height: 92vh; }
+  .mark-row { grid-template-columns: auto minmax(0, 1fr); row-gap: 10px; padding: 12px 10px; }
+  .mark-seg { grid-column: 1 / -1; grid-auto-flow: initial;
+              grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mark-opt { min-width: 0; min-height: 44px; padding: 10px 2px; font-size: 12px; }
+  .mark-bar { flex-direction: column; align-items: stretch; }
+  .mark-bar-r { justify-content: space-between; }
+  .mark-bar-r .btn { flex: 1; justify-content: center; }
+}
