@@ -549,12 +549,15 @@ const UI = (() => {
 
   // ---- modal ----
   /* Every dialog gets a visible dismiss affordance, Escape, a focus trap and a
-     return to whatever opened it — the pages only describe title/body/actions. */
-  function modal({ title, sub, body, actions = [], wide = false }) {
+     return to whatever opened it — the pages only describe title/body/actions.
+     `cls` adds a class to the panel itself, for the rare sheet that has to own the
+     dialog's box layout rather than simply grow it (marking attendance, below). */
+  function modal({ title, sub, body, actions = [], wide = false, cls = "" }) {
     const backdrop = el("div", { class: "modal-backdrop" });
     const opener = document.activeElement;
     const panel = el("div", {
-      class: "modal" + (wide ? " wide" : ""), role: "dialog", "aria-modal": "true",
+      class: "modal" + (wide ? " wide" : "") + (cls ? " " + cls : ""),
+      role: "dialog", "aria-modal": "true",
       "aria-label": title, tabindex: "-1",
     }, [
       el("div", { class: "mhead" }, [
