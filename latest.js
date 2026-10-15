@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://average-wisdom-influences-phentermine.trycloudflare.com","updated_at":"2026-10-13T17:07:01Z"};
+window.GATHERING_PLACE = {"url":"https://soft-ash-cartridges-nor.trycloudflare.com","updated_at":"2026-10-15T16:17:52Z"};
