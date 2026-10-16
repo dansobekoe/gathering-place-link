@@ -38,6 +38,11 @@ const App = (() => {
     const unread = await Ctx.unread(force);
     shellCtx = { user: st.user, stake, stakes: st.stakes, joined: st.joined,
                  unread: unread.total };
+    /* The bell is asked here rather than by each page: every navigation lands on this
+       function, so one call covers the app, and its own throttle means a person who moves
+       about quickly still asks the portal once in a while rather than once per screen.
+       Not awaited — a notice nobody has read yet must never hold up a page. */
+    if (typeof Notify !== "undefined") { Notify.watch(); Notify.poll(); }
     return shellCtx;
   }
   function ctx() { return shellCtx; }
@@ -121,6 +126,10 @@ const App = (() => {
     gateUp = false;
     // the account menu is the thing a person was last holding when the session ended
     UI.closeAccountMenu();
+    /* The bell goes quiet first: it holds a timer, a panel of the last person's news, and
+       the ids already shown to this device. Left running, the next person to open the phone
+       would be handed the previous one's notices. */
+    if (typeof Notify !== "undefined") Notify.stop();
     API.clear();
     Ctx.clear();
     document.body.classList.remove("drawer-open");
@@ -230,7 +239,7 @@ const App = (() => {
     UI.render(root(), UI.el("div", { class: "auth-wrap" }, [
       UI.el("div", { class: "auth-card down-card" }, [
         UI.el("div", { class: "logo" }, [
-          UI.el("img", { class: "brand-img", src: "assets/img/logo.png?v=49", alt: "" }),
+          UI.el("img", { class: "brand-img", src: UI.logoUrl(), alt: "" }),
         ]),
         UI.el("h1", { class: "down-title" }, ["The portal is closed"]),
         UI.el("p", { class: "down-why" }, [why]),
