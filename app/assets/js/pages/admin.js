@@ -8,7 +8,7 @@
    he does not open one or let people into it.
    Every write here goes through /api/admin/*, the widest surface in the API. */
 const AdminPage = (() => {
-  const { el, icon, toast, shell, loading, empty, render, fmtDate, fmtTime, modal, statusPill,
+  const { el, icon, toast, shell, loading, empty, render, fmtDate, fmtTime, ago, modal, statusPill,
           roleLabel, tile, avatar, logAction, logDetail, logKind } = UI;
 
   const TABS = [["overview", "Overview"], ["approvals", "Approvals"],
@@ -1865,18 +1865,10 @@ const AdminPage = (() => {
     const hit = stakeById(id);
     return hit ? hit.name : "—";
   }
-  function when(iso) {
-    let s = String(iso || "").replace(" ", "T");
-    if (s && !/[zZ]|[+-]\d\d:?\d\d$/.test(s)) s += "Z";       // naive UTC from the API
-    const t = new Date(s).getTime();
-    if (!isFinite(t)) return "";
-    const mins = Math.round((Date.now() - t) / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    if (mins < 1440) return `${Math.round(mins / 60)}h ago`;
-    if (mins < 10080) return `${Math.round(mins / 1440)}d ago`;
-    return fmtDate(iso);
-  }
+  /* One wording for "how long ago", shared with the bell: the console and the notices must
+     never disagree about how old the same stamp is, and a queue of waiting accounts is
+     exactly where a person notices that they do. */
+  const when = ago;
   async function copy(text) {
     if (!text) return;
     try { await navigator.clipboard.writeText(String(text)); toast("Copied to the clipboard"); }
