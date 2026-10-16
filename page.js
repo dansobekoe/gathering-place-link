@@ -1,9 +1,9 @@
 /* The one job here is to answer a question a person cannot answer themselves: is the
    portal open right now, and if so where.
-   Two fetches, no framework. `latest.js` is rewritten by the launcher on the
-   administrator's laptop each time he starts it, and is asked with a fresh query string,
-   because GitHub Pages hands the same file to everybody for ten minutes — a link read
-   through a stale copy is a link that points at yesterday's dead tunnel. */
+   Two fetches, no framework. `latest.js` is rewritten by the launcher on the laptop of the
+   student who built this portal, each time he starts it, and is asked with a fresh query
+   string, because GitHub Pages hands the same file to everybody for ten minutes — a link
+   read through a stale copy is a link that points at yesterday's dead tunnel. */
 (function () {
   'use strict';
 
@@ -113,8 +113,8 @@
 
     if (!url) {
       look('off', 'The portal is not open yet',
-           'When the administrator starts it, today’s link appears here on its own — '
-           + 'this page never changes address, so keep it.',
+           'When the student who built it starts the portal, today’s link appears here on '
+           + 'its own — this page never changes address, so keep it.',
            null, false);
       stamped(published, checked);
       return;
@@ -123,7 +123,8 @@
     if (!TUNNEL.test(url)) {
       look('wait', 'The published link looks wrong',
            'The address on the portal’s own list is not one the portal recognises, so it '
-           + 'is not offered as a door. Tell the administrator and start the portal again.',
+           + 'is not offered as a door. Tell the person who runs this portal and start it '
+           + 'again.',
            null, false);
       stamped(published, checked);
       return;
@@ -133,8 +134,8 @@
     probe(url, function (alive) {
       if (alive) {
         look('live', 'Open right now',
-             'The portal is up. Sign in, or register and the administrator will approve '
-             + 'your account.', url, false);
+             'The portal is up. Sign in, or register and the person who runs this portal '
+             + 'will approve your account.', url, false);
       } else {
         look('wait', 'A link is published, but nothing is answering',
              'The portal runs from a laptop in Accra, and it is only reachable while that '
