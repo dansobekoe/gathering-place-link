@@ -53,10 +53,41 @@ const Legal = (() => {
     const b = business();
     const item = (k, v) => (v ? el("div", {}, [el("b", {}, k), String(v)]) : null);
     const rows = [item("Version in force", b.version),
-                  item("Written and administered by", b.responsible_person),
+                  item("Built and run by", b.responsible_person),
                   item("Questions go to", b.contact_email)];
     return el("div", { class: "doc-meta" }, rows.filter(Boolean));
   }
+  /* The two sentences of small print: whose site this is not, and who owns the writing of
+     it. They belong wherever the portal speaks in its own name — the sign-in card, the foot
+     of a document, the side of the shell, the fixed public page, and the bottom of every
+     sheet that is printed — so they are built once, here, from /api/legal.
+
+     The pair below is what that endpoint says today. It is shown only in the moment before
+     the endpoint has answered, and smallPrint() swaps in the served wording the moment it
+     arrives; tests.test_smoke fails if the two ever disagree, which is what stops a stale
+     sentence being printed on a roster. */
+  const SMALL_PRINT = {
+    disclaimer: "YSA Gathering Places is not an official website of The Church of Jesus Christ of Latter-day Saints.",
+    copyright: "© 2026 Gathering Place. All rights reserved.",
+  };
+
+  /* One node holding both lines, so a call site appends one child and the styling stays in
+     one rule — the sidebar and a policy page size it differently in CSS, not here. */
+  function smallPrint() {
+    const box = el("div", { class: "small-print" }, [
+      el("div", {}, SMALL_PRINT.disclaimer),
+      el("div", {}, SMALL_PRINT.copyright),
+    ]);
+    load()
+      .then(() => {
+        const b = business();
+        if (b.disclaimer) box.children[0].textContent = b.disclaimer;
+        if (b.copyright) box.children[1].textContent = b.copyright;
+      })
+      .catch(() => { /* the fallback is the same sentence; nothing to say about it */ });
+    return box;
+  }
+
   function footNode() {
     const b = business();
     return el("div", { class: "doc-foot" }, [
@@ -64,6 +95,7 @@ const Legal = (() => {
       el("div", { style: "margin-top:4px" },
         `Letters about the portal come from ${b.letters_sent_from || b.contact_email}.` +
         (b.reply_to ? ` Write back to ${b.reply_to} and it reaches me.` : "")),
+      smallPrint(),
     ]);
   }
 
@@ -178,12 +210,13 @@ const Legal = (() => {
     const box = modal({
       title: "One thing before you go on",
       sub: (user && user.email ? user.email : "This account") +
-           " was opened by the portal administrator, so these words were never put to you.",
+           " was opened for you by the person who runs this portal, so these words were " +
+           "never put to you.",
       body: el("div", {}, [
         el("p", { class: "muted", style: "font-size:14px;line-height:1.7" },
           "The portal holds a class record with your name on it. It is entitled to hold " +
-          "that record because you say it may. Both documents are short, and the one " +
-          "person who administers this portal wrote them."),
+          "that record because you say it may. Both documents are short, and the student " +
+          "who built this portal wrote them."),
         rows.node, accept, decline,
       ]),
     });
@@ -195,7 +228,7 @@ const Legal = (() => {
   }
 
   return { load, openModal, consentRows, consentGate, TITLES, version, business, find,
-           sectionNode, metaRow, footNode };
+           sectionNode, metaRow, footNode, smallPrint, SMALL_PRINT };
 })();
 
 /* A document as its own page: #/privacy, #/terms, #/cookies. Outside the app shell on
