@@ -30,6 +30,29 @@ self.addEventListener("activate", (event) => {
   })());
 });
 
+/* A tapped alert. The notice was raised here (js/notify.js asks this worker to do it) so
+   the tap can only be answered here — and the answer is not a navigation of the worker's:
+   the app changes screens by its own hash, and a page already open on this address would
+   simply reload if it were sent a new one. So the app is brought forward and the link is
+   posted to it, and the page moves itself. A fresh window is opened with the link on the
+   end because there is nothing open to tell. */
+self.addEventListener("notificationclick", (event) => {
+  const link = (event.notification.data && event.notification.data.link) || "";
+  event.notification.close();
+  event.waitUntil((async () => {
+    const all = await clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of all) {
+      if ("focus" in client) {
+        await client.focus();
+        if (link) client.postMessage({ type: "gp:open", link });
+        return;
+      }
+    }
+    // The scope always ends in "/", and a link always starts with "#", so they join as one.
+    await clients.openWindow(SHELL + link);
+  })());
+});
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   // Anything on another address is none of this worker's business — including, on the
