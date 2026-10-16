@@ -266,6 +266,15 @@ footer {
   color: var(--ink-fine);
   text-align: center;
 }
+/* The four lines at the foot of a page are one block of fine print, not four paragraphs of
+   prose, so they sit close together. The sentence about whose site this is not gets a shade
+   more weight than the rest: it is the one line here a stranger actually needs, and it is
+   the same sentence the portal itself carries on the sign-in card, in the sidebar, at the
+   foot of its policy pages and at the bottom of every sheet it prints. */
+footer p { margin: 0 0 .4rem; }
+footer p:last-child { margin-bottom: 0; }
+footer .disclaim { font-size: .82rem; color: var(--ink-2); max-width: 52ch; margin-left: auto;
+                   margin-right: auto; }
 
 a:focus-visible, button:focus-visible {
   outline: 3px solid var(--accent-2);
