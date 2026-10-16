@@ -54,14 +54,20 @@ const AuthPage = (() => {
       foot(card);
     }
 
-    /* Who runs this, and what they promised about the record. Three links and one line,
-       all of it read from /api/legal so the footer cannot disagree with the policy. */
+    /* Who runs this, and what they promised about the record. Three links, one line and the
+       two sentences of small print, all of it read from /api/legal so the footer cannot
+       disagree with the policy — least of all about whether this is a Church site, or about
+       whether the person who wrote the software holds an office in the programme. */
     function foot(host) {
-      const line = el("div", {}, "Run by the programme administrator.");
+      // The sentence shown for the moment before /api/legal answers. It says the truth it is
+      // about to be replaced with, rather than a title that has to be corrected later.
+      const line = el("div", {}, "Built and run by a Young Single Adult student of "
+                                 + "this gathering place.");
       const fill = () => {
         const b = Legal.business();
         if (b.organisation) {
-          line.textContent = `${b.organisation} · ${b.unit}. Run by ${b.responsible_person}.`;
+          line.textContent = `${b.organisation} · ${b.unit}. ` +
+                             `Built and run by ${b.responsible_person}.`;
         }
       };
       fill();
@@ -70,6 +76,7 @@ const AuthPage = (() => {
         el("div", { class: "docs" }, Object.keys(Legal.TITLES).map(k =>
           el("a", { href: "#/" + k }, Legal.TITLES[k]))),
         line,
+        Legal.smallPrint(),
       ]));
     }
 
