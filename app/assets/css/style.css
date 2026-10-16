@@ -409,6 +409,17 @@ tr:last-child td { border-bottom: none; }
 .auth-foot .docs { display: flex; gap: 12px; justify-content: center; margin-bottom: 6px; }
 .auth-foot .docs a { font-size: 12px; font-weight: 600; color: var(--ink-2); }
 .auth-foot .docs a:hover { color: var(--accent); text-decoration: underline; }
+/* Whose site this is not, and who owns the writing of it. Both sentences are built once,
+   by Legal.smallPrint(), from the same /api/legal wording that the Terms quote and a
+   printed sheet carries — so the rules below only decide how quietly they sit. */
+.small-print { margin-top: 7px; font-size: 10.5px; line-height: 1.5; color: var(--ink-fine); }
+.small-print div + div { margin-top: 1px; }
+/* A policy page ends in these lines, so they need to read as the end of a document rather
+   than as a caption: a touch larger, and clear of the letter address above. */
+.doc-foot .small-print { margin-top: 12px; font-size: 11.5px; line-height: 1.55; }
+/* The 244px rail has the least room of any of the four corners, and fine print there is
+   the first thing to crowd out the navigation. */
+.side-foot .small-print { margin-top: 2px; padding: 0 4px; font-size: 9.5px; line-height: 1.45; }
 /* Sign-in's own small row: the choice to stay, and the way back in. */
 .keep-row { display: flex; align-items: center; justify-content: space-between;
             gap: 12px; margin: -2px 0 0; }
