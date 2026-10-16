@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://loading-studio-making-pale.trycloudflare.com","updated_at":"2026-10-16T14:03:33Z"};
+window.GATHERING_PLACE = {"url":"https://nec-cas-plaintiff-knowledgestorm.trycloudflare.com","updated_at":"2026-10-16T15:20:21Z"};
