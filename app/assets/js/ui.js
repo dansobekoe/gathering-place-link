@@ -674,6 +674,7 @@ const UI = (() => {
           ]),
         ]),
         el("button", { class: "side-signout", onclick: signOut }, [icon("logout", 16), "Sign out"]),
+        Legal.smallPrint(),
       ]),
     ]);
     root.appendChild(side);
@@ -799,6 +800,7 @@ const UI = (() => {
           ]),
         ]),
         el("button", { class: "side-signout", onclick: signOut }, [icon("logout", 16), "Sign out"]),
+        Legal.smallPrint(),
       ]),
     ]);
     const scrim = el("div", { class: "drawer-scrim", onclick: () => toggleDrawer(false) });
