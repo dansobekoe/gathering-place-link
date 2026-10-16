@@ -236,11 +236,11 @@ const Legal = (() => {
    around, and a signed-in reader loses nothing by having the whole width. */
 const LegalPage = (() => {
   function mount(target, key) {
-    const { el, icon, render, announce, loading } = UI;
+    const { el, icon, render, announce, loading, logoUrl } = UI;
     const doc = el("div", { class: "doc" });
     const backTo = API.getToken() ? App.homeHash() : "#/login";
     render(target, el("main", { class: "doc-plain", id: "main", tabindex: "-1" }, [
-      el("img", { class: "brand-img", src: "assets/img/logo.png?v=49", alt: "Gathering Place" }),
+      el("img", { class: "brand-img", src: logoUrl(), alt: "Gathering Place" }),
       el("a", { class: "back", href: backTo }, [icon("back", 14),
         API.getToken() ? "Back to the portal" : "Back to sign in"]),
       doc,
