@@ -49,6 +49,7 @@ const UI = (() => {
     eye: '<path d="M2.6 12S6.1 5.8 12 5.8 21.4 12 21.4 12 17.9 18.2 12 18.2 2.6 12 2.6 12z"/><circle cx="12" cy="12" r="3.1"/>',
     eyeoff: '<path d="M2.6 12S6.1 5.8 12 5.8 21.4 12 21.4 12 17.9 18.2 12 18.2 2.6 12 2.6 12z"/><circle cx="12" cy="12" r="3.1"/><path d="M4.6 4.2 19.4 19.8"/>',
     image: '<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10.2" r="1.5"/><path d="m5.5 17.5 4-4.2 3 2.9 3.2-3.6 2.8 3.1"/>',
+    bell: '<path d="M17.3 8.4a5.3 5.3 0 0 0-10.6 0c0 5.3-2.3 6.9-2.3 6.9h15.2s-2.3-1.6-2.3-6.9"/><path d="M13.5 18.4a1.8 1.8 0 0 1-3 0"/>',
   };
   function icon(name, size = 18, cls = "") {
     const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -91,6 +92,23 @@ const UI = (() => {
     return node;
   }
   function render(target, node) { target.innerHTML = ""; target.appendChild(node); tagLabels(node); }
+
+  // ---- the mark of the portal, at an address that moves with the bundle ----
+  /* Every picture under assets/ is answered with a year of cache, so the only way a person
+     who replaced logo.png ever sees the new one is for its address to change. index.html
+     carries that number on every script and stylesheet tag; a logo written out by hand in a
+     script keeps whatever number it was typed with, and six of them quietly stayed behind at
+     an old one while the rest of the bundle moved on. Read from this file's own tag instead,
+     there is one number to bump and no picture can be forgotten. */
+  let brandTag;
+  function logoUrl() {
+    if (brandTag === undefined) {
+      const tag = document.querySelector('script[src*="ui.js"]');
+      const v = tag && /[?&]v=([^&]+)/.exec(tag.src);
+      brandTag = v ? v[1] : "0";
+    }
+    return `assets/img/logo.png?v=${brandTag}`;
+  }
 
   // ---- accessible fields ----
   /* Pages describe a field as a bare <label> beside its control. Wire each pair so
@@ -185,6 +203,83 @@ const UI = (() => {
       [icon("sun", 19, "sun"), icon("moon", 19, "moon")]);
     labelThemeButton(btn);
     return btn;
+  }
+
+  // ---- a form left half-written ----
+  /* A person registering is nearly always interrupted by the thing the form asks them for:
+     the code that went to their email, a leader with the invite code, or a phone that goes
+     to another app and comes back with this page gone. Forty seconds of typing thrown away
+     is how a registration is abandoned halfway and never finished, so these forms set down
+     what has been typed and hand it back when the page returns.
+
+     It is sessionStorage rather than localStorage on purpose. The browser throws it away
+     when the tab closes, so a shared phone in a ward does not carry the last person's
+     half-written registration into the next one's; and signing out clears every draft
+     outright, before anybody else touches this device.
+
+     A draft is a convenience and never a place to leave a secret. scrub() drops passwords,
+     one-time codes, pins and tokens whatever a caller passes in, so a forgotten field cannot
+     put a credential on disk; and the cookie notice the portal serves lists these keys from
+     the same file that names them. */
+  const DRAFT_PREFIX = "gp_draft_";
+  const DRAFT_TTL = 3 * 60 * 60 * 1000;   // longer than any one interruption should have to be
+  const SECRET_KEY = /^(code|otp|pin|token|password|pass|confirm|dev_?code|secret)$/i;
+
+  function scrub(src) {
+    if (Array.isArray(src)) {
+      return src.map(scrub);
+    }
+    if (!src || typeof src !== "object") return {};
+    const out = {};
+    Object.keys(src).forEach(k => {
+      if (SECRET_KEY.test(k)) return;
+      const v = src[k];
+      if (v === null || v === undefined || v === "" || typeof v === "function") return;
+      if (typeof v === "object") {
+        const inner = scrub(v);
+        if (Array.isArray(v) || Object.keys(inner).length) out[k] = inner;
+      } else if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+        out[k] = v;
+      }
+    });
+    return out;
+  }
+
+  // Nothing to keep is the same as throwing the draft away, so an empty form leaves no trace.
+  function draftSave(name, data) {
+    const key = DRAFT_PREFIX + name;
+    try {
+      const v = scrub(data);
+      if (!v || !Object.keys(v).length) { sessionStorage.removeItem(key); return false; }
+      sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), v }));
+      return true;
+    } catch (e) {
+      return false;   // private mode, or a tab at its limit: the form still works, it just
+                      // cannot survive this visit being closed
+    }
+  }
+  function draftRead(name) {
+    const key = DRAFT_PREFIX + name;
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      if (!d || !d.v || typeof d.v !== "object") return null;
+      if (!(d.t > 0) || Date.now() - d.t > DRAFT_TTL) { sessionStorage.removeItem(key); return null; }
+      return d.v;
+    } catch (e) { return null; }
+  }
+  function draftDrop(name) {
+    try { sessionStorage.removeItem(DRAFT_PREFIX + name); } catch (e) { /* nothing was kept */ }
+  }
+  /* One way out, from the person who finds a form already filled in on their phone: every
+     draft this portal holds, gone, and the screen redrawn clean. */
+  function draftClear() {
+    try {
+      Object.keys(sessionStorage)
+        .filter(k => k.indexOf(DRAFT_PREFIX) === 0)
+        .forEach(k => sessionStorage.removeItem(k));
+    } catch (e) { /* private mode keeps nothing anyway */ }
   }
 
   // ---- Ghanaian phone numbers ----
@@ -377,6 +472,23 @@ const UI = (() => {
     if (!d) return "";
     const dt = new Date(String(d).length === 10 ? d + "T00:00:00" : d);
     return dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  }
+  /* "12m ago" for news, and a date once it stops being news.
+     The stamps arrive from the portal as its own wall clock — every place here is on Ghana
+     time, which is UTC all year — so a stamp with no zone on it is marked UTC by hand rather
+     than left for Date to read in whatever zone the laptop happens to be in. A bell that
+     thought a notice was eight hours old would say so, and the person would disbelieve it. */
+  function ago(iso) {
+    let s = String(iso || "").replace(" ", "T");
+    if (s && !/[zZ]|[+-]\d\d:?\d\d$/.test(s)) s += "Z";
+    const t = new Date(s).getTime();
+    if (!isFinite(t)) return "";
+    const mins = Math.round((Date.now() - t) / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1440) return `${Math.round(mins / 60)}h ago`;
+    if (mins < 10080) return `${Math.round(mins / 1440)}d ago`;
+    return fmtDate(iso);
   }
   /* A closed check-in window has to say which edge of it the person is standing outside,
      or the instructor assumes the code is broken. A class that has not started yet will
@@ -638,6 +750,10 @@ const UI = (() => {
   /* ctx = { stake, stakes, unread } — stake switcher and the message badge */
   function shell(activeNav, contentNode, navItems, ctx) {
     closeAccountMenu();
+    /* The notice panel is hung on the bar this shell is throwing away, and it owns the
+       listeners that dismiss it. Put it away first, or the next page carries a panel that
+       nothing on screen can close. */
+    if (typeof Notify !== "undefined") Notify.close();
     const user = API.getUser() || {};
     const items = navItems || App.nav();
     // pages that predate the context switcher still get the stake list + badge
@@ -661,7 +777,7 @@ const UI = (() => {
     // ---------- sidebar (wide screens) ----------
     const side = el("aside", { class: "sidebar", "aria-label": "Main navigation" }, [
       el("div", { class: "side-brand" }, [
-        el("img", { class: "brand-img", src: "assets/img/logo.png?v=49", alt: "Gathering Place" }),
+        el("img", { class: "brand-img", src: logoUrl(), alt: "Gathering Place" }),
       ]),
       stakeSwitcher(ctx),
       el("nav", { class: "side-nav" }, sideGroups(items, navLink)),
@@ -692,8 +808,8 @@ const UI = (() => {
     const topbar = el("header", { class: "topbar" }, [
       burger,
       el("div", { class: "logo" }, [
-        el("img", { class: "brand-img brand-mobile", src: "assets/img/logo.png?v=49",
-                   alt: "Gathering Place" }),
+        el("img", { class: "brand-img brand-mobile", src: logoUrl(),
+                    alt: "Gathering Place" }),
         ctx && ctx.stake ? el("span", { class: "crumb" }, [
           el("span", { class: "crumb-stake" }, ctx.stake.name),
           el("span", { class: "crumb-role" }, ctx.stake.label || primaryRoleLabel(user)),
@@ -701,6 +817,9 @@ const UI = (() => {
       ]),
       // Day or night, on every screen, whatever the role: the choice belongs to the
       // person holding the phone, and it stays on their device.
+      // The bell comes before it, because news is what a person opens the portal for;
+      // the whole widget, its panel and its alerts are js/notify.js.
+      (typeof Notify !== "undefined" ? Notify.button() : null),
       themeButton(),
       avatarBtn,
     ]);
@@ -719,7 +838,12 @@ const UI = (() => {
     avatarBtn.addEventListener("click", e => {
       // the chip's own click must not reach the document listener that closes the menu
       e.stopPropagation();
-      if (accountMenu) closeAccountMenu(true); else openAccountMenu();
+      if (accountMenu) { closeAccountMenu(true); return; }
+      /* The same reason the menu needs the line above: this click stops here, so nothing
+         else can put the notice panel away when the account chip opens its own. Two panels
+         stacked on one corner of the bar is a screen nobody meant to build. */
+      if (typeof Notify !== "undefined") Notify.close();
+      openAccountMenu();
     });
     function openAccountMenu() {
       const menu = el("div", { class: "menu", role: "menu", "aria-label": "Account" }, [
@@ -785,7 +909,7 @@ const UI = (() => {
     // ---------- drawer (small screens) ----------
     const drawer = el("aside", { class: "drawer", "aria-label": "Main navigation" }, [
       el("div", { class: "drawer-head" }, [
-        el("img", { class: "brand-img", src: "assets/img/logo.png?v=49", alt: "Gathering Place" }),
+        el("img", { class: "brand-img", src: logoUrl(), alt: "Gathering Place" }),
         el("button", { class: "icon-btn", "aria-label": "Close menu",
           onclick: () => toggleDrawer(false) }, [icon("x", 18)]),
       ]),
@@ -919,12 +1043,13 @@ const UI = (() => {
     return frag;
   }
 
-  return { el, render, esc, toast, announce, icon, shell, modal, confirm: confirmDialog,
+  return { el, render, esc, toast, announce, icon, logoUrl, shell, modal, confirm: confirmDialog,
            closeAccountMenu,
            empty, loading, WEEKDAYS, CATEGORIES, ROLES, roleLabel, fmtTime, fmtDate,
-           opensLabel, startsAt, hoursText,
+           ago, opensLabel, startsAt, hoursText,
            logAction, logDetail, logKind,
            statusPill, initials, avatar, coverTile, personName, shortName,
            tile, barSection, stackSection, primaryRoleLabel,
-           theme, setTheme, toggleTheme, themeButton, phoneField, wardField, passWrap, passAgree };
+           theme, setTheme, toggleTheme, themeButton, phoneField, wardField, passWrap, passAgree,
+           draftSave, draftRead, draftDrop, draftClear };
 })();
