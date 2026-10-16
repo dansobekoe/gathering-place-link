@@ -134,7 +134,6 @@
      the text sitting on it: white on a light face measures barely 2:1, so a button or an
      avatar drawn in the accent carries dark ink here rather than white. */
   --on-accent: #06182b;
-  --on-brand: #06182b;
   --shadow-1: 0 2px 10px rgba(0, 0, 0, .3), 0 10px 34px rgba(2, 6, 23, .45);
   --shadow-2: 0 10px 40px rgba(2, 6, 23, .6);
   --rail-shadow: 8px 0 40px rgba(2, 6, 23, .4);
@@ -228,6 +227,100 @@ button { font-family: inherit; cursor: pointer; }
 .menu button:hover { background: var(--accent-soft); }
 .menu button.danger { color: var(--danger); }
 .menu button svg { color: var(--ink-2); }
+
+/* ---------------- The bell ----------------
+   The count is the whole feature, so it is the only thing on the bar allowed to be red —
+   and it is a disc the number sits in, not a dot that says only "something happened".
+   The panel is the account menu's glass at a width a paragraph can live in: frosted, since
+   it is shell chrome that floats over the page rather than a plate of content, and quiet
+   everywhere except the mark itself. */
+.bell-wrap { position: relative; display: grid; }
+.bell-btn { position: relative; }
+.bell-dot {
+  position: absolute; top: -5px; right: -5px;
+  min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px;
+  background: var(--danger); color: var(--on-accent);
+  font-size: 10px; font-weight: 800; font-variant-numeric: tabular-nums;
+  display: none; place-items: center; line-height: 1;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, .38);
+}
+.bell-btn.has-news .bell-dot { display: grid; }
+.bell-btn.has-news { color: var(--accent); border-color: var(--accent-line); }
+.bell-panel {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 62;
+  width: min(384px, calc(100vw - 24px));
+  display: flex; flex-direction: column;
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(26px) saturate(170%); backdrop-filter: blur(26px) saturate(170%);
+  border: 1px solid var(--glass-border); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2); overflow: hidden; animation: menuIn .16s ease;
+}
+.bell-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+             padding: 12px 14px 10px; border-bottom: 1px solid var(--hairline); }
+.bell-head .mhead { font-size: 11px; font-weight: 700; letter-spacing: .06em;
+                    text-transform: uppercase; color: var(--ink-3); }
+.bell-all { background: none; border: none; font: inherit; font-size: 12.5px; font-weight: 700;
+            color: var(--accent); padding: 4px 8px; border-radius: 9px; cursor: pointer; }
+.bell-all:hover { background: var(--accent-soft); }
+.bell-list { max-height: min(56vh, 430px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.bell-none { padding: 24px 20px; text-align: center; color: var(--ink-fine);
+             font-size: 13px; line-height: 1.62; }
+.bell-row { display: flex; align-items: flex-start; gap: 2px; padding: 2px 8px 2px 6px;
+            border-bottom: 1px solid var(--hairline); }
+.bell-row:last-child { border-bottom: none; }
+.bell-open { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; gap: 11px;
+             background: none; border: none; font: inherit; color: inherit; text-align: left;
+             padding: 11px 4px; border-radius: 12px; cursor: pointer; }
+.bell-open:hover { background: var(--hover); }
+/* One mark per kind of news, tinted by what it is: a reminder is a warning about tomorrow,
+   a result is good news about you, and a message is a message. */
+.bell-ic { flex: none; width: 30px; height: 30px; border-radius: 10px; display: grid;
+           place-items: center; background: var(--accent-soft); color: var(--accent); }
+.bell-ic.reminder { background: var(--warn-bg); color: var(--warn-ink); }
+.bell-ic.result { background: var(--ok-bg); color: var(--ok-ink); }
+.bell-ic.account { background: var(--info-bg); color: var(--info-ink); }
+.bell-words { display: flex; flex-direction: column; min-width: 0; }
+.bell-title { font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); }
+.bell-body { font-size: 12.5px; line-height: 1.55; color: var(--ink-2); margin-top: 2px;
+             display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3;
+             -webkit-box-orient: vertical; overflow: hidden; }
+/* --ink-fine, not --ink-3: how long ago a notice arrived is information a person reads,
+   and the sheet's own rule reserves --ink-3 for decoration that may fail to be read. */
+.bell-when { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+             color: var(--ink-fine); margin-top: 4px; }
+.bell-seen { flex: none; width: 28px; height: 28px; margin-top: 11px; border: none;
+             background: none; color: var(--ink-3); border-radius: 9px; display: grid;
+             place-items: center; cursor: pointer; }
+.bell-seen:hover { background: var(--hover); color: var(--ink-2); }
+.bell-older { padding: 10px 16px 12px; font-size: 11.5px; line-height: 1.5; color: var(--ink-fine);
+              border-top: 1px solid var(--hairline); }
+.bell-foot { border-top: 1px solid var(--hairline); padding: 11px 14px 13px;
+             background: var(--subcard-bg); }
+.bell-alerts { display: flex; align-items: center; gap: 10px; cursor: pointer;
+               font-size: 13px; font-weight: 700; color: var(--ink); }
+/* The switch is drawn rather than the checkbox shown: a tick box asks nothing of a thumb,
+   while a sliding face says what the other half of the sentence would be. */
+.bell-check { appearance: none; -webkit-appearance: none; flex: none; position: relative;
+  width: 40px; height: 23px; border-radius: 999px; background: var(--track);
+  border: 1px solid var(--glass-border); cursor: pointer; transition: background .18s; }
+.bell-check::after { content: ""; position: absolute; top: 2px; left: 2px; width: 17px;
+  height: 17px; border-radius: 50%; background: var(--surface);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .3); transition: transform .18s; }
+.bell-check:checked { background: var(--accent); }
+.bell-check:checked::after { transform: translateX(17px); }
+.bell-note { margin-top: 8px; font-size: 11.5px; line-height: 1.55; color: var(--ink-fine); }
+/* On a phone the bar is only so wide, so the drop becomes a sheet hung from the bar itself:
+   the wrapper stops being the anchor and the sticky topbar, which is positioned, takes over. */
+@media (max-width: 620px) {
+  .bell-wrap { position: static; }
+  .bell-panel { left: 8px; right: 8px; width: auto; top: calc(100% + 4px); }
+}
+/* The bar gained a control, so the account chip gives back the room it was borrowing: the
+   face says whose it is, and the name is one tap away in the menu it opens. */
+@media (max-width: 480px) {
+  .avatar-btn .nm { display: none; }
+  .avatar-btn { padding: 5px; }
+}
 
 /* ---------------- Layout ---------------- */
 .container { max-width: 980px; margin: 0 auto; padding: 22px 18px 120px; }
@@ -370,8 +463,14 @@ tr:last-child td { border-bottom: none; }
 .nav-badge {
   position: absolute; top: -4px; right: -4px;
   min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
-  background: var(--danger); color: var(--on-brand); font-size: 10px; font-weight: 700;
+  /* --on-accent is the one token that is the right ink on a saturated face in both
+     settings: white on the daylight red, dark navy on the night's light rose. Naming
+     --on-brand here would read as that token's purpose, but it is only ever given a value
+     by the night setting, so in daylight these counts inherited the page's own dark ink —
+     a number nobody could see on a red disc. */
+  background: var(--danger); color: var(--on-accent); font-size: 10px; font-weight: 700;
   display: grid; place-items: center; box-shadow: 0 2px 6px rgba(225, 29, 72, .4);
+  font-variant-numeric: tabular-nums;
 }
 .dock .nav-badge { position: static; margin: 0; }
 .dock-item, .side-item { position: relative; }
@@ -850,7 +949,9 @@ tbody tr.is-today td { background: var(--accent-soft); }
   display: grid; place-items: center;
   overflow: hidden;                    /* the crop happens here, and only on screen */
   border-radius: var(--av-radius);
-  color: var(--on-brand); font-size: var(--av-face); font-weight: 700; letter-spacing: .02em;
+  /* The same pair of faces as the counts above: white on the daylight brand, dark navy on
+     the night's light blue — which is what --on-accent already decides. */
+  color: var(--on-accent); font-size: var(--av-face); font-weight: 700; letter-spacing: .02em;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   user-select: none;
 }
