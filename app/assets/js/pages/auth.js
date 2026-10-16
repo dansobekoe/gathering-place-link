@@ -13,14 +13,28 @@
    server, which is the only party that knows whether a mailbox is wired up — so with no
    SMTP account the screen stops mentioning an email and shows the code instead. */
 const AuthPage = (() => {
-  const { el, toast, render, icon, modal, statusPill, roleLabel } = UI;
+  const { el, toast, render, icon, modal, statusPill, roleLabel, logoUrl,
+          draftSave, draftRead, draftDrop } = UI;
 
   const RESEND_WAIT = 30;        // seconds of courtesy before a second code is offered
 
   function mount(target) {
-    let mode = "login";
-    let waitData = null;
-    let verifyData = null;
+    /* What this device was left holding, if anything. A person who goes to fetch the code
+       the form just asked for often comes back to a page that has been thrown away — a phone
+       that needed the memory, a tab that was closed, a reload pressed in confusion — and the
+       forty seconds of typing they would have to do again is the point where registrations
+       are quietly abandoned. Nothing secret is in here: see UI's draft store. */
+    const kept = draftRead("auth") || {};
+    const SCREENS = ["login", "signup", "verify", "waiting"];
+    let mode = SCREENS.indexOf(kept.mode) >= 0 ? kept.mode : "login";
+    let keptForm = kept.form || null;
+    let waitData = mode === "waiting" ? (draftRead("waiting") || null) : null;
+    let verifyData = mode === "verify" ? (draftRead("verify") || null) : null;
+    // a screen whose own data did not survive is not a screen anybody can be put back on
+    if (mode === "waiting" && !waitData) mode = keptForm ? "signup" : "login";
+    if (mode === "verify" && !verifyData) mode = keptForm ? "signup" : "login";
+    // said once, on the screen it came back to, and true for as long as that draft is live
+    let restored = !!(keptForm || waitData || verifyData);
     let timer = null;
     const card = el("div", { class: "auth-card" });
 
@@ -37,13 +51,44 @@ const AuthPage = (() => {
     }
     function stopTimer() { if (timer) clearInterval(timer); timer = null; }
 
+    /* One place keeps the screen and whatever it was mid-way through, so every move that
+       changes what this card is — sign in, registering, the code, the admin's queue — is a
+       move a reload can survive. Drafts are dropped where the thing they describe is done:
+       a sent message, a confirmed address, a signed-in account, a signed-out device. */
+    function saveScreen() {
+      draftSave("auth", { mode, form });
+      draftSave("verify", mode === "verify" ? verifyData : null);
+      draftSave("waiting", mode === "waiting" ? waitData : null);
+    }
+
+    /* "Start again" for whoever finds a form already filled in — a shared phone, or their own
+       half-written attempt at the wrong account. It is their data to throw away, so the
+       button throws it away and redraws the card clean. */
+    function startAgain() {
+      ["auth", "verify", "waiting", "reset"].forEach(draftDrop);
+      form = null; keptForm = null; verifyData = null; waitData = null; restored = false;
+      mode = "login";
+      draw();
+      toast("The form is empty again");
+    }
+
     function draw() {
       stopTimer();
+      saveScreen();
       card.innerHTML = "";
       card.appendChild(el("div", { class: "logo" }, [
-        el("img", { class: "brand-img", src: "assets/img/logo.png?v=49", alt: "Gathering Place" }),
+        el("img", { class: "brand-img", src: logoUrl(), alt: "Gathering Place" }),
         el("div", { class: "tag" }, "Courses, attendance & community for YSA gathering places"),
       ]));
+      // only the screens that took something back say so; the sign-in tab kept nothing
+      if (restored && mode !== "login") {
+        card.appendChild(el("div", { class: "keep-note" }, [
+          "We kept what you had already typed on this device, so you could come back to it. "
+          + "Your password and any code were not kept, and the two statements you agree to at "
+          + "the foot of the form are yours to tick again. ",
+          el("button", { class: "linkbtn", type: "button", onclick: startAgain }, "Start again"),
+        ]));
+      }
       if (mode === "waiting") { card.appendChild(waitingScreen()); foot(card); return; }
       if (mode === "verify") { card.appendChild(verifyScreen()); foot(card); return; }
       card.appendChild(el("div", { class: "tabs" }, [
@@ -227,8 +272,8 @@ const AuthPage = (() => {
           .catch(() => App.afterLogin());
         return;
       }
-      try { sessionStorage.setItem("gp_pending", JSON.stringify({ email: r.email, name: r.name })); }
-      catch (e) { /* storage may be unavailable; the screen already has the data */ }
+      /* Nothing else to write down: showWaiting keeps this screen's own draft, so reloading
+         the waiting screen still says who is waiting and what the server told them. */
       showWaiting(r);
     }
 
@@ -430,10 +475,14 @@ const AuthPage = (() => {
     let form = null;
 
     function signupForm() {
-      form = form || { name: "", email: "", password: "", confirm: "", phone: "", whatsapp: "",
-                       intent: "student", invite: "", role: "student", companion: "",
-                       gender: "", member: "",
-                       stakeName: "", stakeKind: "stake", stakeAddr: "" };
+      // Anything this device already typed goes back into the form before it is drawn, so a
+      // reload mid-registration is an inconvenience rather than forty seconds of retyping.
+      // keptForm never holds a password: the draft store refuses to write one.
+      form = form || Object.assign({ name: "", email: "", password: "", confirm: "",
+                                     phone: "", whatsapp: "", intent: "student", invite: "",
+                                     role: "student", companion: "", gender: "", member: "",
+                                     ward: null, stakeName: "", stakeKind: "stake",
+                                     stakeAddr: "" }, keptForm || {});
       const name = el("input", { placeholder: "Full name", autocomplete: "name", value: form.name });
       const email = el("input", { type: "email", placeholder: "you@example.org",
                                   autocomplete: "email", value: form.email });
@@ -493,6 +542,7 @@ const AuthPage = (() => {
         if (regName) form.stakeName = regName.value;
         if (regKind) form.stakeKind = regKind.value;
         if (regAddr) form.stakeAddr = regAddr.value;
+        saveScreen();
       }
 
       function renderIntent() {
@@ -650,8 +700,8 @@ const AuthPage = (() => {
             stopTimer(); mode = "verify"; draw();
             return;
           }
-          try { sessionStorage.setItem("gp_pending", JSON.stringify({ email: r.email, name: r.name })); }
-          catch (e) { /* storage may be unavailable; the screen still has the data */ }
+          // and the waiting screen is kept as its own draft, so a reload mid-approval
+          // still names the account and shows what the portal said about it
           showWaiting(r);
         } catch (e) {
           toast(e.message, "err");
