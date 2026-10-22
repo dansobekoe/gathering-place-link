@@ -109,7 +109,7 @@ const ProfilePage = (() => {
 
     const photoCard = el("div", { class: "card" }, [
       el("div", { class: "sec-title", style: "margin-top:0" }, "Profile picture"),
-      el("div", { class: "photo-pick", style: "margin-top:12px" }, [
+      el("div", { class: "photo-pick", style: "margin-top:var(--sp-12)" }, [
         faceSlot,
         el("div", { class: "photo-side" }, [
           el("div", { class: "muted", style: "font-size:var(--t-ui)" },
@@ -167,7 +167,7 @@ const ProfilePage = (() => {
 
     const card = el("div", { class: "card" }, [
       el("div", { class: "row" }, [f("full_name", "Full name"), companion]),
-      el("div", { class: "hint", style: "margin:-4px 0 12px" },
+      el("div", { class: "hint", style: "margin:-4px 0 var(--sp-12)" },
         "A service missionary couple shares one account: both names appear together " +
         "on rosters, badges and certificates."),
       el("div", { class: "row" }, [phone.node, whatsapp.node]),
@@ -278,7 +278,7 @@ const ProfilePage = (() => {
   function rightsCard() {
     const body = el("div", {}, loading(2));
     const card = el("div", { class: "card" }, [
-      el("div", { class: "sec-title", style: "margin-top:22px" }, "My data and my rights"),
+      el("div", { class: "sec-title", style: "margin-top:var(--sp-22)" }, "My data and my rights"),
       body,
     ]);
     API.get("/api/account/data").then(fill, e => {
@@ -343,7 +343,7 @@ const ProfilePage = (() => {
         "Signing out and asking for the account to be closed is the whole of it.",
         mail("Ask to close the account", d.support_email, "Closing my account")));
 
-      body.appendChild(el("div", { class: "doc-nav", style: "margin:16px 0 0" },
+      body.appendChild(el("div", { class: "doc-nav", style: "margin:var(--sp-16) 0 0" },
         ["privacy", "terms", "cookies"].map(k =>
           el("a", { class: "chip", href: "#/" + k }, Legal.TITLES[k]))));
     }
@@ -402,7 +402,7 @@ const ProfilePage = (() => {
           el("div", { class: "rights-note" }, [icon("alert", 16),
             "Going: " + who.full_name + ", " + who.email + ", your numbers, your photograph, " +
             "the letters sent to you and your sign-in codes."]),
-          el("div", { class: "hint", style: "margin:0 0 12px" },
+          el("div", { class: "hint", style: "margin:0 0 var(--sp-12)" },
             "Staying: the attendance marks and enrolment rows, with your name taken out of " +
             "them. They are the ministry record of the gathering place, and the leaders who " +
             "keep it need the totals to still add up."),
@@ -476,11 +476,11 @@ const ProfilePage = (() => {
         wide: true,
         body: el("div", {}, [
           table(lines),
-          el("div", { class: "sec-title", style: "margin-top:18px" }, "Rows attached to the account"),
+          el("div", { class: "sec-title", style: "margin-top:var(--sp-18)" }, "Rows attached to the account"),
           table(tally),
-          el("div", { class: "sec-title", style: "margin-top:18px" }, "Deliberately not collected"),
+          el("div", { class: "sec-title", style: "margin-top:var(--sp-18)" }, "Deliberately not collected"),
           el("ul", { class: "not-held" }, (d.not_collected || []).map(x => el("li", {}, x))),
-          el("div", { class: "hint", style: "margin-top:12px" },
+          el("div", { class: "hint", style: "margin-top:var(--sp-12)" },
             "Details of each row — which class, which date, who marked it — are in the " +
             "download, and on the class pages of this portal."),
         ]),
