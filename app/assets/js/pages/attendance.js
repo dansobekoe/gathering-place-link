@@ -146,7 +146,7 @@ const AttendancePage = (() => {
 
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
-      el("a", { href: "#/classes", style: "font-size:13px;font-weight:600" }, "← Classes"),
+      el("a", { href: "#/classes", style: "font-size:var(--t-ui);font-weight:600" }, "← Classes"),
       el("h2", { class: "page-title", style: "margin-top:6px" }, course.title),
       el("div", { class: "page-sub" },
         `${course.gathering_place_name || ""} · ${course.enrolled_count}/${course.capacity} enrolled` +
@@ -298,7 +298,7 @@ const AttendancePage = (() => {
         dlBtn("Roster (CSV)", "download", `/api/stakes/${stakeId}/courses/${courseId}/roster.csv`,
           `roster-course-${courseId}.csv`),
       ]));
-      rcard.appendChild(el("div", { class: "muted", style: "font-size:12px;margin-top:9px" },
+      rcard.appendChild(el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:9px" },
         "Documents carry this stake's branding. Badge sheets are CR80 cards (54 × 85.6 mm), nine to an A4 page."));
     }
     content.appendChild(rcard);
@@ -342,7 +342,7 @@ const AttendancePage = (() => {
       const codeEl = el("div", { class: "code-big" }, "······");
       const qrHost = el("div", { class: "qr-box" });
       const statusEl = el("div", { style: "margin-top:8px" });
-      const countEl = el("div", { class: "muted", style: "font-size:12px;margin-top:4px" });
+      const countEl = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:4px" });
 
       let rot = 30, lastFetch = 0;
       async function fetchLive() {
@@ -372,7 +372,7 @@ const AttendancePage = (() => {
         el("div", {}, [codeEl, statusEl, countEl]),
         qrHost,
       ]));
-      card.appendChild(el("div", { class: "muted", style: "font-size:12.5px;margin-top:10px" },
+      card.appendChild(el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:10px" },
         "Project this screen. Students scan the code, or you scan their badges."));
       card.appendChild(el("button", { class: "btn secondary sm", style: "margin-top:10px",
         onclick: () => badgeScan(+sel.value) }, [icon("qr", 15), "Scan student badges"]));
@@ -402,9 +402,9 @@ const AttendancePage = (() => {
             el("span", { html: r.already ? statusPill("grey") : statusPill(r.status) }),
           ]));
         } catch (e) {
-          feed.prepend(el("div", { class: "muted", style: "font-size:12px;padding:6px 2px" }, e.message));
+          feed.prepend(el("div", { class: "muted", style: "font-size:var(--t-meta);padding:6px 2px" }, e.message));
         }
-      }, msg => feed.prepend(el("div", { class: "muted", style: "font-size:12px;padding:6px 2px" }, msg)))
+      }, msg => feed.prepend(el("div", { class: "muted", style: "font-size:var(--t-meta);padding:6px 2px" }, msg)))
         .then(s => { stop = s; });
       return m;
     }
@@ -815,7 +815,7 @@ const AttendancePage = (() => {
 
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
-      el("a", { href: "#/classes", style: "font-size:13px;font-weight:600" }, "← Classes"),
+      el("a", { href: "#/classes", style: "font-size:var(--t-ui);font-weight:600" }, "← Classes"),
     ]));
 
     // ---------------- hero ----------------
