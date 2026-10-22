@@ -7,7 +7,7 @@
    watches, so every button here is keyed to Ctx.can(), never to who signs the call. */
 const CoursesPage = (() => {
   const { el, toast, icon, fmtTime, WEEKDAYS, CATEGORIES, empty, coverTile } = UI;
-  const metaFlex = "display:flex;gap:8px;align-items:center;margin-top:4px";
+  const metaFlex = "display:flex;gap:var(--sp-8);align-items:center;margin-top:var(--sp-4)";
 
   /* The words a certificate line may name; the printer swaps each one for that member's
      own when it prints. The authority for this list is `cert_layout.PLACEHOLDERS` in the
@@ -180,7 +180,7 @@ const CoursesPage = (() => {
           el("div", { class: "meter" + (full ? " full" : "") },
             [el("i", { style: `width:${pct}%` })]),
         ]),
-        el("div", { style: "text-align:right;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:7px" }, [
+        el("div", { style: "text-align:right;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-8)" }, [
           my && my.status === "enrolled" ? el("span", { class: "pill green" }, "Enrolled")
             : my && my.status === "waitlisted" ? el("span", { class: "pill amber" },
                 "Waitlist #" + my.waitlist_position)
@@ -261,7 +261,7 @@ const CoursesPage = (() => {
         class: "chip" + (on ? " on" : ""), type: "button",
         onclick: () => { classView.archived = !on; drawClasses(); },
       }, on ? "Showing archived too" : "Show archived classes");
-      const wrap = el("div", { class: "chips", style: "margin-top:14px" }, [box]);
+      const wrap = el("div", { class: "chips", style: "margin-top:var(--sp-14)" }, [box]);
       wrap.appendChild(el("div", { class: "meta" },
         on ? `Archived classes are here so a room they hold can be moved or cleared. ${shown} shown.`
            : "Archived classes keep their roster and attendance and are off this list."));
@@ -269,7 +269,7 @@ const CoursesPage = (() => {
     }
 
     function createPrompt() {
-      return el("div", { style: "margin-top:20px" }, [
+      return el("div", { style: "margin-top:var(--sp-20)" }, [
         el("button", { class: "btn secondary", onclick: () => openForm(null) },
           [icon("plus", 17), "Create a class"]),
       ]);
@@ -296,7 +296,7 @@ const CoursesPage = (() => {
     function openCard(open) {
       const card = el("div", { class: "card" });
       card.appendChild(el("div", { class: "sec-title" }, "Open classes to claim"));
-      card.appendChild(el("div", { class: "meta", style: "margin-bottom:6px" },
+      card.appendChild(el("div", { class: "meta", style: "margin-bottom:var(--sp-6)" },
         "Published by the admin or a service missionary, waiting for an instructor."));
       open.forEach(c => card.appendChild(el("div", { class: "list-item" }, [
         el("div", { class: "grow" }, [
@@ -316,12 +316,12 @@ const CoursesPage = (() => {
       const seatsLeft = c.capacity - c.enrolled_count;
       const mayEdit = canManage || c.is_mine;
       const card = el("div", { class: "card" });
-      card.appendChild(el("div", { class: "list-item", style: "border:none;padding-top:2px" }, [
+      card.appendChild(el("div", { class: "list-item", style: "border:none;padding-top:var(--sp-2)" }, [
         coverTile(c.cover_url),
         el("div", { class: "grow" }, [
           el("div", { class: "title" }, [
             c.title,
-            c.is_active ? null : el("span", { class: "pill grey", style: "margin-left:8px" },
+            c.is_active ? null : el("span", { class: "pill grey", style: "margin-left:var(--sp-8)" },
                                     "archived"),
           ]),
           // the booking reads room first — the place is derived, not chosen
@@ -335,13 +335,13 @@ const CoursesPage = (() => {
         el("div", { style: "text-align:right;flex:none" }, [
           el("div", { html: seatsLeft > 0 ? `<span class="pill green">${seatsLeft} seats</span>`
                                           : `<span class="pill amber">waitlist</span>` }),
-          el("div", { class: "meta", style: "margin-top:5px" },
+          el("div", { class: "meta", style: "margin-top:var(--sp-6)" },
             `${c.enrolled_count}/${c.capacity}`
             + (c.waitlist_count ? ` · ${c.waitlist_count} waiting` : "")),
         ]),
       ]));
 
-      const actions = el("div", { class: "actions", style: "margin-top:10px" });
+      const actions = el("div", { class: "actions", style: "margin-top:var(--sp-10)" });
       if (c.claimable && canClaim) {
         actions.appendChild(el("button", { class: "btn sm", onclick: () => claim(c) },
           [icon("check", 15), "Claim this class"]));
@@ -457,7 +457,7 @@ const CoursesPage = (() => {
     function courseForm(course) {
       const editing = !!course;
       const sec = el("div");
-      sec.appendChild(el("div", { class: "sec-title", style: "margin-top:22px" },
+      sec.appendChild(el("div", { class: "sec-title", style: "margin-top:var(--sp-22)" },
         editing ? `Edit “${course.title}”` : "Create a class"));
       const card = el("div", { class: "card" });
       const title = el("input", { placeholder: "Course title", value: editing ? course.title : "" });
@@ -615,7 +615,7 @@ const CoursesPage = (() => {
       card.appendChild(el("div", { class: "row" }, [
         el("div", { class: "field", style: "flex:1" }, [
           el("label", {}, "Room"),
-          el("div", { style: "display:flex;gap:8px;align-items:center" }, [roomSel, newRoomBtn]),
+          el("div", { style: "display:flex;gap:var(--sp-8);align-items:center" }, [roomSel, newRoomBtn]),
         ]),
         el("div", { class: "field" }, [el("label", {}, "Gathering place"), placeOut])]));
       if (canManage) {
@@ -624,7 +624,7 @@ const CoursesPage = (() => {
       } else {
         /* A teacher opening a class opens it for themselves, so there is nothing to
            choose here — and no second name to choose wrongly. */
-        card.appendChild(el("div", { class: "meta", style: "margin:2px 0 12px" }, editing
+        card.appendChild(el("div", { class: "meta", style: "margin:var(--sp-2) 0 var(--sp-12)" }, editing
           ? "You teach this class. Whoever runs the gathering place can hand it to someone "
             + "else from their own copy of this form."
           : "You will teach this class. Whoever runs the gathering place can hand it to "
@@ -677,14 +677,14 @@ const CoursesPage = (() => {
         el("div", { class: "cert-words" },
           CERT_WORDS.map(ph => el("button", { class: "cert-word", type: "button",
             title: `Put ${ph} into the line`, onclick: () => putWord(ph) }, ph))),
-        el("div", { class: "meta", style: "margin-top:8px" },
+        el("div", { class: "meta", style: "margin-top:var(--sp-8)" },
           "A word between braces is filled in with that member's own when the certificate "
           + "prints — {name} becomes the graduate, {course} this class."),
       ]));
 
       const save = el("button", { class: "btn", onclick: submit },
         [icon(editing ? "check" : "plus", 17), editing ? "Save changes" : "Create class"]);
-      card.appendChild(el("div", { class: "actions", style: "margin-top:14px" }, [
+      card.appendChild(el("div", { class: "actions", style: "margin-top:var(--sp-14)" }, [
         save,
         el("button", { class: "btn ghost", onclick: () => closeForm() }, "Cancel"),
       ]));
@@ -782,7 +782,7 @@ const CoursesPage = (() => {
           const items = grid[day] || [];
           if (!items.length) return;
           any = true;
-          wrap.appendChild(el("div", { class: "sec-title", style: "margin:14px 0 4px" }, day));
+          wrap.appendChild(el("div", { class: "sec-title", style: "margin:var(--sp-14) 0 var(--sp-4)" }, day));
           items.forEach(i => wrap.appendChild(el("div", { class: "list-item" }, [
             el("div", { class: "grow" }, [
               el("div", { class: "title" }, i.title),
