@@ -66,7 +66,7 @@ const StakePage = (() => {
     const dash = await API.get(`/api/stakes/${stakeId_}/dashboard`);
     const content = el("div");
     content.appendChild(el("div", { class: "page-head",
-        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap" }, [
+        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
         el("h2", { class: "page-title" }, dash.stake.name),
         el("div", { class: "page-sub" },
@@ -86,12 +86,12 @@ const StakePage = (() => {
     ]));
 
     if (!seesAll) {
-      content.appendChild(el("div", { class: "card", style: "margin-top:16px" }, [
+      content.appendChild(el("div", { class: "card", style: "margin-top:var(--sp-16)" }, [
         el("div", { class: "list-item", style: "border:none" }, [
           icon("pin", 20),
-          el("div", { class: "grow", style: "margin-left:10px" }, [
+          el("div", { class: "grow", style: "margin-left:var(--sp-10)" }, [
             el("div", { class: "meta" }, "Browse Classes or Courses to enrol, and check My record for the classes you have attended."),
-            el("div", { class: "meta", style: "margin-top:4px" },
+            el("div", { class: "meta", style: "margin-top:var(--sp-4)" },
               `${word} settings, rooms and the people list are kept by the people who run this place.`),
           ]),
         ]),
@@ -103,13 +103,13 @@ const StakePage = (() => {
     if (cur.status && cur.status !== "active") {
       /* The admin gets here from Portal control with a stake that is not open yet. Saying
          so is the point: the work below is real, and the doors it leads to are not. */
-      content.appendChild(el("div", { class: "card", style: "margin-top:16px" }, [
+      content.appendChild(el("div", { class: "card", style: "margin-top:var(--sp-16)" }, [
         el("div", { class: "list-item", style: "border:none" }, [
           icon("alert", 20),
-          el("div", { class: "grow", style: "margin-left:10px" }, [
-            el("div", { class: "title", style: "display:flex;gap:8px;align-items:center" },
+          el("div", { class: "grow", style: "margin-left:var(--sp-10)" }, [
+            el("div", { class: "title", style: "display:flex;gap:var(--sp-8);align-items:center" },
               [word + " is " + cur.status.replace("_", " "), el("span", { html: statusPill(cur.status) })]),
-            el("div", { class: "meta", style: "margin-top:4px" },
+            el("div", { class: "meta", style: "margin-top:var(--sp-4)" },
               "Places, rooms, terms and people are still managed from here, but nobody can "
               + "sign in to this " + word.toLowerCase() + " or join it with the invite code "
               + "until it is made active in Portal control."),
@@ -291,7 +291,7 @@ const StakePage = (() => {
         el("hr", { class: "hr" }),
         el("div", { class: "field" }, [
           el("label", {}, "Move every class into another room"),
-          el("div", { style: "display:flex;gap:8px;align-items:center" }, [others, move]),
+          el("div", { style: "display:flex;gap:var(--sp-8);align-items:center" }, [others, move]),
           el("div", { class: "meta" },
             "Nothing is half-moved: if a class will not fit, or the hour is already taken in "
             + "the room you picked, the move is refused and every class keeps its room. To "
@@ -432,8 +432,8 @@ const StakePage = (() => {
       card.appendChild(el("hr", { class: "hr" }));
       card.appendChild(el("label", {}, "New term"));
       card.appendChild(tname);
-      card.appendChild(el("div", { class: "row", style: "margin-top:8px" }, [tstart, tend]));
-      card.appendChild(el("button", { class: "btn", style: "margin-top:10px", onclick: async () => {
+      card.appendChild(el("div", { class: "row", style: "margin-top:var(--sp-8)" }, [tstart, tend]));
+      card.appendChild(el("button", { class: "btn", style: "margin-top:var(--sp-10)", onclick: async () => {
         if (!tname.value || !tstart.value || !tend.value) return toast("Fill in the term name and dates", "err");
         try { await API.post(`/api/stakes/${stakeId}/terms`,
           { name: tname.value, start_date: tstart.value, end_date: tend.value });
@@ -551,7 +551,7 @@ const StakePage = (() => {
     order.forEach(role => {
       const list = byRole[role];
       card.appendChild(el("div", { class: "meta muted",
-        style: "margin:8px 0 2px;font-size:var(--t-fine);font-weight:700;letter-spacing:.06em;text-transform:uppercase",
+        style: "margin:var(--sp-8) 0 var(--sp-2);font-size:var(--t-fine);font-weight:700;letter-spacing:.06em;text-transform:uppercase",
         html: roleLabel(role) + " · " + list.length }));
       list.forEach(m => card.appendChild(el("div", { class: "list-item" }, [
         avatar({ full_name: m.name, photo_url: m.photo_url }),
@@ -582,7 +582,7 @@ const StakePage = (() => {
         "Add someone who already has an account, by email:"));
       const aemail = el("input", { type: "email", placeholder: "person@example.org" });
       const arole = el("select", {}, GROUPS.map(r => el("option", { value: r }, roleLabel(r))));
-      card.appendChild(el("div", { class: "row", style: "margin-top:8px" }, [aemail, arole,
+      card.appendChild(el("div", { class: "row", style: "margin-top:var(--sp-8)" }, [aemail, arole,
         el("button", { class: "btn sm", style: "align-self:flex-end;height:42px", onclick: async () => {
           try { await API.post(`/api/stakes/${stakeId}/members?email=${encodeURIComponent(aemail.value)}&role=${arole.value}`);
             toast("Member added"); refresh(stakeId); }
@@ -643,7 +643,7 @@ const StakePage = (() => {
           + "here the first time a person writes it at sign-up — or add it below.", "users"));
       } else roll.wards.forEach(w => list.appendChild(wardRow(w)));
       if (roll.unassigned) list.appendChild(el("div", { class: "meta muted",
-        style: "padding:8px 2px 0;font-size:var(--t-ui)" },
+        style: "padding:var(--sp-8) var(--sp-2) 0;font-size:var(--t-ui)" },
         `${roll.unassigned} ${persons(roll.unassigned)} here ${roll.unassigned === 1 ? "has" : "have"} no ward `
         + "recorded. They can put it on their own profile, or add the ward below and name it "
         + "when you register them."));
@@ -663,7 +663,7 @@ const StakePage = (() => {
     card.appendChild(el("div", { class: "meta muted", style: "font-size:var(--t-ui)" },
       `Add a ward to this ${word.toLowerCase()}’s list, so the people who attend it can pick `
       + "the name instead of typing it:"));
-    card.appendChild(el("div", { class: "row", style: "margin-top:8px" }, [wname,
+    card.appendChild(el("div", { class: "row", style: "margin-top:var(--sp-8)" }, [wname,
       el("button", { class: "btn sm", style: "align-self:flex-end;height:42px",
         onclick: async () => {
           if (!wname.value.trim()) return toast("A ward needs a name", "err");
@@ -749,7 +749,7 @@ const StakePage = (() => {
         el("div", { class: "title" }, "Invite code"),
         el("div", { class: "meta" }, "Share it with instructors and students so they can join this place"),
       ]),
-      el("span", { class: "pill blue", style: "font-size:var(--t-body);letter-spacing:.12em;padding:6px 12px" },
+      el("span", { class: "pill blue", style: "font-size:var(--t-body);letter-spacing:.12em;padding:var(--sp-6) var(--sp-12)" },
         stake.invite_code || "—"),
     ]));
     if (paper) {
@@ -759,7 +759,7 @@ const StakePage = (() => {
       }}, [icon("refresh", 15), "Regenerate code"]));
     }
     const color = el("input", { type: "color", value: stake.color || stake.branding_color || "#085088",
-      style: "height:42px;padding:4px" });
+      style: "height:42px;padding:var(--sp-4)" });
     const grace = el("input", { type: "number", min: "0", max: "120",
       value: stake.attendance_grace_minutes ?? 15 });
     const lateAfter = el("input", { type: "number", min: "0", max: "120",
@@ -775,7 +775,7 @@ const StakePage = (() => {
         }}, "Save")]),
     ]));
     card.appendChild(el("hr", { class: "hr" }));
-    card.appendChild(el("div", { class: "title", style: "font-weight:700;margin-bottom:8px" },
+    card.appendChild(el("div", { class: "title", style: "font-weight:700;margin-bottom:var(--sp-8)" },
       "Attendance check-in window"));
     card.appendChild(el("div", { class: "row", style: "align-items:flex-end" }, [
       el("div", { class: "field" }, [el("label", {}, "Grace (min before/after start)"), grace]),
@@ -821,7 +821,7 @@ const StakePage = (() => {
           [icon("file", 15), paper ? "Place the lines" : "Look inside"]),
       ]));
     }
-    if (!paper) card.appendChild(el("div", { class: "meta", style: "padding:12px 16px 6px" },
+    if (!paper) card.appendChild(el("div", { class: "meta", style: "padding:var(--sp-12) var(--sp-16) var(--sp-6)" },
       "Only the Portal Admin can put a design up or move a line. Ask for a sample before "
       + "the awards night, not after."));
     wrap.appendChild(card);
