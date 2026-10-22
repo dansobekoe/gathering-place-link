@@ -92,7 +92,7 @@ const Legal = (() => {
     const b = business();
     return el("div", { class: "doc-foot" }, [
       [b.organisation, b.unit].filter(Boolean).join(" — "),
-      el("div", { style: "margin-top:4px" },
+      el("div", { style: "margin-top:var(--sp-4)" },
         `Letters about the portal come from ${b.letters_sent_from || b.contact_email}.` +
         (b.reply_to ? ` Write back to ${b.reply_to} and it reaches me.` : "")),
       smallPrint(),
@@ -117,10 +117,10 @@ const Legal = (() => {
       sub: `Version ${version() || ""} — nothing is recorded by reading it`,
       wide: true,
       body: el("div", {}, [
-        el("p", { class: "muted", style: "font-size:var(--t-body);line-height:1.7;margin-bottom:6px" }, d.intro),
+        el("p", { class: "muted", style: "font-size:var(--t-body);line-height:1.7;margin-bottom:var(--sp-6)" }, d.intro),
         ...d.sections.map(sectionNode),
         footNode(),
-        el("div", { style: "margin-top:16px" }, [
+        el("div", { style: "margin-top:var(--sp-16)" }, [
           el("button", { class: "btn secondary", type: "button", onclick: () => box.close() },
             [icon("x", 16), "Close"]),
         ]),
@@ -259,7 +259,7 @@ const LegalPage = (() => {
         el("a", { class: "chip" + (k === key ? " on" : ""), href: "#/" + k,
                   "aria-current": k === key ? "page" : null }, Legal.TITLES[k]))));
       doc.appendChild(el("p", { class: "muted",
-        style: "font-size:var(--t-body);line-height:1.75;margin:-2px 0 6px" }, d.intro));
+        style: "font-size:var(--t-body);line-height:1.75;margin:-2px 0 var(--sp-6)" }, d.intro));
       d.sections.forEach(s => doc.appendChild(Legal.sectionNode(s)));
       doc.appendChild(Legal.footNode());
     }
