@@ -147,7 +147,7 @@ const AttendancePage = (() => {
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
       el("a", { href: "#/classes", style: "font-size:var(--t-ui);font-weight:600" }, "← Classes"),
-      el("h2", { class: "page-title", style: "margin-top:6px" }, course.title),
+      el("h2", { class: "page-title", style: "margin-top:var(--sp-6)" }, course.title),
       el("div", { class: "page-sub" },
         `${course.gathering_place_name || ""} · ${course.enrolled_count}/${course.capacity} enrolled` +
         (course.instructor_name ? ` · ${course.instructor_name}` : "")),
@@ -174,7 +174,7 @@ const AttendancePage = (() => {
     const scard = el("div", { class: "card" });
     if (!sessions.length) scard.appendChild(empty("No sittings booked yet — build them from the weekly schedule, or book one by hand.", "calendar"));
     sessions.forEach(s => {
-      const acts = el("div", { style: "display:flex;gap:6px;flex:none" });
+      const acts = el("div", { style: "display:flex;gap:var(--sp-6);flex:none" });
       if (canManage) {
         acts.appendChild(el("button", { class: "btn sm", title: "Record attendance",
           onclick: () => markSession(s) }, [icon("check", 15), "Attendance"]));
@@ -228,7 +228,7 @@ const AttendancePage = (() => {
     const rcard = el("div", { class: "card" });
     if (!roster.length) rcard.appendChild(empty("No students enrolled yet.", "users"));
     roster.forEach(r => {
-      const acts = el("div", { style: "display:flex;gap:6px;flex:none" });
+      const acts = el("div", { style: "display:flex;gap:var(--sp-6);flex:none" });
       if (canManage && r.status === "enrolled") {
         acts.appendChild(el("button", { class: "btn secondary sm", onclick: () => grade(r) },
           [icon("award", 15), "Grade"]));
@@ -287,7 +287,7 @@ const AttendancePage = (() => {
     }
     if (records) {
       rcard.appendChild(el("hr", { class: "hr" }));
-      rcard.appendChild(el("div", { class: "sec-title", style: "margin:0 0 9px" }, "Documents & exports"));
+      rcard.appendChild(el("div", { class: "sec-title", style: "margin:0 0 var(--sp-10)" }, "Documents & exports"));
       rcard.appendChild(el("div", { class: "actions" }, [
         dlBtn("Roster (PDF)", "print", `/api/stakes/${stakeId}/courses/${courseId}/roster.pdf`,
           `roster-course-${courseId}.pdf`),
@@ -298,7 +298,7 @@ const AttendancePage = (() => {
         dlBtn("Roster (CSV)", "download", `/api/stakes/${stakeId}/courses/${courseId}/roster.csv`,
           `roster-course-${courseId}.csv`),
       ]));
-      rcard.appendChild(el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:9px" },
+      rcard.appendChild(el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-10)" },
         "Documents carry this stake's branding. Badge sheets are CR80 cards (54 × 85.6 mm), nine to an A4 page."));
     }
     content.appendChild(rcard);
@@ -341,8 +341,8 @@ const AttendancePage = (() => {
 
       const codeEl = el("div", { class: "code-big" }, "······");
       const qrHost = el("div", { class: "qr-box" });
-      const statusEl = el("div", { style: "margin-top:8px" });
-      const countEl = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:4px" });
+      const statusEl = el("div", { style: "margin-top:var(--sp-8)" });
+      const countEl = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-4)" });
 
       let rot = 30, lastFetch = 0;
       async function fetchLive() {
@@ -372,9 +372,9 @@ const AttendancePage = (() => {
         el("div", {}, [codeEl, statusEl, countEl]),
         qrHost,
       ]));
-      card.appendChild(el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:10px" },
+      card.appendChild(el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-10)" },
         "Project this screen. Students scan the code, or you scan their badges."));
-      card.appendChild(el("button", { class: "btn secondary sm", style: "margin-top:10px",
+      card.appendChild(el("button", { class: "btn secondary sm", style: "margin-top:var(--sp-10)",
         onclick: () => badgeScan(+sel.value) }, [icon("qr", 15), "Scan student badges"]));
       wrap.appendChild(card);
       return wrap;
@@ -402,9 +402,9 @@ const AttendancePage = (() => {
             el("span", { html: r.already ? statusPill("grey") : statusPill(r.status) }),
           ]));
         } catch (e) {
-          feed.prepend(el("div", { class: "muted", style: "font-size:var(--t-meta);padding:6px 2px" }, e.message));
+          feed.prepend(el("div", { class: "muted", style: "font-size:var(--t-meta);padding:var(--sp-6) var(--sp-2)" }, e.message));
         }
-      }, msg => feed.prepend(el("div", { class: "muted", style: "font-size:var(--t-meta);padding:6px 2px" }, msg)))
+      }, msg => feed.prepend(el("div", { class: "muted", style: "font-size:var(--t-meta);padding:var(--sp-6) var(--sp-2)" }, msg)))
         .then(s => { stop = s; });
       return m;
     }
@@ -660,7 +660,7 @@ const AttendancePage = (() => {
             el("div", { class: "field" }, [el("label", {}, "Starts"), t]),
             el("div", { class: "field" }, [el("label", {}, "Ends"), e]),
           ]),
-          el("div", { class: "field", style: "display:flex;gap:9px;align-items:center" }, [
+          el("div", { class: "field", style: "display:flex;gap:var(--sp-10);align-items:center" }, [
             door, el("label", { style: "margin:0" }, "Check-in stays open until the class ends"),
           ]),
           el("div", { class: "hint" },
@@ -730,7 +730,7 @@ const AttendancePage = (() => {
         body: el("div", {}, [
           el("div", { class: "field" }, [el("label", {}, "Completion status"), comp]),
           el("div", { class: "field" }, [el("label", {}, "Final grade"), g]),
-          el("div", { class: "field", style: "display:flex;gap:9px;align-items:center" },
+          el("div", { class: "field", style: "display:flex;gap:var(--sp-10);align-items:center" },
             [cert, el("label", { style: "margin:0" }, "Certificate issued")]),
         ]),
         actions: [
@@ -1000,11 +1000,11 @@ const AttendancePage = (() => {
     if (bookedCount) {
       card.appendChild(el("div", { class: "meter" }, [el("i", {
         style: `width:${Math.round(heldCount / bookedCount * 100)}%` })]));
-      card.appendChild(el("div", { class: "mc-count", style: "margin-top:7px" },
+      card.appendChild(el("div", { class: "mc-count", style: "margin-top:var(--sp-8)" },
         `${heldCount} of ${bookedCount} sittings held`));
     }
     if (marks.length) {
-      card.appendChild(el("div", { class: "strip", style: "margin-top:15px",
+      card.appendChild(el("div", { class: "strip", style: "margin-top:var(--sp-16)",
         "aria-label": "One square for each session you were marked in, oldest first" },
         marks.slice().reverse().map(m => el("i", { class: "att-cell " + m.status,
           title: `${fmtDate(m.date)} · ${ATT_WORD[m.status] || m.status}` }))));
