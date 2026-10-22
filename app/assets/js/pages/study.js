@@ -64,7 +64,7 @@ const StudyPage = (() => {
     ]));
 
     /* ---------- the reading ---------- */
-    veil = el("div", { class: "muted", style: "font-size:13px;padding:10px 2px 0" },
+    veil = el("div", { class: "muted", style: "font-size:var(--t-ui);padding:10px 2px 0" },
       "Loading the Library…");
     const frame = el("iframe", {
       class: "study-frame",
@@ -113,7 +113,7 @@ const StudyPage = (() => {
     /* ---------- the honest paragraph ---------- */
     content.appendChild(el("div", { class: "card" }, [
       el("div", { class: "sec-title", style: "margin-top:0" }, "About this window"),
-      el("p", { class: "muted", style: "font-size:13.5px;line-height:1.7;margin:8px 0 0" },
+      el("p", { class: "muted", style: "font-size:var(--t-ui);line-height:1.7;margin:8px 0 0" },
         "What you see above is served by churchofjesuschrist.org, not by this portal. Your " +
         "browser speaks to them directly, so they see the request and may set their own " +
         "cookies on your device. Their privacy notice governs that part. This portal keeps " +
