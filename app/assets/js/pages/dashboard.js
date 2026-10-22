@@ -354,7 +354,7 @@ const DashboardPage = (() => {
         el("th", { class: "num" }, "Attendance"), el("th", {}, "")])]),
       el("tbody", {}, rows.map(r => el("tr", {}, [
         el("td", {}, [el("div", { style: "font-weight:600" }, r.title),
-          el("div", { class: "muted", style: "font-size:12px" }, r.category_label)]),
+          el("div", { class: "muted", style: "font-size:var(--t-meta)" }, r.category_label)]),
         el("td", {}, r.when),
         el("td", {}, r.room || "—"),
         el("td", {}, [r.instructor, r.is_mine ? el("span", { class: "mini-pill mine" }, "mine") : null]),
@@ -442,7 +442,7 @@ const DashboardPage = (() => {
         el("th", { class: "num" }, "Attendance"), el("th", {}, "")])]),
       el("tbody", {}, people.slice(0, 60).map(p => el("tr", {}, [
         el("td", {}, [el("div", { style: "font-weight:600" }, p.name),
-          el("div", { class: "muted", style: "font-size:12px" }, p.email || p.ward || "")]),
+          el("div", { class: "muted", style: "font-size:var(--t-meta)" }, p.email || p.ward || "")]),
         el("td", {}, el("span", { class: "mini-pill" }, p.role_label)),
         el("td", {}, p.courses.length ? p.courses.join(", ") : "—"),
         el("td", { class: "num" }, p.attendance_rate == null ? "—" : p.attendance_rate + "%"),
