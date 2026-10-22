@@ -56,8 +56,15 @@ const AuthPage = (() => {
        move a reload can survive. Drafts are dropped where the thing they describe is done:
        a sent message, a confirmed address, a signed-in account, a signed-out device. */
     function saveScreen() {
-      draftSave("auth", { mode, form });
-      draftSave("verify", mode === "verify" ? verifyData : null);
+      /* "Sign in" is where everybody starts, so it is not worth remembering: keeping it would
+         leave a key behind after Start again had cleared the person's own details out. */
+      draftSave("auth", { mode: mode === "login" ? null : mode, form });
+      /* A code kept on this device is not the same as a code still worth waiting for: the
+         one that was sent an hour ago may have expired while the person was in the other app,
+         so the screen that comes back never counts down at them. It names the address, and
+         offers a new code as soon as they are ready for it. */
+      draftSave("verify", mode === "verify"
+                ? Object.assign({}, verifyData, { just_sent: false }) : null);
       draftSave("waiting", mode === "waiting" ? waitData : null);
     }
 
@@ -328,8 +335,20 @@ const AuthPage = (() => {
     }
 
     // ---- password reset (two-step modal) ----
+    /* The same interruption, one step in. A person who left to read the code in their mail
+       came back to a dialog that had closed and had to start over — and a reset code is only
+       good for fifteen minutes, so the second attempt often failed before it began. What is
+       kept here is the address and which step they had reached. The code and the new password
+       are never written down, and coming back to step two is not a way of spending a stale
+       code by accident: the box is empty and the portal answers plainly when it is refused. */
     function forgot() {
-      const email = el("input", { type: "email", placeholder: "you@example.org" });
+      const keptReset = draftRead("reset") || {};
+      // without an address there is nothing to bring back: step one is the only way in
+      let step = (keptReset.step === 2 && keptReset.email) ? 2 : 1;
+      const saveReset = () => draftSave("reset", { email: email.value, step });
+      const email = el("input", { type: "email", placeholder: "you@example.org",
+                                  autocomplete: "username", value: keptReset.email || "" });
+      email.addEventListener("input", saveReset);
       const step2 = el("div", { style: "display:none" });
       const body = el("div", {}, [
         el("div", { id: "fp-step1" }, [
@@ -345,8 +364,19 @@ const AuthPage = (() => {
       ]);
       const m = modal({ title: "Reset your password", sub: "We'll issue a 6-digit code that expires in 15 minutes.", body });
 
+      // back to the first step is also how somebody asks for a second code
+      function backToStep1() {
+        step = 1;
+        step2.style.display = "none";
+        step2.innerHTML = "";
+        body.querySelector("#fp-step1").style.display = "";
+        email.focus();
+        saveReset();
+      }
+
       function showStep2(res) {
         const r = res || {};
+        step = 2; saveReset();
         body.querySelector("#fp-step1").style.display = "none";
         step2.style.display = "block";
         const code = el("input", { placeholder: "6-digit code", inputmode: "numeric", maxlength: "6" });
@@ -371,10 +401,22 @@ const AuthPage = (() => {
           try {
             await API.post("/api/auth/reset-password",
               { email: email.value, code: code.value, new_password: np.value });
+            draftDrop("reset");
             m.close(); toast("Password updated — sign in with your new password");
             mode = "login"; draw();
           } catch (e) { toast(e.message, "err"); }
         }}, [icon("lock", 17), "Set new password"]));
+        step2.appendChild(el("div", { class: "keep-note", style: "margin-top:12px" }, [
+          el("button", { class: "linkbtn", type: "button", onclick: backToStep1 },
+            "Ask for a new code"),
+        ]));
+      }
+
+      // this device was left mid-reset, so the dialog opens where they left it
+      if (step === 2) {
+        showStep2({ message: `You had already asked for a code for ${keptReset.email} on this `
+                           + "device. If the one you were sent has gone stale, ask for a new "
+                           + "one below." });
       }
     }
 
