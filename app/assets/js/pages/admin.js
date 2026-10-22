@@ -200,7 +200,7 @@ const AdminPage = (() => {
         pending.length ? el("div", {}, pending.map(approvalRow))
                        : el("div", { class: "muted", style: "font-size:var(--t-ui)" },
                            "Every stake has been decided. New requests appear here."),
-        el("a", { class: "linkbtn", href: "#/admin", style: "margin-top:10px",
+        el("a", { class: "linkbtn", href: "#/admin", style: "margin-top:var(--sp-10)",
                   onclick: ev => { ev.preventDefault(); pickTab("approvals"); } },
           "Accounts and requests to join →"),
       ]),
@@ -217,7 +217,7 @@ const AdminPage = (() => {
     wrap.appendChild(card([
       logs.length ? el("div", {}, logs.map(logRow))
                   : el("div", { class: "muted", style: "font-size:var(--t-ui)" }, "No activity yet."),
-      el("a", { class: "linkbtn", href: "#/admin", style: "margin-top:10px",
+      el("a", { class: "linkbtn", href: "#/admin", style: "margin-top:var(--sp-10)",
                 onclick: ev => { ev.preventDefault(); pickTab("activity"); } },
         "See the full trail →"),
     ]));
@@ -295,8 +295,8 @@ const AdminPage = (() => {
 
   function queueCard(title, note, rows, whenEmpty) {
     const sec = el("div");
-    sec.appendChild(el("div", { class: "sec-title", style: "margin-top:22px" }, title));
-    sec.appendChild(el("div", { class: "meta", style: "margin-bottom:8px" }, note));
+    sec.appendChild(el("div", { class: "sec-title", style: "margin-top:var(--sp-22)" }, title));
+    sec.appendChild(el("div", { class: "meta", style: "margin-bottom:var(--sp-8)" }, note));
     if (!rows.length) { sec.appendChild(empty(whenEmpty, "check")); return sec; }
     const card_ = card([]);
     rows.forEach(r => card_.appendChild(r));
@@ -369,7 +369,7 @@ const AdminPage = (() => {
       title: "Turn down this registration",
       sub: `${a.name} · ${a.email}`,
       body: el("div", {}, [
-        el("div", { class: "meta", style: "margin-bottom:10px" },
+        el("div", { class: "meta", style: "margin-bottom:var(--sp-10)" },
           mailExpected
             ? "They will be emailed this wording, and will not be able to sign in "
               + "until you let them in."
@@ -513,10 +513,10 @@ const AdminPage = (() => {
       el("div", { class: "meta" }, "Gone: the name, the address, the phone and WhatsApp "
         + "numbers, the ward or branch, the emergency contact, the photograph, the letters "
         + "sent to that address and the sign-in codes. The account stops working."),
-      el("div", { class: "meta", style: "margin-top:6px" }, "Kept: the enrolment and "
+      el("div", { class: "meta", style: "margin-top:var(--sp-6)" }, "Kept: the enrolment and "
         + "attendance rows with the name taken out of them, so a term still adds up for the "
         + "leaders who keep the gathering place. That is what the privacy policy promises."),
-      el("div", { class: "hint", style: "margin-top:10px" }, mailExpected
+      el("div", { class: "hint", style: "margin-top:var(--sp-10)" }, mailExpected
         ? "The person is written to at the address being removed, so they can see it is "
           + "done even after they can no longer sign in."
         : "No mailbox is connected, so the confirmation letter only files itself in the "
@@ -588,7 +588,7 @@ const AdminPage = (() => {
       title: "Do not carry this out as asked",
       sub: `${r.name} · asked ${when(r.asked_at)}`,
       body: el("div", {}, [
-        el("div", { class: "meta", style: "margin-bottom:10px" }, mailExpected
+        el("div", { class: "meta", style: "margin-bottom:var(--sp-10)" }, mailExpected
           ? "The request is closed and this wording is emailed to them. They can send a new "
             + "one at any time."
           : "The request is closed and the reason stays on this server — no mailbox is "
@@ -618,7 +618,7 @@ const AdminPage = (() => {
       ]),
       el("div", { style: "flex:none;text-align:right" }, [
         el("span", { html: statusPill(r.status) }),
-        el("div", { class: "meta", style: "margin-top:4px;white-space:nowrap" },
+        el("div", { class: "meta", style: "margin-top:var(--sp-4);white-space:nowrap" },
           r.handled_at ? "Decided " + when(r.handled_at) : "Asked " + when(r.asked_at)),
       ]),
     ]);
@@ -763,7 +763,7 @@ const AdminPage = (() => {
       title: "Invite code · " + s.name,
       sub: "People enter this code when they sign up or join the stake.",
       body: el("div", {}, [box,
-        el("div", { class: "meta muted", style: "margin-top:10px" },
+        el("div", { class: "meta muted", style: "margin-top:var(--sp-10)" },
           "Rotate it if the code has spread beyond the stake — anyone who has not joined yet will need the new one.")]),
       actions: [
         { label: "Rotate code", kind: "danger", onClick: async close => {
@@ -853,7 +853,7 @@ const AdminPage = (() => {
     const late = el("input", { type: "number", min: "0", max: "120",
                                value: (s && s.late_after_minutes) ?? 10 });
     const color = el("input", { type: "color", value: (s && s.branding_color) || "#085088",
-                                style: "height:42px;padding:4px" });
+                                style: "height:42px;padding:var(--sp-4)" });
     const statusSel = el("select", {}, STAKE_STATES.map(([v, l]) => el("option", { value: v }, l)));
     if (s) statusSel.value = s.status;
 
@@ -1247,7 +1247,7 @@ const AdminPage = (() => {
       title: "Sign-in details · " + name,
       sub: email,
       body: el("div", {}, [secretBox(password),
-        el("div", { class: "meta muted", style: "margin-top:10px" },
+        el("div", { class: "meta muted", style: "margin-top:var(--sp-10)" },
           "This is the only time it is shown. Pass it to the person directly — they can change it under My profile.")]),
       actions: [{ label: "Done", onClick: c => c() }],
     });
@@ -1395,7 +1395,7 @@ const AdminPage = (() => {
         if (r.generated_password) {
           out.innerHTML = "";
           out.appendChild(secretBox(r.generated_password));
-          out.appendChild(el("div", { class: "meta muted", style: "margin-top:8px" },
+          out.appendChild(el("div", { class: "meta muted", style: "margin-top:var(--sp-8)" },
             "Shown once. Copy it before you close this dialog."));
         } else toast("Password updated");
       } catch (e) { toast(e.message, "err"); }
@@ -1535,7 +1535,7 @@ const AdminPage = (() => {
             style: `width:${(v / a.attendance.sessions) * 100}%` }))),
         el("div", { class: "legend" }, segs.map(([k, v, cls]) => el("div", { class: "legend-item" }, [
           el("span", { class: "dot " + cls }), el("span", {}, `${k} — ${v}`)]))),
-        el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:6px" },
+        el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-6)" },
           a.attendance.recent.slice(0, 6).map(r => `${fmtDate(r.date)} — ${r.status}`).join(" · ") || "—"),
       ])));
     }
@@ -1640,7 +1640,7 @@ const AdminPage = (() => {
         el("div", { class: "meta" }, `${fmtTime(r.time) || "TBA"} · ${r.room || r.place || "no room"}`),
         el("div", { class: "meta" }, `${r.instructor} · ${r.enrolled} enrolled` +
           (r.recorded ? ` · ${r.present}/${r.recorded} present` : "")),
-        el("div", { class: "meta", style: "display:flex;gap:6px;margin-top:4px;flex-wrap:wrap" }, [
+        el("div", { class: "meta", style: "display:flex;gap:var(--sp-6);margin-top:var(--sp-4);flex-wrap:wrap" }, [
           r.needs_attendance ? el("span", { class: "mini-pill hot" }, "roster not recorded") : null,
           r.is_today ? el("span", { class: "mini-pill mine" }, "today") : null,
           r.status !== "scheduled" ? el("span", { html: statusPill(r.status) }) : null,
@@ -1742,7 +1742,7 @@ const AdminPage = (() => {
             el("div", { class: "meta" },
               "Nothing has been emailed. Every letter below is recorded and dated, "
               + "but it stays on this server until a mailbox is connected."),
-            el("div", { class: "hint", style: "margin-top:10px" },
+            el("div", { class: "hint", style: "margin-top:var(--sp-10)" },
               "Add SMTP_HOST, SMTP_USER, the app password and SUPPORT_EMAIL to backend/.env, "
               + "then restart the server. The address a person sees in their inbox comes from there."),
           ]),
@@ -1750,7 +1750,7 @@ const AdminPage = (() => {
     wrap.appendChild(state);
 
     const entries = data.entries || [];
-    wrap.appendChild(el("div", { class: "sec-title", style: "margin-top:22px" },
+    wrap.appendChild(el("div", { class: "sec-title", style: "margin-top:var(--sp-22)" },
       entries.length ? `Last ${entries.length} letters` : "Letters"));
     if (!entries.length) {
       wrap.appendChild(empty("The portal has not tried to send anything yet.", "mail"));
@@ -1779,7 +1779,7 @@ const AdminPage = (() => {
       el("div", { style: "flex:none;text-align:right" }, [
         el("span", { html: mailPill(r.status) }),
         el("div", { class: "meta" }, MAIL_KINDS[r.kind] || String(r.kind || "").replace(/_/g, " ")),
-        el("div", { class: "meta", style: "margin-top:4px;white-space:nowrap" }, when(r.created_at)),
+        el("div", { class: "meta", style: "margin-top:var(--sp-4);white-space:nowrap" }, when(r.created_at)),
       ]),
     ]);
   }
@@ -1823,7 +1823,7 @@ const AdminPage = (() => {
   // ---------------- small shared builders ----------------
   function card(children) { return el("div", { class: "card" }, children); }
   function cardTitle(label, right) {
-    return el("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px" },
+    return el("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:var(--sp-10);margin-bottom:var(--sp-4)" },
       [el("div", { class: "title", style: "font-weight:700" }, label), right || null]);
   }
   function subcard(title, note, node) {
