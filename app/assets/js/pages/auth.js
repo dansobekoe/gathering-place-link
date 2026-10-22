@@ -256,7 +256,7 @@ const AuthPage = (() => {
       return el("div", { class: "verify" }, [
         el("div", { class: "mark" }, [icon(byMail ? "mail" : "key", 26)]),
         el("h3", { style: "margin-bottom:4px" }, "Confirm your email address"),
-        el("p", { class: "muted", style: "font-size:13.5px;line-height:1.6;margin-bottom:14px" },
+        el("p", { class: "muted", style: "font-size:var(--t-ui);line-height:1.6;margin-bottom:14px" },
           d.message || (byMail
             ? "A six-digit code went to the address you registered with. Enter it and " +
               "your details go to the portal admin."
@@ -390,7 +390,7 @@ const AuthPage = (() => {
         if (r.dev_code) step2.appendChild(el("div", { class: "field" }, [
           el("label", {}, "Your reset code"), el("div", { class: "code-chip" }, r.dev_code)]));
         else if (r.message) step2.appendChild(el("div", { class: "muted",
-          style: "font-size:12.5px;line-height:1.5;margin:-2px 0 12px" }, r.message));
+          style: "font-size:var(--t-meta);line-height:1.5;margin:-2px 0 12px" }, r.message));
         step2.appendChild(field("Reset code", code));
         step2.appendChild(field("New password", UI.passWrap(np)));
         step2.appendChild(field("Confirm new password", UI.passWrap(cp)));
