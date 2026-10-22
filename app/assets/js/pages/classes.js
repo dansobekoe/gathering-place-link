@@ -67,7 +67,7 @@ const ClassesPage = (() => {
       [icon("refresh", 15), "Refresh"]));
 
     return el("div", { class: "page-head",
-        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap" }, [
+        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
         el("h2", { class: "page-title" }, "Classes"),
         el("div", { class: "page-sub" },
@@ -195,7 +195,7 @@ const ClassesPage = (() => {
         el("div", { class: "title" }, [r.title, el("span", { html: statusPill(r.status) })]),
         el("div", { class: "meta" }, `${fmtDate(r.date)} · ${fmtTime(r.time) || "TBA"}`),
         el("div", { class: "meta" }, facts.join(" · ")),
-        el("div", { class: "meta", style: "display:flex;gap:6px;margin-top:5px;flex-wrap:wrap" }, [
+        el("div", { class: "meta", style: "display:flex;gap:var(--sp-6);margin-top:var(--sp-6);flex-wrap:wrap" }, [
           r.is_today ? el("span", { class: "mini-pill mine" }, "today") : null,
           r.needs_attendance ? el("span", { class: "mini-pill hot" }, "roster not recorded") : null,
           r.attendance_rate != null
@@ -247,14 +247,14 @@ const ClassesPage = (() => {
   function qrModal(row, stakeId, stakeName) {
     const codeEl = el("div", { class: "code-big" }, "······");
     const qrHost = el("div", { class: "qr-box" });
-    const statusEl = el("div", { style: "margin-top:8px" });
-    const countEl = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:4px" });
+    const statusEl = el("div", { style: "margin-top:var(--sp-8)" });
+    const countEl = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-4)" });
     const body = el("div", {}, [
       el("div", { class: "live-grid" }, [
         el("div", {}, [codeEl, statusEl, countEl]),
         qrHost,
       ]),
-      el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:10px" },
+      el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-10)" },
         "Students scan this or type the six digits — the code changes on its own."),
     ]);
 
