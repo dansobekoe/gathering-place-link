@@ -47,7 +47,7 @@ const DashboardPage = (() => {
     const s = ctx.stake;
     const who = String(ctx.user.full_name || "").split(" ")[0] || "there";
     return el("div", { class: "page-head",
-        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap" }, [
+        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
         el("h2", { class: "page-title" }, `Welcome, ${who}`),
         el("div", { class: "page-sub" },
@@ -79,7 +79,7 @@ const DashboardPage = (() => {
     // ---------- needs attention ----------
     if (data.attention.length) {
       const card = el("div", { class: "card", style: "border-color:rgba(225,29,72,.32)" });
-      card.appendChild(el("div", { class: "sec-title", style: "color:#be123c;margin-bottom:8px" },
+      card.appendChild(el("div", { class: "sec-title", style: "color:#be123c;margin-bottom:var(--sp-8)" },
         [icon("alert", 15), " Needs attendance"]));
       data.attention.forEach(a => card.appendChild(el("div", { class: "list-item" }, [
         el("div", { class: "grow" }, [
@@ -264,7 +264,7 @@ const DashboardPage = (() => {
       el("a", { class: "btn ghost sm", href: "#/record" }, [icon("list", 14), "Full record"]),
     ]));
     if (!m.sessions.length) return card;
-    card.appendChild(el("div", { class: "strip", style: "margin-top:15px",
+    card.appendChild(el("div", { class: "strip", style: "margin-top:var(--sp-16)",
       "aria-label": "One square for each session marked, oldest first" },
       m.sessions.map(s => el("i", { class: "att-cell " + s.status,
         title: `${s.course_title} · ${fmtDate(s.date)} · ${ATT_WORD[s.status] || s.status}` }))));
@@ -399,7 +399,7 @@ const DashboardPage = (() => {
         el("div", { class: "meta" }, `${r.room || "no room"} · ${r.instructor}` +
           ` · ${r.enrolled}${r.capacity ? "/" + r.capacity : ""} enrolled` +
           (r.waitlisted ? ` · ${r.waitlisted} waitlisted` : "")),
-        el("div", { class: "meta", style: "display:flex;gap:6px;margin-top:5px;flex-wrap:wrap" }, [
+        el("div", { class: "meta", style: "display:flex;gap:var(--sp-6);margin-top:var(--sp-6);flex-wrap:wrap" }, [
           r.attendance_rate == null ? el("span", { class: "mini-pill" }, "no roster yet")
             : el("span", { class: "mini-pill " + (r.attendance_rate >= 75 ? "ok" : "") },
                  r.attendance_rate + "% attendance"),
@@ -415,7 +415,7 @@ const DashboardPage = (() => {
   // ---------------- people ----------------
   function peopleTable(people, byRole, ctx) {
     const card = el("div", { class: "card" });
-    const chips = el("div", { style: "display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" });
+    const chips = el("div", { style: "display:flex;gap:var(--sp-6);flex-wrap:wrap;margin-bottom:var(--sp-10)" });
     byRole.forEach(r => chips.appendChild(el("span", { class: "mini-pill" },
       `${r.label} · ${r.count}`)));
     card.appendChild(chips);
