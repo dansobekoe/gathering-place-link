@@ -6,7 +6,7 @@
    broadcast he cannot send, a student is never shown a class he does not teach. */
 const MessagesPage = (() => {
   const { el, icon, toast, shell, loading, empty, render, fmtDate, fmtTime,
-          modal, roleLabel, avatar } = UI;
+          modal, roleLabel, avatar, draftSave, draftRead, draftDrop } = UI;
 
   let box = "inbox";
   let opts = null;        // this person's send options for the stake in view
@@ -289,6 +289,37 @@ const MessagesPage = (() => {
     const subject = el("input", { placeholder: "Subject", maxlength: "140" });
     const text = el("textarea", { placeholder: "Your message…", rows: "5" });
 
+    /* A leader writing an announcement is interrupted by the same things everybody else is —
+       a class starting, a phone that goes to the mail app, a page that came back blank with
+       forty seconds of writing in it. Only the words are kept here, and only for the gathering
+       place they were written in. Who a message goes to is chosen afresh every single time,
+       because a quietly restored recipient is how a note meant for one reader reaches a whole
+       tenant. Nothing is restored without saying so on the screen it appears on. */
+    const keptMsg = draftRead("message");
+    const fromDraft = !!(keptMsg && keptMsg.stake_id === stake.id
+                         && (keptMsg.subject || keptMsg.body));
+    if (fromDraft) { subject.value = keptMsg.subject || ""; text.value = keptMsg.body || ""; }
+    const saveMsg = () => draftSave("message", { stake_id: stake.id,
+                                                 subject: subject.value, body: text.value });
+    subject.addEventListener("input", saveMsg);
+    text.addEventListener("input", saveMsg);
+
+    let msgNote = null;
+    function discardDraft() {
+      draftDrop("message");
+      subject.value = ""; text.value = "";
+      if (msgNote) msgNote.remove();
+      subject.focus();
+      toast("The message is empty again");
+    }
+    if (fromDraft) {
+      msgNote = el("div", { class: "keep-note" }, [
+        "This is the message you had not finished. It was kept on this device, for this "
+        + "gathering place, and nowhere else. ",
+        el("button", { class: "linkbtn", type: "button", onclick: discardDraft }, "Discard it"),
+      ]);
+    }
+
     const panels = {
       role: el("div", { class: "field" }, [el("label", {}, "Group"), roleSel]),
       course: el("div", { class: "field" }, [el("label", {}, "Class"), courseSel]),
@@ -326,6 +357,7 @@ const MessagesPage = (() => {
       panels.role, panels.course, panels.direct,
       el("div", { class: "field" }, [el("label", {}, "Subject"), subject]),
       el("div", { class: "field" }, [el("label", {}, "Message"), text]),
+      msgNote,
     ]);
 
     const m = modal({
@@ -347,6 +379,7 @@ const MessagesPage = (() => {
               return toast("A subject and a message are both required.", "err");
             try {
               await API.post(`/api/stakes/${stake.id}/messages`, payload);
+              draftDrop("message");      // it is sent; there is nothing left to keep
               close(); toast("Message sent");
               if (box === "sent") mount(document.getElementById("app"));
             } catch (e) { toast(e.message, "err"); }
