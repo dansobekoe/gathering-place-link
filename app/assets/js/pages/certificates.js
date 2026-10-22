@@ -75,7 +75,7 @@ const CertificatesPage = (() => {
       onclick: () => mount(document.getElementById("app"), chosen ? chosen.id : null) },
       [icon("refresh", 15), "Reload"]));
     return el("div", { class: "page-head",
-        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap" }, [
+        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
         el("h2", { class: "page-title" }, "Certificates"),
         el("div", { class: "page-sub" }, chosen
@@ -106,7 +106,7 @@ const CertificatesPage = (() => {
 
   function readOnlyNote() {
     return el("div", { class: "subcard" }, [
-      el("div", { class: "row", style: "gap:10px;align-items:flex-start" }, [
+      el("div", { class: "row", style: "gap:var(--sp-10);align-items:flex-start" }, [
         icon("lock", 18),
         el("div", { class: "meta" },
           "You can see where every line lands and how a member's certificate will read. " +
@@ -126,15 +126,15 @@ const CertificatesPage = (() => {
       ]),
     ]));
     wrap.appendChild(el("div", { class: "card" }, [
-      el("div", { class: "row", style: "gap:10px;align-items:flex-start" }, [
+      el("div", { class: "row", style: "gap:var(--sp-10);align-items:flex-start" }, [
         icon("award", 20),
         el("div", {}, [
           el("div", { class: "title" }, "This screen belongs to the people who watch over the place"),
-          el("div", { class: "meta", style: "margin-top:5px" },
+          el("div", { class: "meta", style: "margin-top:var(--sp-6)" },
             "A president, a YSA service missionary or the Portal Admin can open it. If a "
             + "certificate has come out wrong, say whose name and which class it was, and "
             + "the Portal Admin will move the line."),
-          el("a", { class: "btn secondary sm", href: "#/", style: "margin-top:12px;width:auto" },
+          el("a", { class: "btn secondary sm", href: "#/", style: "margin-top:var(--sp-12);width:auto" },
             [icon("back", 15), "Back to my dashboard"]),
         ]),
       ]),
@@ -144,12 +144,12 @@ const CertificatesPage = (() => {
 
   function failed(why, stake, placeId) {
     return el("div", { class: "card" }, [
-      el("div", { class: "row", style: "gap:10px;align-items:flex-start" }, [
+      el("div", { class: "row", style: "gap:var(--sp-10);align-items:flex-start" }, [
         icon("alert", 20),
         el("div", { class: "grow" }, [
           el("div", { class: "title" }, "The places could not be read"),
-          el("div", { class: "meta", style: "margin-top:5px" }, why),
-          el("button", { class: "btn secondary sm", type: "button", style: "margin-top:12px",
+          el("div", { class: "meta", style: "margin-top:var(--sp-6)" }, why),
+          el("button", { class: "btn secondary sm", type: "button", style: "margin-top:var(--sp-12)",
             onclick: () => mount(document.getElementById("app"), placeId) },
             [icon("refresh", 15), "Try again"]),
         ]),
@@ -172,7 +172,7 @@ const CertificatesPage = (() => {
         : "A certificate is printed for the members of one gathering place, so there is no "
           + "sheet to place lines on until the Portal Admin registers one."),
       el("a", { class: "btn secondary sm", href: "#/stake",
-                style: "margin-top:12px;width:auto" }, [icon("home", 15), "Open " + stake.name]),
+                style: "margin-top:var(--sp-12);width:auto" }, [icon("home", 15), "Open " + stake.name]),
     ]));
     return wrap;
   }
