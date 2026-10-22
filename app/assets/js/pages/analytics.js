@@ -30,7 +30,7 @@ const AnalyticsPage = (() => {
 
     const content = el("div");
     content.appendChild(el("div", { class: "page-head",
-        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap" }, [
+        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
         el("h2", { class: "page-title" }, "Analytics"),
         el("div", { class: "page-sub" }, `${name} · attendance, enrolment and completion`),
@@ -90,7 +90,7 @@ const AnalyticsPage = (() => {
   }
 
   function actionsRow(stakes, stakeId, isAdmin) {
-    const row = el("div", { style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap" });
+    const row = el("div", { style: "display:flex;gap:var(--sp-8);align-items:center;flex-wrap:wrap" });
     if (stakes.length > 1 || isAdmin) {
       const sel = el("select", { onchange: ev => {
         location.hash = ev.target.value ? "#/analytics/" + ev.target.value : "#/analytics";
