@@ -51,7 +51,7 @@ const RecordPage = (() => {
     data.rollup.forEach(r => grid.appendChild(el("div", { class: "stat" }, [
       el("div", { class: "n" }, r.pct + "%"),
       el("div", { class: "l" }, r.title),
-      el("div", { class: "meta muted", style: "font-size:11.5px;margin-top:2px" },
+      el("div", { class: "meta muted", style: "font-size:var(--t-fine);margin-top:2px" },
         `${r.present} of ${r.total} sessions`),
     ])));
     body.appendChild(grid);
@@ -63,7 +63,7 @@ const RecordPage = (() => {
     for (const [title, rows] of Object.entries(byCourse)) {
       const card = el("div", { class: "card" }, [
         el("h3", {}, title),
-        el("div", { class: "meta muted", style: "margin:-6px 0 8px;font-size:12px" },
+        el("div", { class: "meta muted", style: "margin:-6px 0 8px;font-size:var(--t-meta)" },
           rows[0].stake_name + " · " + (CATEGORIES[rows[0].category] || "")),
       ]);
       rows.forEach(r => card.appendChild(el("div", { class: "list-item" }, [
