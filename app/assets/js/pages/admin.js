@@ -198,7 +198,7 @@ const AdminPage = (() => {
         cardTitle("Approval queue", pending.length
           ? el("span", { class: "mini-pill hot" }, pending.length + " waiting") : null),
         pending.length ? el("div", {}, pending.map(approvalRow))
-                       : el("div", { class: "muted", style: "font-size:13px" },
+                       : el("div", { class: "muted", style: "font-size:var(--t-ui)" },
                            "Every stake has been decided. New requests appear here."),
         el("a", { class: "linkbtn", href: "#/admin", style: "margin-top:10px",
                   onclick: ev => { ev.preventDefault(); pickTab("approvals"); } },
@@ -208,7 +208,7 @@ const AdminPage = (() => {
         cardTitle("Attendance not recorded", unrecorded.sessions.length
           ? el("span", { class: "mini-pill hot" }, unrecorded.sessions.length + " open") : null),
         unrecorded.sessions.length ? el("div", {}, unrecorded.sessions.map(unrecordedRow))
-          : el("div", { class: "muted", style: "font-size:13px" },
+          : el("div", { class: "muted", style: "font-size:var(--t-ui)" },
               "Nothing from the last week is missing a roster."),
       ]),
     ]));
@@ -216,7 +216,7 @@ const AdminPage = (() => {
     wrap.appendChild(el("div", { class: "sec-title" }, "Latest portal activity"));
     wrap.appendChild(card([
       logs.length ? el("div", {}, logs.map(logRow))
-                  : el("div", { class: "muted", style: "font-size:13px" }, "No activity yet."),
+                  : el("div", { class: "muted", style: "font-size:var(--t-ui)" }, "No activity yet."),
       el("a", { class: "linkbtn", href: "#/admin", style: "margin-top:10px",
                 onclick: ev => { ev.preventDefault(); pickTab("activity"); } },
         "See the full trail →"),
@@ -477,7 +477,7 @@ const AdminPage = (() => {
     const note = logDetail(l.detail);
     return el("div", { class: "list-item" }, [
       el("div", { class: "grow" }, [
-        el("div", { class: "title", style: "font-size:13.5px" }, who),
+        el("div", { class: "title", style: "font-size:var(--t-ui)" }, who),
         el("div", { class: "meta" }, note ? `${what} — ${note}` : what),
       ]),
       el("div", { style: "flex:none;text-align:right" }, [
@@ -611,7 +611,7 @@ const AdminPage = (() => {
   function loggedRequest(r) {
     return el("div", { class: "list-item" }, [
       el("div", { class: "grow" }, [
-        el("div", { class: "title", style: "font-size:13.5px" }, r.name),
+        el("div", { class: "title", style: "font-size:var(--t-ui)" }, r.name),
         el("div", { class: "meta" }, (r.kind === "export" ? "Took a copy of their record"
                                                            : "Asked to be removed")
           + (r.note ? " · " + r.note : "")),
@@ -681,7 +681,7 @@ const AdminPage = (() => {
         el("th", {}, "")])]),
       el("tbody", {}, list.map(s => el("tr", {}, [
         el("td", {}, [el("div", { style: "font-weight:600" }, s.name),
-                      el("div", { class: "muted", style: "font-size:12px" }, kindWord(s))]),
+                      el("div", { class: "muted", style: "font-size:var(--t-meta)" }, kindWord(s))]),
         el("td", {}, [el("span", { html: statusPill(s.status) })]),
         el("td", {}, s.invite_code
           ? el("button", { class: "linkbtn", title: "Copy invite code",
@@ -989,7 +989,7 @@ const AdminPage = (() => {
       list.innerHTML = "";
       const shown = rows.filter(r => chip === "all" || r.role === chip);
       if (!shown.length) {
-        list.appendChild(el("div", { class: "muted", style: "font-size:13px" }, "Nobody in this group."));
+        list.appendChild(el("div", { class: "muted", style: "font-size:var(--t-ui)" }, "Nobody in this group."));
       }
       shown.forEach(r => list.appendChild(rosterRow(s, r, rows, draw)));
     }
@@ -1132,10 +1132,10 @@ const AdminPage = (() => {
       el("tbody", {}, list.map(u => el("tr", {}, [
         el("td", {}, [
           el("div", { style: "font-weight:600" }, u.name),
-          el("div", { class: "muted", style: "font-size:12px" }, u.email)]),
+          el("div", { class: "muted", style: "font-size:var(--t-meta)" }, u.email)]),
         el("td", {}, [u.roles.map(roleLabel).join(", ") || "—",
           u.is_super_admin ? el("span", { class: "mini-pill mine" }, "portal admin") : null]),
-        el("td", { class: "muted", style: "font-size:12.5px" }, u.stakes.join(", ") || "—"),
+        el("td", { class: "muted", style: "font-size:var(--t-meta)" }, u.stakes.join(", ") || "—"),
         el("td", {}, u.is_active ? el("span", { class: "mini-pill ok" }, "active")
                                  : el("span", { class: "mini-pill hot" }, "deactivated")),
         el("td", {}, personActions(u)),
@@ -1333,7 +1333,7 @@ const AdminPage = (() => {
     function draw() {
       list.innerHTML = "";
       if (!d.roles.length) {
-        list.appendChild(el("div", { class: "muted", style: "font-size:13px" },
+        list.appendChild(el("div", { class: "muted", style: "font-size:var(--t-ui)" },
           "Not a member of any stake or district — they can sign in, but there is nothing to see."));
       }
       d.roles.forEach(r => list.appendChild(membershipRow(d, r, draw)));
@@ -1505,7 +1505,7 @@ const AdminPage = (() => {
           el("div", { class: "grow" }, [el("div", { class: "title" }, r.stake_name || "Stake " + r.stake_id),
             el("div", { class: "meta" }, roleLabel(r.role))]),
         ])))
-      : el("div", { class: "muted", style: "font-size:13px" }, "No stake membership.")));
+      : el("div", { class: "muted", style: "font-size:var(--t-ui)" }, "No stake membership.")));
 
     if (a.teaching.length) {
       secs.push(subcard("Teaching", `${a.teaching.length} class${a.teaching.length === 1 ? "" : "es"}`,
@@ -1535,13 +1535,13 @@ const AdminPage = (() => {
             style: `width:${(v / a.attendance.sessions) * 100}%` }))),
         el("div", { class: "legend" }, segs.map(([k, v, cls]) => el("div", { class: "legend-item" }, [
           el("span", { class: "dot " + cls }), el("span", {}, `${k} — ${v}`)]))),
-        el("div", { class: "muted", style: "font-size:12.5px;margin-top:6px" },
+        el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:6px" },
           a.attendance.recent.slice(0, 6).map(r => `${fmtDate(r.date)} — ${r.status}`).join(" · ") || "—"),
       ])));
     }
     secs.push(subcard("Recent portal actions", "latest " + a.activity.length, a.activity.length
       ? el("div", {}, a.activity.map(logRow))
-      : el("div", { class: "muted", style: "font-size:13px" }, "Nothing logged.")));
+      : el("div", { class: "muted", style: "font-size:var(--t-ui)" }, "Nothing logged.")));
 
     body.innerHTML = "";
     body.appendChild(el("div", { class: "stat-grid" }, [
@@ -1657,9 +1657,9 @@ const AdminPage = (() => {
       el("tbody", {}, rows.map(r => el("tr", { class: r.is_today ? "is-today" : "" }, [
         el("td", { style: "white-space:nowrap" }, [
           el("div", { style: "font-weight:600" }, fmtDate(r.date)),
-          el("div", { class: "muted", style: "font-size:12px" }, fmtTime(r.time) || "TBA")]),
+          el("div", { class: "muted", style: "font-size:var(--t-meta)" }, fmtTime(r.time) || "TBA")]),
         el("td", {}, [el("div", { style: "font-weight:600" }, r.title),
-          el("div", { class: "muted", style: "font-size:12px" }, r.category_label)]),
+          el("div", { class: "muted", style: "font-size:var(--t-meta)" }, r.category_label)]),
         el("td", {}, r.room || r.place || "—"),
         el("td", {}, r.instructor),
         el("td", { class: "num" }, String(r.enrolled) + (r.waitlisted ? ` (+${r.waitlisted})` : "")),
