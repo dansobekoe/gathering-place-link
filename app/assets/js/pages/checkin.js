@@ -36,7 +36,7 @@ const CheckinPage = (() => {
     const card = el("div", { class: "card center" });
     const video = el("video", { class: "scan-video", muted: "muted", playsinline: "true",
       hidden: "hidden" });
-    const hint = el("div", { class: "muted center", style: "font-size:13px;margin-top:10px" },
+    const hint = el("div", { class: "muted center", style: "font-size:var(--t-ui);margin-top:10px" },
       "The code on the classroom screen renews every 30 seconds, so scan it while it is showing.");
     const camBtn = el("button", { class: "btn", style: "margin-top:12px" }, "Turn on camera");
     const stopBtn = el("button", { class: "btn secondary sm", style: "margin-top:12px",
@@ -90,9 +90,9 @@ const CheckinPage = (() => {
        listed rather than guessed at on the student's behalf. */
     const courseSel = el("select");
     const sessSel = el("select");
-    const sessHint = el("div", { class: "muted", style: "font-size:13px;margin-top:6px" }, "—");
+    const sessHint = el("div", { class: "muted", style: "font-size:var(--t-ui);margin-top:6px" }, "—");
     const codeIn = el("input", { placeholder: "6-digit code", inputmode: "numeric", maxlength: "6" });
-    const loading = el("div", { class: "muted", style: "font-size:12px;margin-top:8px" },
+    const loading = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:8px" },
       "Loading your courses…");
     let sessionId = null;
 
@@ -178,7 +178,7 @@ const CheckinPage = (() => {
   // ---------------- my badge ----------------
   async function badgeTab(body) {
     const card = el("div", { class: "card center" });
-    card.appendChild(el("div", { class: "muted", style: "font-size:13px" },
+    card.appendChild(el("div", { class: "muted", style: "font-size:var(--t-ui)" },
       "Show this to your instructor to be scanned in."));
     const host = el("div", { class: "qr-box" });
     card.appendChild(host);
