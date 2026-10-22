@@ -551,7 +551,7 @@ const StakePage = (() => {
     order.forEach(role => {
       const list = byRole[role];
       card.appendChild(el("div", { class: "meta muted",
-        style: "margin:8px 0 2px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase",
+        style: "margin:8px 0 2px;font-size:var(--t-fine);font-weight:700;letter-spacing:.06em;text-transform:uppercase",
         html: roleLabel(role) + " · " + list.length }));
       list.forEach(m => card.appendChild(el("div", { class: "list-item" }, [
         avatar({ full_name: m.name, photo_url: m.photo_url }),
@@ -578,7 +578,7 @@ const StakePage = (() => {
       "No one has joined yet. Share the invite code below, or add a person who already has an account.", "users"));
     if (paper) {
       card.appendChild(el("hr", { class: "hr" }));
-      card.appendChild(el("div", { class: "meta muted", style: "font-size:13px" },
+      card.appendChild(el("div", { class: "meta muted", style: "font-size:var(--t-ui)" },
         "Add someone who already has an account, by email:"));
       const aemail = el("input", { type: "email", placeholder: "person@example.org" });
       const arole = el("select", {}, GROUPS.map(r => el("option", { value: r }, roleLabel(r))));
@@ -643,7 +643,7 @@ const StakePage = (() => {
           + "here the first time a person writes it at sign-up — or add it below.", "users"));
       } else roll.wards.forEach(w => list.appendChild(wardRow(w)));
       if (roll.unassigned) list.appendChild(el("div", { class: "meta muted",
-        style: "padding:8px 2px 0;font-size:13px" },
+        style: "padding:8px 2px 0;font-size:var(--t-ui)" },
         `${roll.unassigned} ${persons(roll.unassigned)} here ${roll.unassigned === 1 ? "has" : "have"} no ward `
         + "recorded. They can put it on their own profile, or add the ward below and name it "
         + "when you register them."));
@@ -660,7 +660,7 @@ const StakePage = (() => {
 
     const wname = el("input", { placeholder: "e.g. Nsawam Ward" });
     card.appendChild(el("hr", { class: "hr" }));
-    card.appendChild(el("div", { class: "meta muted", style: "font-size:13px" },
+    card.appendChild(el("div", { class: "meta muted", style: "font-size:var(--t-ui)" },
       `Add a ward to this ${word.toLowerCase()}’s list, so the people who attend it can pick `
       + "the name instead of typing it:"));
     card.appendChild(el("div", { class: "row", style: "margin-top:8px" }, [wname,
@@ -749,7 +749,7 @@ const StakePage = (() => {
         el("div", { class: "title" }, "Invite code"),
         el("div", { class: "meta" }, "Share it with instructors and students so they can join this place"),
       ]),
-      el("span", { class: "pill blue", style: "font-size:14px;letter-spacing:.12em;padding:6px 12px" },
+      el("span", { class: "pill blue", style: "font-size:var(--t-body);letter-spacing:.12em;padding:6px 12px" },
         stake.invite_code || "—"),
     ]));
     if (paper) {
