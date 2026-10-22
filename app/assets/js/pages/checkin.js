@@ -36,10 +36,10 @@ const CheckinPage = (() => {
     const card = el("div", { class: "card center" });
     const video = el("video", { class: "scan-video", muted: "muted", playsinline: "true",
       hidden: "hidden" });
-    const hint = el("div", { class: "muted center", style: "font-size:var(--t-ui);margin-top:10px" },
+    const hint = el("div", { class: "muted center", style: "font-size:var(--t-ui);margin-top:var(--sp-10)" },
       "The code on the classroom screen renews every 30 seconds, so scan it while it is showing.");
-    const camBtn = el("button", { class: "btn", style: "margin-top:12px" }, "Turn on camera");
-    const stopBtn = el("button", { class: "btn secondary sm", style: "margin-top:12px",
+    const camBtn = el("button", { class: "btn", style: "margin-top:var(--sp-12)" }, "Turn on camera");
+    const stopBtn = el("button", { class: "btn secondary sm", style: "margin-top:var(--sp-12)",
       hidden: "hidden" }, "Stop camera");
     card.append(video, hint, camBtn, stopBtn);
     body.appendChild(card);
@@ -90,9 +90,9 @@ const CheckinPage = (() => {
        listed rather than guessed at on the student's behalf. */
     const courseSel = el("select");
     const sessSel = el("select");
-    const sessHint = el("div", { class: "muted", style: "font-size:var(--t-ui);margin-top:6px" }, "—");
+    const sessHint = el("div", { class: "muted", style: "font-size:var(--t-ui);margin-top:var(--sp-6)" }, "—");
     const codeIn = el("input", { placeholder: "6-digit code", inputmode: "numeric", maxlength: "6" });
-    const loading = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:8px" },
+    const loading = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-8)" },
       "Loading your courses…");
     let sessionId = null;
 
@@ -152,9 +152,9 @@ const CheckinPage = (() => {
       mcard.appendChild(el("div", { class: "field" }, [el("label", {}, "Course"), courseSel]));
       mcard.appendChild(el("div", { class: "field" }, [el("label", {}, "Sitting"), sessSel]));
       mcard.appendChild(sessHint);
-      mcard.appendChild(el("div", { class: "field", style: "margin-top:10px" },
+      mcard.appendChild(el("div", { class: "field", style: "margin-top:var(--sp-10)" },
         [el("label", {}, "Code on screen"), codeIn]));
-      mcard.appendChild(el("button", { class: "btn", style: "margin-top:12px",
+      mcard.appendChild(el("button", { class: "btn", style: "margin-top:var(--sp-12)",
         onclick: () => sessionId && submit(sessionId, codeIn.value) },
         [icon("check", 17), "Check in"]));
       await loadSessions();
@@ -182,8 +182,8 @@ const CheckinPage = (() => {
       "Show this to your instructor to be scanned in."));
     const host = el("div", { class: "qr-box" });
     card.appendChild(host);
-    card.appendChild(el("div", { style: "font-weight:700;margin-top:10px" }, API.getUser().full_name));
-    const tools = el("div", { class: "actions", style: "margin-top:14px;justify-content:center" });
+    card.appendChild(el("div", { style: "font-weight:700;margin-top:var(--sp-10)" }, API.getUser().full_name));
+    const tools = el("div", { class: "actions", style: "margin-top:var(--sp-14);justify-content:center" });
     card.appendChild(tools);
     body.appendChild(card);
     try {
