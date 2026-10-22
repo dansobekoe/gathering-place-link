@@ -39,7 +39,7 @@ const MessagesPage = (() => {
   }
 
   function head(stake, unread) {
-    const tabs = el("div", { class: "tabs", style: "margin-top:10px;max-width:260px" });
+    const tabs = el("div", { class: "tabs", style: "margin-top:var(--sp-10);max-width:260px" });
     [["inbox", "Inbox"], ["sent", "Sent"]].forEach(([key, label]) => {
       const b = el("button", {
         class: (box === key ? "active" : "") + (key === "inbox" ? " tab-inbox" : ""),
@@ -48,7 +48,7 @@ const MessagesPage = (() => {
       tabs.appendChild(b);
     });
     return el("div", { class: "page-head",
-        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap" }, [
+        style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
         el("h2", { class: "page-title" }, "Messages"),
         el("div", { class: "page-sub" }, `${stake.name} · ${stake.label || ""}`),
@@ -63,7 +63,7 @@ const MessagesPage = (() => {
   function list(data, ctx) {
     const wrap = el("div");
     const rows = data.messages;
-    wrap.appendChild(el("div", { class: "page-sub msg-count", style: "margin-bottom:10px" },
+    wrap.appendChild(el("div", { class: "page-sub msg-count", style: "margin-bottom:var(--sp-10)" },
       `${rows.length} message(s)` +
       (box === "inbox" && unreadHere ? ` · ${unreadHere} unread` : "")));
     if (!rows.length) {
@@ -124,7 +124,7 @@ const MessagesPage = (() => {
   async function open(m, ctx, node) {
     const when = m.created_at ? new Date(String(m.created_at)) : null;
     const body = el("div", {}, [
-      el("div", { class: "meta", style: "margin-bottom:10px" },
+      el("div", { class: "meta", style: "margin-bottom:var(--sp-10)" },
         `${m.mine ? "You" : m.sender_name}` +
         `${m.sender_role ? " · " + roleLabel(m.sender_role) : ""}` +
         `${when ? " · " + fmtDate(when.toISOString().slice(0, 10)) + " " + fmtTime(when.toISOString().slice(11, 16)) : ""}`),
