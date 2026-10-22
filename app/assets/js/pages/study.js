@@ -64,7 +64,7 @@ const StudyPage = (() => {
     ]));
 
     /* ---------- the reading ---------- */
-    veil = el("div", { class: "muted", style: "font-size:var(--t-ui);padding:10px 2px 0" },
+    veil = el("div", { class: "muted", style: "font-size:var(--t-ui);padding:var(--sp-10) var(--sp-2) 0" },
       "Loading the Library…");
     const frame = el("iframe", {
       class: "study-frame",
@@ -101,7 +101,7 @@ const StudyPage = (() => {
     watchBlank();
 
     content.appendChild(el("div", { class: "card" }, [
-      el("div", { class: "btns", style: "justify-content:space-between;margin-bottom:10px" }, [
+      el("div", { class: "btns", style: "justify-content:space-between;margin-bottom:var(--sp-10)" }, [
         el("div", { class: "sec-title", style: "margin:0" }, "Reading"),
         openTab,
       ]),
@@ -113,12 +113,12 @@ const StudyPage = (() => {
     /* ---------- the honest paragraph ---------- */
     content.appendChild(el("div", { class: "card" }, [
       el("div", { class: "sec-title", style: "margin-top:0" }, "About this window"),
-      el("p", { class: "muted", style: "font-size:var(--t-ui);line-height:1.7;margin:8px 0 0" },
+      el("p", { class: "muted", style: "font-size:var(--t-ui);line-height:1.7;margin:var(--sp-8) 0 0" },
         "What you see above is served by churchofjesuschrist.org, not by this portal. Your " +
         "browser speaks to them directly, so they see the request and may set their own " +
         "cookies on your device. Their privacy notice governs that part. This portal keeps " +
         "no record of what you read here — no page titles, no searches, no time spent."),
-      el("div", { class: "btns", style: "margin-top:12px" }, [
+      el("div", { class: "btns", style: "margin-top:var(--sp-12)" }, [
         el("a", { class: "btn sm ghost", href: "#/cookies" }, [icon("file", 15), "Cookie Notice"]),
         el("a", { class: "btn sm ghost", href: "#/privacy" }, [icon("shield", 15), "Privacy Policy"]),
       ]),
