@@ -112,7 +112,7 @@ const ProfilePage = (() => {
       el("div", { class: "photo-pick", style: "margin-top:12px" }, [
         faceSlot,
         el("div", { class: "photo-side" }, [
-          el("div", { class: "muted", style: "font-size:13px" },
+          el("div", { class: "muted", style: "font-size:var(--t-ui)" },
             user.display_name || user.full_name),
           el("div", { class: "btns" }, [pick, remove, file]),
           note,
@@ -283,7 +283,7 @@ const ProfilePage = (() => {
     ]);
     API.get("/api/account/data").then(fill, e => {
       body.innerHTML = "";
-      body.appendChild(el("div", { class: "muted", style: "font-size:13px" },
+      body.appendChild(el("div", { class: "muted", style: "font-size:var(--t-ui)" },
         "Your record could not be read just now — " + e.message));
     });
     let lastNote = null;
