@@ -107,6 +107,10 @@ const App = (() => {
      who signs in is sent to the stake page as though they belonged to nowhere. */
   async function afterLogin() {
     Ctx.clear();
+    /* A signed-in person has no business looking at the form somebody else left half-written
+       on this phone a minute ago — the registration that came back as a token is finished, and
+       anything still on disk belongs to the attempt that just succeeded. */
+    UI.draftClear();
     try { await prepare(true); } catch (e) { /* a cold shell still shows the login page */ }
     location.hash = homeHash();
     route();
@@ -130,6 +134,10 @@ const App = (() => {
        the ids already shown to this device. Left running, the next person to open the phone
        would be handed the previous one's notices. */
     if (typeof Notify !== "undefined") Notify.stop();
+    /* A half-finished registration, an un sent message and a reset dialog are the last
+       person's business and nobody else's. sessionStorage would already go when this tab
+       closed, but a shared phone in a ward does not always get closed. */
+    UI.draftClear();
     API.clear();
     Ctx.clear();
     document.body.classList.remove("drawer-open");
