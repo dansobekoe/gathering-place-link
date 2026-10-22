@@ -165,10 +165,10 @@ const ClassesPage = (() => {
       el("tbody", {}, rows.map(r => el("tr", { class: r.is_today ? "is-today" : "" }, [
         el("td", { style: "white-space:nowrap" }, [
           el("div", { style: "font-weight:600" }, fmtDate(r.date)),
-          el("div", { class: "muted", style: "font-size:12px" }, fmtTime(r.time) || "TBA"),
+          el("div", { class: "muted", style: "font-size:var(--t-meta)" }, fmtTime(r.time) || "TBA"),
           r.is_today ? el("span", { class: "mini-pill mine" }, "today") : null]),
         el("td", {}, [el("div", { style: "font-weight:600" }, r.title),
-          el("div", { class: "muted", style: "font-size:12px" },
+          el("div", { class: "muted", style: "font-size:var(--t-meta)" },
             r.category_label + (r.status === "cancelled" ? " · cancelled" : ""))]),
         el("td", {}, r.room || r.place || "—"),
         el("td", {}, [r.instructor, r.is_mine && !ctx.stake.student
@@ -248,13 +248,13 @@ const ClassesPage = (() => {
     const codeEl = el("div", { class: "code-big" }, "······");
     const qrHost = el("div", { class: "qr-box" });
     const statusEl = el("div", { style: "margin-top:8px" });
-    const countEl = el("div", { class: "muted", style: "font-size:12px;margin-top:4px" });
+    const countEl = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:4px" });
     const body = el("div", {}, [
       el("div", { class: "live-grid" }, [
         el("div", {}, [codeEl, statusEl, countEl]),
         qrHost,
       ]),
-      el("div", { class: "muted", style: "font-size:12.5px;margin-top:10px" },
+      el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:10px" },
         "Students scan this or type the six digits — the code changes on its own."),
     ]);
 
