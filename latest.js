@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://remaining-eating-internal-convention.trycloudflare.com","updated_at":"2026-10-16T19:45:08Z"};
+window.GATHERING_PLACE = {"url":"https://leone-adequate-len-base.trycloudflare.com","updated_at":"2026-10-22T15:11:08Z"};
