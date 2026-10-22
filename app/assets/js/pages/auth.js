@@ -152,7 +152,7 @@ const AuthPage = (() => {
         el("div", { class: "mark" }, [icon(byMail ? "mail" : "clock", 26)]),
         el("h3", {}, "Your registration is with the portal admin"),
         el("p", {}, d.message || "Your registration has been sent for approval."),
-        req.length ? el("div", { class: "card", style: "margin-top:16px;text-align:left" },
+        req.length ? el("div", { class: "card", style: "margin-top:var(--sp-16);text-align:left" },
           req.map(r => el("div", { class: "list-item" }, [
             el("div", { class: "grow" }, [
               el("div", { class: "title" }, r.stake_name || ""),
@@ -161,7 +161,7 @@ const AuthPage = (() => {
             el("span", { html: statusPill(r.status) }),
           ]))) : null,
         steps,
-        el("div", { style: "margin-top:20px" }, [
+        el("div", { style: "margin-top:var(--sp-20)" }, [
           el("button", { class: "btn secondary", onclick: () => { mode = "login"; draw(); } }, "Back to sign in"),
         ]),
       ]);
@@ -182,7 +182,7 @@ const AuthPage = (() => {
       const line = el("div", { class: "sent-to" });
       const reveal = el("div");
       const again = el("button", { class: "linkbtn", type: "button", onclick: resend });
-      const note = el("div", { class: "hint", style: "text-align:center;margin-top:10px" });
+      const note = el("div", { class: "hint", style: "text-align:center;margin-top:var(--sp-10)" });
       const btn = el("button", { class: "btn", onclick: submit }, [icon("check", 17), "Confirm my email"]);
 
       function paintLine() {
@@ -198,7 +198,7 @@ const AuthPage = (() => {
         reveal.innerHTML = "";
         if (code) d.dev_code = code;
         if (!d.dev_code) return;
-        reveal.appendChild(el("div", { class: "field", style: "margin-top:12px" }, [
+        reveal.appendChild(el("div", { class: "field", style: "margin-top:var(--sp-12)" }, [
           el("label", {}, "Your code"),
           el("div", { class: "code-chip" }, d.dev_code),
         ]));
@@ -255,8 +255,8 @@ const AuthPage = (() => {
       countdown(d.just_sent ? RESEND_WAIT : 0);
       return el("div", { class: "verify" }, [
         el("div", { class: "mark" }, [icon(byMail ? "mail" : "key", 26)]),
-        el("h3", { style: "margin-bottom:4px" }, "Confirm your email address"),
-        el("p", { class: "muted", style: "font-size:var(--t-ui);line-height:1.6;margin-bottom:14px" },
+        el("h3", { style: "margin-bottom:var(--sp-4)" }, "Confirm your email address"),
+        el("p", { class: "muted", style: "font-size:var(--t-ui);line-height:1.6;margin-bottom:var(--sp-14)" },
           d.message || (byMail
             ? "A six-digit code went to the address you registered with. Enter it and " +
               "your details go to the portal admin."
@@ -264,7 +264,7 @@ const AuthPage = (() => {
               "you ask for one.")),
         line, digits, reveal, note, btn,
         el("div", { class: "again" }, [again]),
-        el("div", { class: "hint", style: "margin-top:12px" },
+        el("div", { class: "hint", style: "margin-top:var(--sp-12)" },
           "Wrong address? Register again with the right one — the administrator can remove " +
           "the account that is waiting here."),
       ]);
@@ -390,7 +390,7 @@ const AuthPage = (() => {
         if (r.dev_code) step2.appendChild(el("div", { class: "field" }, [
           el("label", {}, "Your reset code"), el("div", { class: "code-chip" }, r.dev_code)]));
         else if (r.message) step2.appendChild(el("div", { class: "muted",
-          style: "font-size:var(--t-meta);line-height:1.5;margin:-2px 0 12px" }, r.message));
+          style: "font-size:var(--t-meta);line-height:1.5;margin:-2px 0 var(--sp-12)" }, r.message));
         step2.appendChild(field("Reset code", code));
         step2.appendChild(field("New password", UI.passWrap(np)));
         step2.appendChild(field("Confirm new password", UI.passWrap(cp)));
@@ -406,7 +406,7 @@ const AuthPage = (() => {
             mode = "login"; draw();
           } catch (e) { toast(e.message, "err"); }
         }}, [icon("lock", 17), "Set new password"]));
-        step2.appendChild(el("div", { class: "keep-note", style: "margin-top:12px" }, [
+        step2.appendChild(el("div", { class: "keep-note", style: "margin-top:var(--sp-12)" }, [
           el("button", { class: "linkbtn", type: "button", onclick: backToStep1 },
             "Ask for a new code"),
         ]));
@@ -633,7 +633,7 @@ const AuthPage = (() => {
 
         extra.appendChild(field("Search your stake or district", joinPicker.node));
         extra.appendChild(el("div", { class: "hint",
-          style: "margin:-6px 0 12px" }, "Searching sends a request the portal admin confirms. An invite code from your leader opens the seat right away."));
+          style: "margin:-6px 0 var(--sp-12)" }, "Searching sends a request the portal admin confirms. An invite code from your leader opens the seat right away."));
         extra.appendChild(field("Invite code (optional)", joinInvite));
         extra.appendChild(joinWard.node);
         extra.appendChild(joinRoleField);
@@ -661,7 +661,7 @@ const AuthPage = (() => {
           "The area it covers, shown in the directory so people pick the right one. "
           + "Exact meeting addresses belong to the gathering places you add after this."));
         extra.appendChild(el("div", { class: "hint",
-          style: "margin:2px 0 4px" }, "On a brand-new portal this first account becomes its admin and signs straight in."));
+          style: "margin:var(--sp-2) 0 var(--sp-4)" }, "On a brand-new portal this first account becomes its admin and signs straight in."));
       }
 
       // Only keys that apply to the chosen intent are sent.
