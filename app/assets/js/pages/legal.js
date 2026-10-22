@@ -117,7 +117,7 @@ const Legal = (() => {
       sub: `Version ${version() || ""} — nothing is recorded by reading it`,
       wide: true,
       body: el("div", {}, [
-        el("p", { class: "muted", style: "font-size:14px;line-height:1.7;margin-bottom:6px" }, d.intro),
+        el("p", { class: "muted", style: "font-size:var(--t-body);line-height:1.7;margin-bottom:6px" }, d.intro),
         ...d.sections.map(sectionNode),
         footNode(),
         el("div", { style: "margin-top:16px" }, [
@@ -213,7 +213,7 @@ const Legal = (() => {
            " was opened for you by the person who runs this portal, so these words were " +
            "never put to you.",
       body: el("div", {}, [
-        el("p", { class: "muted", style: "font-size:14px;line-height:1.7" },
+        el("p", { class: "muted", style: "font-size:var(--t-body);line-height:1.7" },
           "The portal holds a class record with your name on it. It is entitled to hold " +
           "that record because you say it may. Both documents are short, and the student " +
           "who built this portal wrote them."),
@@ -259,7 +259,7 @@ const LegalPage = (() => {
         el("a", { class: "chip" + (k === key ? " on" : ""), href: "#/" + k,
                   "aria-current": k === key ? "page" : null }, Legal.TITLES[k]))));
       doc.appendChild(el("p", { class: "muted",
-        style: "font-size:14.5px;line-height:1.75;margin:-2px 0 6px" }, d.intro));
+        style: "font-size:var(--t-body);line-height:1.75;margin:-2px 0 6px" }, d.intro));
       d.sections.forEach(s => doc.appendChild(Legal.sectionNode(s)));
       doc.appendChild(Legal.footNode());
     }
