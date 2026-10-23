@@ -69,7 +69,7 @@ const ClassesPage = (() => {
     return el("div", { class: "page-head",
         style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
-        el("h2", { class: "page-title" }, "Classes"),
+        el("h1", { class: "page-title" }, "Classes"),
         el("div", { class: "page-sub" },
           `${stake.name} · ${scope === "stake" ? "every class in the stake"
                           : stake.student ? "my enrolled classes" : "classes I teach"}`),
@@ -258,25 +258,23 @@ const ClassesPage = (() => {
         "Students scan this or type the six digits — the code changes on its own."),
     ]);
 
-    const m = modal({
+    /* The code rotates while the dialog is up, so it has to stop however the dialog is
+       left — the X, Escape, a tap on the backdrop, or one of the buttons. `onClose` is the
+       one place all four arrive at. */
+    let rot = 30, last = 0, closed = false;
+    function shutdown() { closed = true; clearInterval(liveTimer); }
+
+    modal({
       title: row.title,
       sub: `${fmtDate(row.date)} · ${fmtTime(row.time) || "TBA"} — check-in code`
            + (stakeName ? ` · ${stakeName}` : ""),
       body,
+      onClose: shutdown,
       actions: [
         { label: "Open class", kind: "secondary",
           onClick: close => { close(); location.hash = `#/course/${stakeId}/${row.course_id}`; } },
         { label: "Close", kind: "", onClick: close => close() },
       ],
-    });
-
-    let rot = 30, last = 0, closed = false;
-    function shutdown() { closed = true; clearInterval(liveTimer); }
-    const origClose = m.close;
-    m.close = () => { shutdown(); origClose(); };
-    m.panel.querySelectorAll(".mactions .btn").forEach(b => {
-      const fn = b.onclick;
-      b.onclick = () => { shutdown(); if (fn) fn(m.close); };
     });
 
     async function fetchLive() {
@@ -286,7 +284,8 @@ const ClassesPage = (() => {
         if (closed) return;
         rot = live.rotation_seconds || 30;
         codeEl.textContent = live.code;
-        QR.render(qrHost, JSON.stringify({ s: row.session_id, c: live.code }), 190);
+        QR.render(qrHost, JSON.stringify({ s: row.session_id, c: live.code }), 190,
+          "Check-in code for this class. The same code is written in digits beside it.");
         statusEl.innerHTML = live.open ? '<span class="pill green">check-in open</span>'
                                        : '<span class="pill grey">check-in closed</span>';
         if (!live.open) countEl.textContent = opensLabel(live);
