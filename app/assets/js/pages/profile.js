@@ -15,7 +15,7 @@ const ProfilePage = (() => {
     const user = API.getUser();
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
-      el("h2", { class: "page-title" }, "My profile"),
+      el("h1", { class: "page-title" }, "My profile"),
       el("div", { class: "page-sub" }, "The details used on rosters, badges and messages"),
     ]));
 
@@ -108,7 +108,7 @@ const ProfilePage = (() => {
     }
 
     const photoCard = el("div", { class: "card" }, [
-      el("div", { class: "sec-title", style: "margin-top:0" }, "Profile picture"),
+      el("h2", { class: "sec-title", style: "margin-top:0" }, "Profile picture"),
       el("div", { class: "photo-pick", style: "margin-top:var(--sp-12)" }, [
         faceSlot,
         el("div", { class: "photo-side" }, [
@@ -180,7 +180,7 @@ const ProfilePage = (() => {
           "“I'd rather not say” is an answer of its own — it is never read as a no."),
       ]),
       el("hr", { class: "hr" }),
-      el("div", { class: "sec-title", style: "margin-top:0" }, "Emergency contact"),
+      el("h2", { class: "sec-title", style: "margin-top:0" }, "Emergency contact"),
       el("div", { class: "row" }, [f("emergency_contact_name", "Name"), emergPhone.node]),
       el("button", { class: "btn", onclick: save }, [icon("check", 17), "Save changes"]),
     ]);
@@ -216,7 +216,7 @@ const ProfilePage = (() => {
     }
 
     /* ---------- where this account belongs ---------- */
-    const mcard = el("div", { class: "card" }, [el("h3", {}, "My stake and district memberships")]);
+    const mcard = el("div", { class: "card" }, [el("h2", {}, "My stake and district memberships")]);
     (user.memberships || []).forEach(m => mcard.appendChild(el("div", { class: "list-item" }, [
       avatar(user),
       el("div", { class: "grow" }, [
@@ -237,7 +237,7 @@ const ProfilePage = (() => {
     const newpw = el("input", { id: "pw-new", type: "password", autocomplete: "new-password" });
     const againpw = el("input", { id: "pw-again", type: "password", autocomplete: "new-password" });
     const pw = el("div", { class: "card" }, [
-      el("h3", {}, "Password"),
+      el("h2", {}, "Password"),
       el("div", { class: "field" }, [el("label", { for: "pw-old" }, "Current password"),
                                      UI.passWrap(oldpw)]),
       el("div", { class: "row" }, [
@@ -278,7 +278,7 @@ const ProfilePage = (() => {
   function rightsCard() {
     const body = el("div", {}, loading(2));
     const card = el("div", { class: "card" }, [
-      el("div", { class: "sec-title", style: "margin-top:var(--sp-22)" }, "My data and my rights"),
+      el("h2", { class: "sec-title", style: "margin-top:var(--sp-22)" }, "My data and my rights"),
       body,
     ]);
     API.get("/api/account/data").then(fill, e => {
@@ -476,9 +476,9 @@ const ProfilePage = (() => {
         wide: true,
         body: el("div", {}, [
           table(lines),
-          el("div", { class: "sec-title", style: "margin-top:var(--sp-18)" }, "Rows attached to the account"),
+          el("h2", { class: "sec-title", style: "margin-top:var(--sp-18)" }, "Rows attached to the account"),
           table(tally),
-          el("div", { class: "sec-title", style: "margin-top:var(--sp-18)" }, "Deliberately not collected"),
+          el("h2", { class: "sec-title", style: "margin-top:var(--sp-18)" }, "Deliberately not collected"),
           el("ul", { class: "not-held" }, (d.not_collected || []).map(x => el("li", {}, x))),
           el("div", { class: "hint", style: "margin-top:var(--sp-12)" },
             "Details of each row — which class, which date, who marked it — are in the " +
