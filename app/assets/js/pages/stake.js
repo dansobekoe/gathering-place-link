@@ -551,7 +551,7 @@ const StakePage = (() => {
     order.forEach(role => {
       const list = byRole[role];
       card.appendChild(el("div", { class: "meta muted",
-        style: "margin:var(--sp-8) 0 var(--sp-2);font-size:var(--t-fine);font-weight:700;letter-spacing:.06em;text-transform:uppercase",
+        style: "margin:var(--sp-8) 0 var(--sp-2);font-size:var(--t-fine);font-weight:600;letter-spacing:.06em;text-transform:uppercase",
         html: roleLabel(role) + " · " + list.length }));
       list.forEach(m => card.appendChild(el("div", { class: "list-item" }, [
         avatar({ full_name: m.name, photo_url: m.photo_url }),
@@ -775,7 +775,7 @@ const StakePage = (() => {
         }}, "Save")]),
     ]));
     card.appendChild(el("hr", { class: "hr" }));
-    card.appendChild(el("div", { class: "title", style: "font-weight:700;margin-bottom:var(--sp-8)" },
+    card.appendChild(el("div", { class: "title", style: "font-weight:600;margin-bottom:var(--sp-8)" },
       "Attendance check-in window"));
     card.appendChild(el("div", { class: "row", style: "align-items:flex-end" }, [
       el("div", { class: "field" }, [el("label", {}, "Grace (min before/after start)"), grace]),
