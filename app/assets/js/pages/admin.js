@@ -1403,7 +1403,7 @@ const AdminPage = (() => {
     return subcard("Password", d.is_super_admin ? "portal admin" : "", el("div", {}, [
       el("div", { class: "field" }, [el("label", {}, "New password"), UI.passWrap(pw)]),
       el("div", { class: "field inline" }, [must,
-        el("label", { style: "margin:0;font-weight:500" }, "Require a new one at next sign-in")]),
+        el("label", { style: "margin:0;font-weight:600" }, "Require a new one at next sign-in")]),
       el("div", { class: "row" }, [
         el("button", { class: "btn secondary sm", onclick: () => set(pw.value) }, "Set this password"),
         el("button", { class: "btn sm", onclick: () => set("") },
@@ -1824,7 +1824,7 @@ const AdminPage = (() => {
   function card(children) { return el("div", { class: "card" }, children); }
   function cardTitle(label, right) {
     return el("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:var(--sp-10);margin-bottom:var(--sp-4)" },
-      [el("div", { class: "title", style: "font-weight:700" }, label), right || null]);
+      [el("div", { class: "title", style: "font-weight:600" }, label), right || null]);
   }
   function subcard(title, note, node) {
     return el("div", { class: "subcard" }, [
