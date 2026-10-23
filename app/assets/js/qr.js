@@ -130,5 +130,122 @@ const QR = (() => {
     return stop;
   }
 
-  return { render, startScanner };
+  /* ---- the join code a leader hands out ----
+
+     The picture is only as good as the address behind it, so it is drawn from the address
+     the portal says it has — PUBLIC_BASE_URL, written by the launcher before the portal
+     starts — and never from the address in this browser's bar. A leader working on the
+     laptop itself would otherwise print a code that says 127.0.0.1 and opens on exactly
+     one machine. The server is asked every time the sheet opens: a tunnel restarted while
+     this page stayed open would leave a stale address in any kept copy of the answer. */
+  function warnLine(text) {
+    return UI.el("div", { class: "qr-warn" }, [UI.icon("alert", 18), UI.el("div", {}, text)]);
+  }
+
+  async function copyLink(text) {
+    try {
+      await navigator.clipboard.writeText(String(text));
+      UI.toast("Link copied");
+    } catch (e) {
+      UI.toast("Select the address above and copy it", "err");
+    }
+  }
+
+  function savePicture(plate, name) {
+    const canvas = plate.querySelector("canvas");
+    if (!canvas) return UI.toast("The code did not draw — close this and open it again", "err");
+    const slug = String(name || "gathering-place").toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `join-${slug || "place"}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    UI.toast("Picture saved");
+  }
+
+  /* The sheet itself, as a node, so a dialog can hold it beside the invite code it belongs
+     with. Everything that can go wrong is named here: a portal with no public address, a
+     stake that is not open, an answer that never came. */
+  function joinBlock(stakeId) {
+    const host = UI.el("div");
+    const working = () => { host.innerHTML = ""; host.appendChild(
+      UI.el("div", { class: "picker-empty" }, "Drawing the code…")); };
+    working();
+
+    function show(r) {
+      host.innerHTML = "";
+      if (!r.public) {
+        host.appendChild(warnLine("This portal has not been told its public address yet, "
+          + "so a code drawn here would only work on this computer. Start the portal with "
+          + "“Start Gathering Place” and open this again — or share the invite code, which "
+          + "still works."));
+        return;
+      }
+      if (r.status !== "active") {
+        host.appendChild(warnLine("This stake is not open yet, so a join link would turn "
+          + "people away at the front door. Approve it in Portal control first, then draw "
+          + "the code."));
+        return;
+      }
+      const plate = UI.el("div", { class: "qr-box qr-join" });
+      host.appendChild(plate);
+      try {
+        // Drawn at 320 and shown at 212 (see .qr-join): the picture a leader saves is
+        // sharp enough to print, and a projected code still reads at arm's length.
+        render(plate, r.url, 320, `Join ${r.stake_name} — QR code`);
+      } catch (e) {
+        plate.remove();
+        host.appendChild(warnLine("The code could not be drawn. Close this and open it "
+          + "again — the invite code still works."));
+        return;
+      }
+      host.appendChild(UI.el("div", { class: "qr-title" }, r.stake_name));
+      host.appendChild(UI.el("div", { class: "qr-url" }, r.url));
+      host.appendChild(UI.el("div", { class: "qr-btns" }, [
+        UI.el("button", { class: "btn secondary sm", type: "button",
+                          onclick: () => copyLink(r.url) }, "Copy link"),
+        UI.el("button", { class: "btn secondary sm", type: "button",
+                          onclick: () => savePicture(plate, r.stake_name) },
+              [UI.icon("download", 15), "Save picture"]),
+      ]));
+      host.appendChild(UI.el("div", { class: "qr-note" },
+        "Scanning opens the create-account screen with this stake already chosen. The "
+        + "portal admin still approves every account."));
+    }
+
+    function fail(e) {
+      host.innerHTML = "";
+      /* A portal started before this feature existed answers 404 here. Naming the
+         restart is the difference between "try again" and a fix the person can do. */
+      host.appendChild(warnLine(e && e.status === 404
+        ? "This portal has not been restarted since the join code was added, so it cannot "
+          + "draw one yet. Start it with “Start Gathering Place” and open this again — or "
+          + "share the invite code, which still works."
+        : (e && e.message) || "The join link could not be read."));
+      host.appendChild(UI.el("div", { class: "qr-btns", style: "margin-top:var(--sp-10)" }, [
+        UI.el("button", { class: "btn secondary sm", type: "button", onclick: ask },
+              "Try again"),
+      ]));
+    }
+    function ask() {
+      working();
+      API.get(`/api/stakes/${stakeId}/join-link`).then(show).catch(fail);
+    }
+    ask();
+    return host;
+  }
+
+  function joinModal(stake) {
+    UI.modal({
+      title: "Join QR · " + ((stake && stake.name) || "this place"),
+      sub: "Print it, or send it to the class. A phone camera opens registration with "
+           + "this stake already found.",
+      body: joinBlock(stake.id),
+      actions: [{ label: "Close", onClick: c => c() }],
+    });
+  }
+
+  return { render, startScanner, joinBlock, joinModal };
 })();
