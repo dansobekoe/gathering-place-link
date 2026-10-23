@@ -36,7 +36,7 @@ const Legal = (() => {
 
   // ---- one document, as nodes ----
   function sectionNode(s) {
-    const kids = [el("h3", {}, s.h)];
+    const kids = [el("h2", {}, s.h)];
     (s.p || []).forEach(p => kids.push(el("p", {}, p)));
     if (s.bullets && s.bullets.length) {
       kids.push(el("ul", {}, s.bullets.map(b => el("li", {}, b))));
@@ -160,7 +160,7 @@ const Legal = (() => {
       ])]);
 
     const node = el("div", { class: "consent" }, opts.compact ? [termsRow, ageRow] : [
-      el("div", { class: "sec-title", style: "margin-top:0" }, "Two words before anything is stored"),
+      el("h2", { class: "sec-title", style: "margin-top:0" }, "Two words before anything is stored"),
       termsRow, ageRow,
     ]);
     load().catch(() => { /* the links still say what they are; the dialog will retry */ });
@@ -250,7 +250,7 @@ const LegalPage = (() => {
     function paint(d) {
       doc.innerHTML = "";
       doc.appendChild(el("div", { class: "doc-head" }, [
-        el("h2", {}, d.title),
+        el("h1", {}, d.title),
         el("div", { class: "who" },
           [Legal.business().organisation, Legal.business().unit].filter(Boolean).join(" · ")),
       ]));
