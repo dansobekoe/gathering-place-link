@@ -20,35 +20,35 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/gabarito-600.woff2?v=101") format("woff2");
+  src: url("../fonts/gabarito-600.woff2?v=107") format("woff2");
 }
 @font-face {
   font-family: "Gabarito";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/gabarito-700.woff2?v=101") format("woff2");
+  src: url("../fonts/gabarito-700.woff2?v=107") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("../fonts/figtree-400.woff2?v=101") format("woff2");
+  src: url("../fonts/figtree-400.woff2?v=107") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/figtree-600.woff2?v=101") format("woff2");
+  src: url("../fonts/figtree-600.woff2?v=107") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/figtree-700.woff2?v=101") format("woff2");
+  src: url("../fonts/figtree-700.woff2?v=107") format("woff2");
 }
 
 :root {
@@ -663,6 +663,74 @@ tr:last-child td { border-bottom: none; }
 .linkbtn { background: none; border: none; color: var(--accent); font-size: var(--t-meta); font-weight: 600;
            padding: 0; }
 .linkbtn:hover { text-decoration: underline; }
+
+/* The five ways into an account. The form used to ask a dropdown, then a second dropdown
+   inside it; these are the same two questions with nothing hidden behind a tap. Four of
+   them join a place that exists and sit as a pair of pairs; the fifth starts one and
+   gets its own full-width line under an "or". */
+.choice-set { border: none; padding: 0; margin: 0 0 var(--sp-16); min-width: 0; }
+.choice-legend { padding: 0; margin-bottom: var(--sp-10); font-size: var(--t-meta);
+                 font-weight: 600; color: var(--ink); }
+.choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-8); }
+@media (max-width: 420px) { .choice-grid { grid-template-columns: 1fr; } }
+.choice { position: relative; display: block; cursor: pointer; }
+/* The radio is the control — it keeps the arrow keys, the focus ring's owner and the
+   screen reader's "2 of 5" — while the face beside it is the thing a person sees. */
+.choice input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0;
+                pointer-events: none; }
+.choice-face {
+  display: flex; align-items: flex-start; gap: var(--sp-10); height: 100%;
+  padding: var(--sp-10) var(--sp-12); border-radius: var(--r-md);
+  border: 1px solid var(--hairline); background: var(--surface);
+  transition: border-color .15s, background .15s, box-shadow .15s, transform .15s;
+}
+.choice:hover .choice-face { border-color: var(--accent-line); transform: translateY(-1px); }
+.choice input:checked + .choice-face {
+  border-color: var(--accent-line); background: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.choice input:focus-visible + .choice-face { outline: 2px solid var(--accent); outline-offset: 2px; }
+.choice-face .ic {
+  flex: none; width: 30px; height: 30px; border-radius: var(--r-sm); display: grid;
+  place-items: center; background: var(--accent-soft); color: var(--accent);
+  transition: background .15s, color .15s;
+}
+.choice input:checked + .choice-face .ic { background: var(--accent); color: var(--on-accent); }
+.choice-face .tx { min-width: 0; display: flex; flex-direction: column; gap: 1px; padding-top: 1px; }
+.choice-face b { font-family: var(--font-display); font-size: var(--t-ui); font-weight: 600;
+                 letter-spacing: -.005em; color: var(--ink); line-height: 1.25; }
+.choice-face small { font-size: var(--t-fine); color: var(--ink-2); line-height: 1.35; }
+.choice.wide { margin-top: var(--sp-8); }
+.choice.wide .choice-face { align-items: center; }
+.choice-or { display: flex; align-items: center; gap: var(--sp-10); margin-top: var(--sp-14);
+             font-size: var(--t-micro); font-weight: 600; letter-spacing: .08em;
+             text-transform: uppercase; color: var(--ink-fine); }
+.choice-or::before, .choice-or::after {
+  content: ""; flex: 1; height: 1px; background: var(--hairline);
+}
+
+/* The join sheet: the code, the address it carries, and the two ways to take it away.
+   The plate stays white in both settings — see .qr-box — and the picture is drawn at
+   320px and shown at 212px, so the PNG a leader saves is sharp enough to print. */
+/* Two classes, because .qr-box itself comes later in this sheet: the plate is centred as
+   a block of its own, so the address and the buttons underneath read as one card. */
+.qr-box.qr-join { display: block; width: max-content; margin: 0 auto;
+                  padding: var(--sp-14); }
+/* The vendor draws on a canvas and then shows the same picture as an img, so both are
+   sized: a rule naming only the canvas leaves the visible img at the 320 it was drawn
+   at, which pushes the sheet wider than the phone it is being read on. */
+.qr-join canvas, .qr-join img { width: 212px; height: 212px; }
+.qr-title { font-family: var(--font-display); font-weight: 700; font-size: var(--t-body);
+            text-align: center; margin-top: var(--sp-12); }
+.qr-url { margin: var(--sp-10) 0 var(--sp-12); padding: var(--sp-10) var(--sp-12);
+          border-radius: var(--r-sm); background: var(--track); font-size: var(--t-fine);
+          color: var(--ink-2); overflow-wrap: anywhere; text-align: center; }
+.qr-btns { display: flex; gap: var(--sp-8); justify-content: center; flex-wrap: wrap; }
+.qr-note { font-size: var(--t-fine); color: var(--ink-fine); line-height: 1.5;
+           margin-top: var(--sp-12); text-align: center; }
+.qr-warn { display: flex; gap: var(--sp-10); padding: var(--sp-12); border-radius: var(--r-md);
+           background: var(--warn-bg); font-size: var(--t-fine); line-height: 1.5; }
+.qr-warn svg { flex: none; color: var(--warn-ink); margin-top: 1px; }
 
 /* ---------------- Modal ---------------- */
 .modal-backdrop {
