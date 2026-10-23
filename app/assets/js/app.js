@@ -152,6 +152,38 @@ const App = (() => {
     shellCtx.user.consent_required = false;
   }
 
+  /* Every navigation is a new screen, and a screen has a name.
+     A single-page app swaps the page under a person without a page load, so nothing tells
+     them the screen changed: the tab keeps the old name, the keyboard is left on the link
+     that has just been replaced, and the window is still halfway down the last page.
+     This settles all three once the new page's heading exists — pages draw their heading
+     after their data arrives, so it waits a few frames — and leaves focus alone if the
+     page has already put it somewhere of its own. */
+  function newScreen(previous) {
+    /* `previous` is the screen that was on the page when the route began — captured by
+       the router before it mounted the new one, because a page may draw its shell in the
+       same tick. Comparing against what is there now would compare the new screen with
+       itself and never settle. */
+    let tries = 0;
+    const settle = () => {
+      const main = document.getElementById("main");
+      const h = main && main !== previous ? main.querySelector("h1") : null;
+      if (!h) {
+        if (++tries < 200) setTimeout(settle, 60);
+        return;
+      }
+      const name = (h.textContent || "").replace(/\s+/g, " ").trim();
+      document.title = name ? `${name} · Gathering Place` : "Gathering Place";
+      const active = document.activeElement;
+      if (!active || active === document.body || active === document.documentElement) {
+        h.setAttribute("tabindex", "-1");
+        h.focus({ preventScroll: true });
+        window.scrollTo(0, 0);
+      }
+    };
+    requestAnimationFrame(settle);
+  }
+
   async function route() {
     // Top-level `const` pages live in the global lexical scope, not on window,
     // so they must be probed with typeof. Any page with a background timer has
@@ -165,6 +197,8 @@ const App = (() => {
        running behind whatever comes next. */
     if (typeof CertDesign !== "undefined") CertDesign.stop();
 
+    /* The screen being left, read before anything mounts over it. */
+    const previous = document.getElementById("main");
     const hash = location.hash.replace(/^#\/?/, "");
     const [first, ...params] = hash.split("/");
     const name = first || "home";
@@ -172,12 +206,14 @@ const App = (() => {
     if (DOCS.includes(name)) {
       document.body.classList.remove("drawer-open");
       LegalPage.mount(root(), name);
+      newScreen(previous);
       return;
     }
     if (!API.getToken()) {
       document.body.classList.remove("drawer-open");
       if (location.hash !== "#/login") location.hash = "#/login";
       AuthPage.mount(root());
+      newScreen(previous);
       return;
     }
     try {
@@ -198,6 +234,7 @@ const App = (() => {
                 ["Try again"]),
         ]),
       ]));
+      newScreen(previous);
       return;
     }
     document.body.classList.remove("drawer-open");
@@ -221,7 +258,7 @@ const App = (() => {
     if (name === "admin" && !shellCtx.user.is_super_admin) { homeFor(); return; }
 
     const handler = routes[name];
-    if (handler) handler(params);
+    if (handler) { handler(params); newScreen(previous); }
     else homeFor();
   }
 
