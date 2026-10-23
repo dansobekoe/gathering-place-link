@@ -162,6 +162,32 @@ const UI = (() => {
     setTimeout(() => { host.textContent = msg; }, 40);
   }
 
+  /* One press, one write. A thumb can land twice before the answer comes back, and on
+     these screens the second press is a second row, a second letter, or a class moved
+     twice. While the work runs the control is disabled and says what it is doing; the
+     `finally` puts its words and its state back on every path, including a refusal, so
+     a failed request never leaves a dead button behind. A press that arrives while the
+     first is still working is not a press at all. */
+  async function act(btn, label, run) {
+    if (!btn) return undefined;
+    if (typeof label === "function") { run = label; label = ""; }
+    if (btn.dataset.busy === "1") return undefined;
+    const words = btn.innerHTML;
+    const was = btn.disabled;
+    btn.dataset.busy = "1";
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    if (label) btn.textContent = label;
+    try {
+      return await run();
+    } finally {
+      delete btn.dataset.busy;
+      btn.removeAttribute("aria-busy");
+      btn.disabled = was;
+      if (label) btn.innerHTML = words;
+    }
+  }
+
   // ---- day and night ----
   /* One switch, on every screen, for every role. The choice is written to this device
      and nowhere else: a colour preference tells the portal nothing a class record
@@ -697,7 +723,7 @@ const UI = (() => {
      return to whatever opened it — the pages only describe title/body/actions.
      `cls` adds a class to the panel itself, for the rare sheet that has to own the
      dialog's box layout rather than simply grow it (marking attendance, below). */
-  function modal({ title, sub, body, actions = [], wide = false, cls = "" }) {
+  function modal({ title, sub, body, actions = [], wide = false, cls = "", onClose }) {
     const backdrop = el("div", { class: "modal-backdrop" });
     const opener = document.activeElement;
     const panel = el("div", {
@@ -706,7 +732,7 @@ const UI = (() => {
       "aria-label": title, tabindex: "-1",
     }, [
       el("div", { class: "mhead" }, [
-        el("div", { class: "mt" }, [el("h3", {}, title), sub ? el("div", { class: "msub" }, sub) : null]),
+        el("div", { class: "mt" }, [el("h2", {}, title), sub ? el("div", { class: "msub" }, sub) : null]),
         el("button", { class: "btn ghost icon-only mclose", type: "button",
                        "aria-label": "Close", title: "Close", onclick: () => close() },
           [icon("x", 16)]),
@@ -714,10 +740,21 @@ const UI = (() => {
       body,
     ]);
     const actRow = el("div", { class: "mactions" });
-    actions.forEach(a => actRow.appendChild(el("button", {
-      class: "btn " + (a.kind || "secondary"), type: "button",
-      onclick: () => a.onClick && a.onClick(close),
-    }, a.label)));
+    actions.forEach(a => {
+      const btn = el("button", {
+        class: "btn " + (a.kind || "secondary"), type: "button",
+      }, a.label);
+      /* A dialog action is a write as often as it is a cancel. One that returns a promise
+         holds the button until it settles; Cancel closes at once and never waits. */
+      btn.addEventListener("click", () => {
+        let started;
+        try { started = a.onClick && a.onClick(close); }
+        catch (e) { toast(e.message || String(e), "err"); return; }
+        if (started && typeof started.then === "function")
+          act(btn, () => started).catch(e => toast(e.message || String(e), "err"));
+      });
+      actRow.appendChild(btn);
+    });
     if (actions.length) panel.appendChild(actRow);
     backdrop.appendChild(panel);
     backdrop.addEventListener("mousedown", e => { if (e.target === backdrop) close(); });
@@ -742,6 +779,12 @@ const UI = (() => {
     function close() {
       document.removeEventListener("keydown", onKey);
       backdrop.remove();
+      /* A dialog can hold something that outlives its box — a rotating code, a poll, a
+         timer. The X, Escape, a tap on the backdrop and an action button all land here,
+         so whoever made the dialog is told exactly once, whichever way it was left. */
+      if (typeof onClose === "function") {
+        try { onClose(); } catch (e) { /* a dialog must still go away if its hook fails */ }
+      }
       if (opener && document.contains(opener) && typeof opener.focus === "function") opener.focus();
     }
     return { close, panel };
@@ -829,8 +872,11 @@ const UI = (() => {
     root.appendChild(side);
 
     // ---------- topbar ----------
+    /* The button says whether the panel it owns is showing, and names that panel, so a
+       screen reader hears "Open menu, collapsed" and knows where the answer lives. */
     const burger = el("button", { class: "icon-btn menu-btn", "aria-label": "Open menu",
-      onclick: () => toggleDrawer(true) }, [icon("menu", 20)]);
+      "aria-expanded": "false", "aria-controls": "main-drawer",
+      onclick: e => toggleDrawer(true, e.currentTarget) }, [icon("menu", 20)]);
     const avatarBtn = el("button", { class: "avatar-btn", "aria-label": "Account menu" }, [
       avatar(user, "sm"),
       // the compact chip uses the person's own name; a couple's full title, which can
@@ -898,6 +944,10 @@ const UI = (() => {
       const onOutside = () => closeAccountMenu(false);
       const onKey = e => {
         if (e.key === "Escape") { e.stopPropagation(); closeAccountMenu(true); }
+        /* Tab is how a keyboard leaves a menu. The menu is put away after the browser has
+           moved the focus, not before: taking the focused row out of the page first would
+           drop focus to the top of the document instead of the next thing on the screen. */
+        else if (e.key === "Tab") setTimeout(() => closeAccountMenu(false), 0);
       };
       const onPage = () => closeAccountMenu(false);
       /* A menu you can only leave with a mouse is not a menu. The list takes its first row
@@ -940,7 +990,10 @@ const UI = (() => {
     }
 
     // ---------- drawer (small screens) ----------
-    const drawer = el("aside", { class: "drawer", "aria-label": "Main navigation" }, [
+    /* `inert` until it is opened: the panel sits off the left edge, and without it a
+       keyboard would walk through a menu nobody can see. It is lifted in toggleDrawer. */
+    const drawer = el("aside", { class: "drawer", id: "main-drawer",
+      "aria-label": "Main navigation", inert: "" }, [
       el("div", { class: "drawer-head" }, [
         el("img", { class: "brand-img", src: logoUrl(), alt: "Gathering Place" }),
         el("button", { class: "icon-btn", "aria-label": "Close menu",
@@ -971,7 +1024,9 @@ const UI = (() => {
     const dock = el("nav", { class: "dock", "aria-label": "Quick navigation" },
       primary.map(i => navLink(i, "dock")));
     if (hasMore) {
-      dock.appendChild(el("button", { class: "dock-item dock-more", onclick: () => toggleDrawer(true) },
+      dock.appendChild(el("button", { class: "dock-item dock-more", "aria-label": "More navigation",
+        "aria-expanded": "false", "aria-controls": "main-drawer",
+        onclick: e => toggleDrawer(true, e.currentTarget) },
         [icon("menu", 20), el("span", { class: "nav-label" }, "More")]));
     }
     root.appendChild(dock);
@@ -979,7 +1034,55 @@ const UI = (() => {
     root.appendChild(el("main", { class: "container", id: "main", tabindex: "-1" },
       [contentNode]));
 
-    function toggleDrawer(open) { document.body.classList.toggle("drawer-open", open); }
+    /* One drawer, two doors on a phone: the menu button in the bar and "More" in the dock.
+       Opening it takes the off-screen panel out of `inert`, says so on both buttons, and
+       puts the keyboard on its close control; closing it puts the panel back out of reach
+       and returns the keyboard to whichever door was used. Escape and Tab stay inside
+       while it is up, so the page behind is never edited by accident. */
+    let drawerOpener = null;
+    function drawerParts() {
+      return Array.from(drawer.querySelectorAll(
+        'a[href], button:not([disabled]), select:not([disabled]), input:not([disabled]),' +
+        ' [tabindex]:not([tabindex="-1"])')).filter(n => n.offsetParent !== null);
+    }
+    function toggleDrawer(open, opener) {
+      if (open) drawerOpener = opener || document.activeElement;
+      document.body.classList.toggle("drawer-open", open);
+      burger.setAttribute("aria-expanded", String(open));
+      const more = dock.querySelector(".dock-more");
+      if (more) more.setAttribute("aria-expanded", String(open));
+      if (open) {
+        drawer.removeAttribute("inert");
+        const first = drawer.querySelector("button, a[href], select");
+        if (first) requestAnimationFrame(() => first.focus({ preventScroll: true }));
+      } else {
+        drawer.setAttribute("inert", "");
+        if (drawerOpener && document.contains(drawerOpener))
+          drawerOpener.focus({ preventScroll: true });
+        drawerOpener = null;
+      }
+    }
+    /* Bound to the shell, not to the panel. Escape has to work from the moment the panel
+       opens, and its first frame is spent moving focus — a person who taps the menu button
+       twice in quick succession, or reaches for Escape before the focus lands, is still on
+       the button outside the drawer. The shell is the right scope: a dialog opens above it
+       with focus of its own and keeps its Escape to itself. */
+    root.addEventListener("keydown", e => {
+      if (!document.body.classList.contains("drawer-open")) return;
+      if (e.key === "Escape") { e.preventDefault(); toggleDrawer(false); return; }
+      if (e.key !== "Tab") return;
+      const parts = drawerParts();
+      if (!parts.length) return;
+      const first = parts[0], last = parts[parts.length - 1];
+      if (!drawer.contains(document.activeElement)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      } else if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    });
     // App.signOut is the one way out — it also clears the consent gate flag, so a
     // person who leaves without agreeing is asked again when they come back.
     function signOut() { App.signOut(); }
@@ -1043,7 +1146,7 @@ const UI = (() => {
   function barSection(title, items, opts) {
     const o = opts || {};
     const frag = el("div", { class: "chart-block" });
-    if (title) frag.appendChild(el("div", { class: "sec-title" }, title));
+    if (title) frag.appendChild(el("h2", { class: "sec-title" }, title));
     const card = el("div", { class: "card" });
     if (!items.length) card.appendChild(el("div", { class: "muted" }, o.emptyText || "No data yet."));
     items.forEach(i => {
@@ -1071,12 +1174,12 @@ const UI = (() => {
         el("span", { class: "muted" }, ` · ${Math.round(s.v / sum * 100)}%`),
       ]))));
     const frag = el("div", { class: "chart-block" });
-    if (title) frag.appendChild(el("div", { class: "sec-title" }, title));
+    if (title) frag.appendChild(el("h2", { class: "sec-title" }, title));
     frag.appendChild(card);
     return frag;
   }
 
-  return { el, render, esc, toast, announce, icon, logoUrl, shell, modal, confirm: confirmDialog,
+  return { el, render, esc, toast, announce, act, icon, logoUrl, shell, modal, confirm: confirmDialog,
            closeAccountMenu,
            empty, loading, WEEKDAYS, CATEGORIES, ROLES, roleLabel, fmtTime, fmtDate,
            ago, opensLabel, startsAt, hoursText,
