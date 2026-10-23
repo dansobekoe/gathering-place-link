@@ -33,16 +33,34 @@ const CoursesPage = (() => {
     const isStudent = !!st.student && Ctx.can(st, "enrol");
 
     const runsTerms = Ctx.can(st, "terms");   // who may create, edit and un-archive a term
-    const terms = await API.get(`/api/stakes/${stakeId}/terms`
-      + (runsTerms ? "?include_archived=true" : ""));
-    const activeTerm = terms.find(t => t.is_active && !t.is_archived) || terms[0];
 
+    /* The heading, the stake and what this person may do are all known the moment the
+       click lands, so the screen is painted before the term list is asked for. Waiting on
+       /terms first left the page blank for one whole round trip — the slowest screen in
+       the portal over a tunnel. The term, the tabs and the classes fill in underneath. */
     const content = el("div");
+    const sub = el("div", { class: "page-sub" }, st.name);
     content.appendChild(el("div", { class: "page-head" }, [
       el("h1", { class: "page-title" }, "Courses"),
-      el("div", { class: "page-sub" },
-        (activeTerm ? activeTerm.name : "No active term yet") + ` · ${st.name}`),
+      sub,
     ]));
+    const waiting = UI.loading(3);
+    content.appendChild(waiting);
+    const body = el("div");
+    UI.render(target, UI.shell("courses", content, App.nav(), ctx));
+
+    let terms;
+    try {
+      terms = await API.get(`/api/stakes/${stakeId}/terms`
+        + (runsTerms ? "?include_archived=true" : ""));
+    } catch (e) {
+      waiting.replaceWith(el("div", { class: "card" }, [
+        icon("alert", 22), el("div", { class: "muted" }, e.message)]));
+      return;
+    }
+    const activeTerm = terms.find(t => t.is_active && !t.is_archived) || terms[0];
+    sub.textContent = (activeTerm ? activeTerm.name : "No active term yet") + ` · ${st.name}`;
+    waiting.remove();
     if (!activeTerm) {
       /* Archived terms are excluded from the list a student sees, so this reads as an
          empty stake to them. To whoever runs the place it says what actually happened —
@@ -69,7 +87,6 @@ const CoursesPage = (() => {
     const tabBar = el("div", { class: "tabs" }, tabs.map(([key, label], i) =>
       el("button", { class: i === 0 ? "active" : "", onclick: e => setView(key, e) }, label)));
     content.appendChild(tabBar);
-    const body = el("div");
     content.appendChild(body);
 
     function setView(v, e) {
@@ -82,6 +99,19 @@ const CoursesPage = (() => {
       if (view === "browse") return drawBrowse();
       if (view === "classes") return drawClasses();
       return drawTimetable();
+    }
+
+    /* The tabs this person has not opened are read beside the first one, not after it.
+       A tap on Timetable or Classes then finds its answer already kept, exactly as a
+       repeat visit does, instead of a skeleton and another round trip. A warm read that
+       fails says nothing — nobody asked for that tab yet — and the tap itself asks again,
+       this time with a reason on screen if it fails. */
+    function warmTabs() {
+      const has = key => tabs.some(([k]) => k === key);
+      const quietly = p => p.catch(() => {});
+      if (view !== "browse" && has("browse")) quietly(fetchCatalogue());
+      if (view !== "classes" && has("classes")) quietly(API.get(classesUrl(false)));
+      if (view !== "timetable") quietly(API.get(timetableUrl()));
     }
 
     // ---------------------------------------------------------------- browse
@@ -118,18 +148,27 @@ const CoursesPage = (() => {
       await loadCatalogue();
     }
 
-    async function loadCatalogue() {
-      rowsHost.innerHTML = "";
-      rowsHost.appendChild(UI.loading(2));
+    function browseParams() {
       const params = new URLSearchParams({ term_id: String(activeTerm.id) });
       if (browse.q) params.set("q", browse.q);
       if (browse.category) params.set("category", browse.category);
       if (browse.mine) params.set("mine", "1");
+      return params;
+    }
+    /* The catalogue and this person's own enrolments answer from the class list alone,
+       so they are asked side by side: one round trip for the whole Browse tab. */
+    function fetchCatalogue() {
+      return Promise.all([
+        API.get(`/api/stakes/${stakeId}/catalogue?${browseParams()}`),
+        API.get(`/api/stakes/${stakeId}/students/${user.id}/enrollments`),
+      ]);
+    }
+
+    async function loadCatalogue() {
+      rowsHost.innerHTML = "";
+      rowsHost.appendChild(UI.loading(2));
       try {
-        const [data, mine] = await Promise.all([
-          API.get(`/api/stakes/${stakeId}/catalogue?${params}`),
-          API.get(`/api/stakes/${stakeId}/students/${user.id}/enrollments`),
-        ]);
+        const [data, mine] = await fetchCatalogue();
         myRows = {};
         mine.forEach(r => {
           if (r.status === "enrolled" || r.status === "waitlisted") myRows[r.course_id] = r;
@@ -224,13 +263,17 @@ const CoursesPage = (() => {
     let formHost = null;          // where a create-or-edit form opens
     let cardById = {};            // course id -> its card, so Edit opens under that class
 
+    function classesUrl(archived) {
+      const params = new URLSearchParams({ term_id: String(activeTerm.id) });
+      if (archived) params.set("include_archived", "true");
+      return `/api/stakes/${stakeId}/courses?${params}`;
+    }
+
     async function drawClasses() {
       body.innerHTML = "";
       body.appendChild(UI.loading(3));
       try {
-        const params = new URLSearchParams({ term_id: String(activeTerm.id) });
-        if (classView.archived) params.set("include_archived", "true");
-        const courses = await API.get(`/api/stakes/${stakeId}/courses?${params}`);
+        const courses = await API.get(classesUrl(classView.archived));
         body.innerHTML = "";
         cardById = {};
         formHost = el("div");
@@ -771,11 +814,15 @@ const CoursesPage = (() => {
     }
 
     // -------------------------------------------------------------- timetable
+    function timetableUrl() {
+      return `/api/stakes/${stakeId}/timetable?term_id=${activeTerm.id}`;
+    }
+
     async function drawTimetable() {
       body.innerHTML = "";
       body.appendChild(UI.loading(2));
       try {
-        const grid = await API.get(`/api/stakes/${stakeId}/timetable?term_id=${activeTerm.id}`);
+        const grid = await API.get(timetableUrl());
         const wrap = el("div", { class: "card" });
         let any = false;
         WEEKDAYS.forEach(day => {
@@ -798,8 +845,10 @@ const CoursesPage = (() => {
       } catch (e) { body.innerHTML = ""; toast(e.message, "err"); }
     }
 
+    /* The other tabs are read beside the first one, not after it: by the time this
+       screen is on the glass, their answers are usually already kept. */
+    warmTabs();
     await drawBody();
-    UI.render(target, UI.shell("courses", content, App.nav(), ctx));
   }
 
   return { mount };
