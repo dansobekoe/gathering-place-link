@@ -7,7 +7,8 @@
    GET /api/stakes/{id}/dashboard so a single load paints the whole screen. */
 const DashboardPage = (() => {
   const { el, icon, toast, shell, loading, empty, render, fmtDate, fmtTime,
-          tile, barSection, stackSection, statusPill, logAction, logDetail, coverTile } = UI;
+          tile, barSection, stackSection, statusPill, logAction, logDetail, coverTile,
+          seatRow } = UI;
 
   let filters = {};
   let filtersStake = null;
@@ -220,8 +221,7 @@ const DashboardPage = (() => {
             el("div", { class: "mc-text" }, [
               el("div", { class: "mc-name" }, r.title),
               el("div", { class: "mc-meta" }, `${r.category_label} · ${r.when}`),
-              el("div", { class: "mc-meta" }, `${r.room || "no room set"} · ${r.instructor}` +
-                (r.waitlisted ? ` · ${r.waitlisted} waitlisted` : "")),
+              el("div", { class: "mc-meta" }, `${r.room || "no room set"} · ${r.instructor}`),
             ]),
           ]),
           r.next_session_date ? el("span", { class: "mini-pill" },
@@ -245,6 +245,9 @@ const DashboardPage = (() => {
           ? ["You were in ", el("b", {}, `${r.my_present} of ${r.my_marks}`),
              " sessions marked here."]
           : "No roster has been taken in this class yet."),
+        // The plate ends on the room, not on the person: one mark per seat, filled
+        // as the class fills. The same row opens the class page behind "Class".
+        seatRow(r.enrolled, r.capacity, r.waitlisted),
       ]));
     });
     return wrap;
