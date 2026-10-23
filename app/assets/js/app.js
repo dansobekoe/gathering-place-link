@@ -221,6 +221,14 @@ const App = (() => {
     }
     if (!API.getToken()) {
       document.body.classList.remove("drawer-open");
+      /* A join link is the one address that gets past the front door — that is the whole
+         point of the QR a leader prints. It opens the registration form with the place it
+         names already found; every other address still goes to sign-in. */
+      if (first === "join") {
+        AuthPage.mount(root(), { joinStake: Number(params[0]) || null, signup: true });
+        newScreen(previous);
+        return;
+      }
       if (location.hash !== "#/login") location.hash = "#/login";
       AuthPage.mount(root());
       newScreen(previous);
