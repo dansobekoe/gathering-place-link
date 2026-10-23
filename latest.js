@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://retro-imaging-childhood-display.trycloudflare.com","updated_at":"2026-10-23T17:57:08Z"};
+window.GATHERING_PLACE = {"url":"https://seats-distributor-cheats-carries.trycloudflare.com","updated_at":"2026-10-23T19:20:46Z"};
