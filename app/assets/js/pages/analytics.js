@@ -32,7 +32,7 @@ const AnalyticsPage = (() => {
     content.appendChild(el("div", { class: "page-head",
         style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
-        el("h2", { class: "page-title" }, "Analytics"),
+        el("h1", { class: "page-title" }, "Analytics"),
         el("div", { class: "page-sub" }, `${name} · attendance, enrolment and completion`),
       ]),
       actionsRow(stakes, stakeId, isAdmin),
@@ -50,7 +50,7 @@ const AnalyticsPage = (() => {
   async function mountOverview(target, ctx) {
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
-      el("h2", { class: "page-title" }, "Area overview"),
+      el("h1", { class: "page-title" }, "Area overview"),
       el("div", { class: "page-sub" }, "Every active stake at a glance — open one for its full report"),
     ]));
     content.appendChild(loading(2));
@@ -70,7 +70,7 @@ const AnalyticsPage = (() => {
       tile(rows.length, "Stakes"), tile(sum("students"), "Students"),
       tile(sum("enrolled"), "Enrolments"), tile(sum("certificates"), "Certificates"),
     ]));
-    wrap.appendChild(el("div", { class: "sec-title" }, "Stakes"));
+    wrap.appendChild(el("h2", { class: "sec-title" }, "Stakes"));
     const card = el("div", { class: "card" });
     rows.forEach(r => {
       const pct = parseInt(r.avg_attendance, 10) || 0;
@@ -92,9 +92,15 @@ const AnalyticsPage = (() => {
   function actionsRow(stakes, stakeId, isAdmin) {
     const row = el("div", { style: "display:flex;gap:var(--sp-8);align-items:center;flex-wrap:wrap" });
     if (stakes.length > 1 || isAdmin) {
-      const sel = el("select", { onchange: ev => {
-        location.hash = ev.target.value ? "#/analytics/" + ev.target.value : "#/analytics";
-      }}, [
+      /* The page title above already says "Analytics" and the name below repeats the
+         stake that is showing, so nothing visible reads as a caption for this control.
+         A screen reader needs the words the layout left out. */
+      const sel = el("select", {
+        "aria-label": "Stake to report on",
+        onchange: ev => {
+          location.hash = ev.target.value ? "#/analytics/" + ev.target.value : "#/analytics";
+        },
+      }, [
         isAdmin ? el("option", { value: "" }, "All stakes") : null,
         ...stakes.map(s => el("option", { value: s.id }, s.name)),
       ]);
