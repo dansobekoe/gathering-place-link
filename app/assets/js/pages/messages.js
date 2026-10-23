@@ -50,7 +50,7 @@ const MessagesPage = (() => {
     return el("div", { class: "page-head",
         style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
-        el("h2", { class: "page-title" }, "Messages"),
+        el("h1", { class: "page-title" }, "Messages"),
         el("div", { class: "page-sub" }, `${stake.name} · ${stake.label || ""}`),
         tabs,
       ]),
