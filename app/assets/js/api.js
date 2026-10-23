@@ -76,6 +76,31 @@ const API = (() => {
     return err;
   }
 
+  /* When an answer carries no words of its own — a proxy's error page, a blank 502 — the
+     portal still says what happened and what to do next. The status is read as a
+     situation, never printed as a number; the server's own sentence always wins when
+     there is one. */
+  function failure(status) {
+    if (status === 401)
+      return "Your sign-in has expired. Sign in again, then try once more.";
+    if (status === 403)
+      return "The portal did not allow that. If it should be allowed, ask the person who runs the portal.";
+    if (status === 404)
+      return "That is no longer in the portal. Refresh the page and check the list.";
+    if (status === 409)
+      return "Something changed while you were working on it. Refresh the page, check it, then try again.";
+    if (status === 413)
+      return "That file is bigger than the portal accepts. Choose a smaller copy.";
+    if (status === 422)
+      return "Some of those details need checking. Correct the marked fields and try again.";
+    if (status === 429)
+      return "Too many tries in a short time. Wait a minute, then try again.";
+    if (status >= 500)
+      return "The portal could not finish that. Wait a moment and try again; if it keeps "
+        + "happening, tell the person who runs the portal.";
+    return "The portal could not finish that. Refresh the page and try again.";
+  }
+
   /* Whether the portal can be reached at all, for the one screen that has to ask before
      the app is worth showing. On the portal's own address the answer is yes by
      definition — the page being read came from it. */
@@ -132,7 +157,30 @@ const API = (() => {
     });
   }
 
-  async function request(method, path, body, opts = {}) {
+  /* Two taps on one button issue the same write twice: the row, the letter, the move.
+     The second caller joins the answer already on its way instead of starting another.
+     Only writes are shared, and only ordinary answers — a raw response can be read once,
+     so a download or a printed sample must keep its own body. The key is cleared as soon
+     as the answer lands, which is what lets an intentional repeat go through once the
+     first attempt is over. */
+  const inFlight = new Map();
+  function request(method, path, body, opts = {}) {
+    if (method === "GET" || opts.raw) return send(method, path, body, opts);
+    let key;
+    try {
+      key = method + " " + path + " " + (body instanceof FormData ? "[form]"
+        : body === undefined ? "" : JSON.stringify(body));
+    } catch { return send(method, path, body, opts); }
+    const already = inFlight.get(key);
+    if (already) return already;
+    const shared = send(method, path, body, opts).finally(() => {
+      if (inFlight.get(key) === shared) inFlight.delete(key);
+    });
+    inFlight.set(key, shared);
+    return shared;
+  }
+
+  async function send(method, path, body, opts = {}) {
     const root = await portalBase();
     if (root === null) throw down(NO_ADDRESS);
 
@@ -160,7 +208,7 @@ const API = (() => {
     if (text) { try { data = JSON.parse(text); } catch { data = text; } }
 
     if (!res.ok) {
-      const msg = (data && (data.detail || data.message)) || ("Request failed (" + res.status + ")");
+      const msg = (data && (data.detail || data.message)) || failure(res.status);
       const err = new Error(typeof msg === "string" ? msg : readable(msg));
       err.status = res.status;
       throw err;
@@ -192,7 +240,7 @@ const API = (() => {
     async download(path, filename) {
       const res = await request("GET", path, undefined, { raw: true });
       if (!res.ok) {
-        let msg = "Request failed (" + res.status + ")";
+        let msg = failure(res.status);
         try {
           const j = await res.json();
           const raw = j.detail || j.message || msg;
