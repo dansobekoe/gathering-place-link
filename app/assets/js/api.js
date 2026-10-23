@@ -164,6 +164,9 @@ const API = (() => {
     /^\/api\/attendance\/sessions\/\d+\/live/,
     /^\/api\/attendance\/my-badge/,
     /^\/api\/stakes\/\d+\/sessions\/\d+\/attendance/,
+    /* The join link is built from today's tunnel address. A page left open across a
+       restart would otherwise draw yesterday's code from a kept answer. */
+    /^\/api\/stakes\/\d+\/join-link/,
     /^\/api\/messages/,
     /^\/api\/notifications/,
     /^\/api\/admin\//,
