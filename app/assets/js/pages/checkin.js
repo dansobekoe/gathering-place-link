@@ -8,7 +8,7 @@ const CheckinPage = (() => {
     const user = API.getUser();
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
-      el("h2", { class: "page-title" }, "Check in"),
+      el("h1", { class: "page-title" }, "Check in"),
       el("div", { class: "page-sub" }, "Scan the code on the classroom screen, or show your badge."),
     ]));
 
@@ -83,7 +83,7 @@ const CheckinPage = (() => {
       "Turn on camera");
 
     // manual fallback
-    body.appendChild(el("div", { class: "sec-title" }, "Or enter the code manually"));
+    body.appendChild(el("h2", { class: "sec-title" }, "Or enter the code manually"));
     const mcard = el("div", { class: "card" });
     /* Which sitting the code belongs to. A class can meet twice on one day, so the date
        alone never picks one out — the hour does — and every sitting still to come is
@@ -188,7 +188,7 @@ const CheckinPage = (() => {
     body.appendChild(card);
     try {
       const b = await API.get("/api/attendance/my-badge");
-      QR.render(host, b.token, 210);
+      QR.render(host, b.token, 210, "Your personal check-in code");
 
       // Printable card is branded per stake, so ask which membership to print when there is more than one.
       const stakes = (await API.get("/api/my-stakes"))
