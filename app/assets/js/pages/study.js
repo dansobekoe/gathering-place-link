@@ -59,7 +59,7 @@ const StudyPage = (() => {
     stopTimer();
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
-      el("h2", { class: "page-title" }, "Study"),
+      el("h1", { class: "page-title" }, "Study"),
       el("div", { class: "page-sub" }, "The Gospel Library, one tap from the class you are preparing"),
     ]));
 
@@ -102,7 +102,7 @@ const StudyPage = (() => {
 
     content.appendChild(el("div", { class: "card" }, [
       el("div", { class: "btns", style: "justify-content:space-between;margin-bottom:var(--sp-10)" }, [
-        el("div", { class: "sec-title", style: "margin:0" }, "Reading"),
+        el("h2", { class: "sec-title", style: "margin:0" }, "Reading"),
         openTab,
       ]),
       chips,
@@ -112,7 +112,7 @@ const StudyPage = (() => {
 
     /* ---------- the honest paragraph ---------- */
     content.appendChild(el("div", { class: "card" }, [
-      el("div", { class: "sec-title", style: "margin-top:0" }, "About this window"),
+      el("h2", { class: "sec-title", style: "margin-top:0" }, "About this window"),
       el("p", { class: "muted", style: "font-size:var(--t-ui);line-height:1.7;margin:var(--sp-8) 0 0" },
         "What you see above is served by churchofjesuschrist.org, not by this portal. Your " +
         "browser speaks to them directly, so they see the request and may set their own " +
@@ -126,7 +126,7 @@ const StudyPage = (() => {
 
     /* ---------- the same places, outside the frame ---------- */
     content.appendChild(el("div", { class: "chart-block" }, [
-      el("div", { class: "sec-title" }, "Or open a section in its own tab"),
+      el("h2", { class: "sec-title" }, "Or open a section in its own tab"),
       el("div", { class: "study-links" }, SECTIONS.map(s => el("a", {
         href: BASE + s.path, target: "_blank", rel: "noopener noreferrer",
       }, [
