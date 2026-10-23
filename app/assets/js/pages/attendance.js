@@ -129,7 +129,47 @@ const AttendancePage = (() => {
     stop();
     const user = API.getUser();
     const f = await Ctx.flags(stakeId);          // president / missionary / admin / instructor
-    const course = await API.get(`/api/stakes/${stakeId}/courses/${courseId}`);
+
+    /* The way back and the shell cost nothing, so they are painted before the class is
+       asked for: a tap on a class lands on a screen at once, and the title, picture and
+       lists change in as the answer arrives. */
+    const frame = el("div");
+    frame.appendChild(el("div", { class: "page-head" }, [
+      el("a", { href: "#/classes", style: "font-size:var(--t-ui);font-weight:600" }, "← Classes"),
+      el("div", { class: "page-sub", style: "margin-top:var(--sp-6)" }, "Reading this class…"),
+    ]));
+    frame.appendChild(UI.loading(3));
+    UI.render(target, UI.shell("courses", frame, App.nav(), App.ctx()));
+
+    /* The three lists answer from the class id alone, so their questions go out with the
+       class's own rather than after it: one round trip where there used to be two. A
+       member's own view asks for none of them, so none is started for a member. */
+    function fetchLists() {
+      return Promise.all([
+        API.get(`/api/stakes/${stakeId}/courses/${courseId}/sessions`),
+        API.get(`/api/stakes/${stakeId}/courses/${courseId}/roster`),
+        API.get(`/api/stakes/${stakeId}/courses/${courseId}/attendance-summary`).catch(() => null),
+      ]).then(([sessions, roster, summary]) => ({ sessions, roster, summary }))
+        .catch(e => ({ failed: e }));
+    }
+    const listsP = f.student ? null : fetchLists();
+    /* A member's own view asks four questions of its own, all keyed to the class id. They
+       go out now, beside the class, so the member's page opens in one round trip too. */
+    const memberP = f.student
+      ? memberViewData(stakeId, courseId, user.id).catch(e => ({ failed: e }))
+      : null;
+
+    let course;
+    try {
+      course = await API.get(`/api/stakes/${stakeId}/courses/${courseId}`);
+    } catch (e) {
+      frame.innerHTML = "";
+      frame.appendChild(el("div", { class: "card" }, [
+        icon("alert", 22), el("div", { class: "muted" }, e.message),
+        el("div", { class: "meta", style: "margin-top:var(--sp-8)" },
+          "Go back to Classes and open the class again.")]));
+      return;
+    }
     /* Two different things, and the page must not blur them:
        `runs` fills in this class — its instructor, a service missionary, or the admin;
        `records` is what a leader holds — the papers, never the pen. */
@@ -142,7 +182,9 @@ const AttendancePage = (() => {
     /* A member who does not run the class has no use for a live code, a grade box or a
        badge sheet — and the working screen handed them every classmate's record on the way
        past. This is the page they actually came for. */
-    if (f.student && !isInstructor) return memberView(target, stakeId, courseId, course, f);
+    if (f.student && !isInstructor) {
+      return memberView(target, stakeId, courseId, course, f, memberP);
+    }
 
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
@@ -161,16 +203,25 @@ const AttendancePage = (() => {
     if (cover) content.appendChild(el("div", { class: "card" }, [cover]));
 
     // ---------- Sessions ----------
-    /* The three lists this page shows — sittings, roster, summary — answer from the class
-       id alone, so they are asked together. In turn, a phone on a tunnel waited out the
-       round trip for each one before the next even started. */
-    const [sessions, roster, summary] = await Promise.all([
-      API.get(`/api/stakes/${stakeId}/courses/${courseId}/sessions`),
-      API.get(`/api/stakes/${stakeId}/courses/${courseId}/roster`),
-      API.get(`/api/stakes/${stakeId}/courses/${courseId}/attendance-summary`).catch(() => null),
-    ]);
-    if (canManage) content.appendChild(liveSection(sessions));
-    content.appendChild(el("h2", { class: "sec-title", style: canManage ? "" : "margin-top:0" }, "Sessions"));
+    /* The class, its picture and the buttons that change it are known as soon as the course
+       answer lands, so the page is painted here and the three lists fill in below it. Those
+       lists were already asked for alongside the class, so this wait is usually nothing. */
+    const lists = el("div");
+    lists.appendChild(UI.loading(3));
+    content.appendChild(lists);
+    UI.render(target, UI.shell("courses", content, App.nav(), App.ctx()));
+
+    const packed = listsP || await fetchLists();
+    if (packed.failed) {
+      lists.innerHTML = "";
+      lists.appendChild(el("div", { class: "card" }, [
+        icon("alert", 22), el("div", { class: "muted" }, packed.failed.message)]));
+      return;
+    }
+    const { sessions, roster, summary } = packed;
+    lists.innerHTML = "";
+    if (canManage) lists.appendChild(liveSection(sessions));
+    lists.appendChild(el("h2", { class: "sec-title", style: canManage ? "" : "margin-top:0" }, "Sessions"));
     const scard = el("div", { class: "card" });
     if (!sessions.length) scard.appendChild(empty("No sittings booked yet — build them from the weekly schedule, or book one by hand.", "calendar"));
     sessions.forEach(s => {
@@ -222,10 +273,10 @@ const AttendancePage = (() => {
           [icon("plus", 15), sessions.length ? "Book another sitting" : "Book a sitting"]),
       ]));
     }
-    content.appendChild(scard);
+    lists.appendChild(scard);
 
     // ---------- Roster ----------
-    content.appendChild(el("h2", { class: "sec-title" }, "Roster"));
+    lists.appendChild(el("h2", { class: "sec-title" }, "Roster"));
     const rcard = el("div", { class: "card" });
     if (!roster.length) rcard.appendChild(empty("No students enrolled yet.", "users"));
     roster.forEach(r => {
@@ -302,11 +353,11 @@ const AttendancePage = (() => {
       rcard.appendChild(el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-10)" },
         "Documents carry this stake's branding. Badge sheets are CR80 cards (54 × 85.6 mm), nine to an A4 page."));
     }
-    content.appendChild(rcard);
+    lists.appendChild(rcard);
 
     // ---------- Summary ----------
     if (summary && summary.completed_sessions > 0) {
-      content.appendChild(el("h2", { class: "sec-title" }, "Attendance summary"));
+      lists.appendChild(el("h2", { class: "sec-title" }, "Attendance summary"));
       const c2 = el("div", { class: "card" });
       const table = el("table");
       table.innerHTML = "<thead><tr><th>Student</th><th>Present</th><th>Rate</th></tr></thead>";
@@ -318,10 +369,8 @@ const AttendancePage = (() => {
       ])));
       table.appendChild(tb);
       c2.appendChild(table);
-      content.appendChild(c2);
+      lists.appendChild(c2);
     }
-
-    UI.render(target, UI.shell("courses", content, App.nav(), App.ctx()));
 
     // ---------- live QR check-in ----------
     function liveSection(sessions) {
@@ -788,14 +837,25 @@ const AttendancePage = (() => {
      who else is coming. Every line below is a ClassSession, an Enrollment or an Attendance
      row — this portal keeps no lesson, material, event or announcement record to fill a
      picture with, so nothing here is standing in for one. */
-  async function memberView(target, stakeId, courseId, course, f) {
-    const user = API.getUser();
-    const [sessions, myEnrolments, history, roster] = await Promise.all([
+  /* Everything a member's view of a class is built from, all keyed to the class id.
+     Shared so the questions can leave with the class's own rather than after it. */
+  function memberViewData(stakeId, courseId, userId) {
+    return Promise.all([
       API.get(`/api/stakes/${stakeId}/courses/${courseId}/sessions`),
-      API.get(`/api/stakes/${stakeId}/students/${user.id}/enrollments`),
+      API.get(`/api/stakes/${stakeId}/students/${userId}/enrollments`),
       API.get("/api/attendance/my-history").catch(() => ({ history: [], rollup: [] })),
       API.get(`/api/stakes/${stakeId}/courses/${courseId}/roster`),
     ]);
+  }
+
+  async function memberView(target, stakeId, courseId, course, f, ready) {
+    const user = API.getUser();
+    /* `ready` is the set already asked for beside the class. If that pass did not arrive
+       — a member who also teaches, or a dropped connection — the same four are asked
+       here, and this time a failure is shown rather than swallowed. */
+    let set = ready ? await ready : null;
+    if (!set || set.failed) set = await memberViewData(stakeId, courseId, user.id);
+    const [sessions, myEnrolments, history, roster] = set;
     const seat = myEnrolments.find(r => r.course_id === courseId
       && (r.status === "enrolled" || r.status === "waitlisted")) || null;
     const myMarks = history.history.filter(h => h.course_id === courseId);
