@@ -1,12 +1,19 @@
 /* QR helpers: render (qrcodejs) + camera scan (jsQR). No build step. */
 const QR = (() => {
-  function render(host, text, size = 190) {
+  /* The drawn code is a picture with no words of its own, and the vendor leaves its
+     <img> without a description. `label` names it for a screen reader in words that say
+     what it is for, because "qr-code-9f2c" — its data — is not an answer. */
+  function render(host, text, size = 190, label = "QR code") {
     host.innerHTML = "";
     new QRCode(host, {                       // eslint-disable-line no-new
       text, width: size, height: size,
       colorDark: "#0f172a", colorLight: "#ffffff",
       correctLevel: QRCode.CorrectLevel.M,
     });
+    host.setAttribute("role", "img");
+    host.setAttribute("aria-label", label);
+    const img = host.querySelector("img");
+    if (img) img.alt = "";
   }
 
   /* The decoder is a quarter of a megabyte and the check-in camera is the only thing
