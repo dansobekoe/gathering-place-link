@@ -147,7 +147,7 @@ const AttendancePage = (() => {
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
       el("a", { href: "#/classes", style: "font-size:var(--t-ui);font-weight:600" }, "← Classes"),
-      el("h2", { class: "page-title", style: "margin-top:var(--sp-6)" }, course.title),
+      el("h1", { class: "page-title", style: "margin-top:var(--sp-6)" }, course.title),
       el("div", { class: "page-sub" },
         `${course.gathering_place_name || ""} · ${course.enrolled_count}/${course.capacity} enrolled` +
         (course.instructor_name ? ` · ${course.instructor_name}` : "")),
@@ -170,7 +170,7 @@ const AttendancePage = (() => {
       API.get(`/api/stakes/${stakeId}/courses/${courseId}/attendance-summary`).catch(() => null),
     ]);
     if (canManage) content.appendChild(liveSection(sessions));
-    content.appendChild(el("div", { class: "sec-title", style: canManage ? "" : "margin-top:0" }, "Sessions"));
+    content.appendChild(el("h2", { class: "sec-title", style: canManage ? "" : "margin-top:0" }, "Sessions"));
     const scard = el("div", { class: "card" });
     if (!sessions.length) scard.appendChild(empty("No sittings booked yet — build them from the weekly schedule, or book one by hand.", "calendar"));
     sessions.forEach(s => {
@@ -206,17 +206,18 @@ const AttendancePage = (() => {
     if (canManage) {
       scard.appendChild(el("hr", { class: "hr" }));
       scard.appendChild(el("div", { class: "actions" }, [
-        el("button", { class: "btn secondary sm", onclick: async () => {
-          try {
-            const r = await API.post(`/api/stakes/${stakeId}/courses/${courseId}/sessions/generate`);
-            toast(r.created
-              ? `${r.created} sitting${r.created === 1 ? "" : "s"} booked` +
-                (r.skipped ? ` · ${r.skipped} kept their own time` : "")
-              : "Every date in this schedule is already booked");
-            mount(target, stakeId, courseId);
-          }
-          catch (e) { toast(e.message, "err"); }
-        } }, [icon("refresh", 15), "Generate from weekly schedule"]),
+        el("button", { class: "btn secondary sm",
+          onclick: e => UI.act(e.currentTarget, "Booking…", async () => {
+            try {
+              const r = await API.post(`/api/stakes/${stakeId}/courses/${courseId}/sessions/generate`);
+              toast(r.created
+                ? `${r.created} sitting${r.created === 1 ? "" : "s"} booked` +
+                  (r.skipped ? ` · ${r.skipped} kept their own time` : "")
+                : "Every date in this schedule is already booked");
+              mount(target, stakeId, courseId);
+            }
+            catch (e) { toast(e.message, "err"); }
+          }) }, [icon("refresh", 15), "Generate from weekly schedule"]),
         el("button", { class: "btn secondary sm", onclick: () => sittingModal(null) },
           [icon("plus", 15), sessions.length ? "Book another sitting" : "Book a sitting"]),
       ]));
@@ -224,7 +225,7 @@ const AttendancePage = (() => {
     content.appendChild(scard);
 
     // ---------- Roster ----------
-    content.appendChild(el("div", { class: "sec-title" }, "Roster"));
+    content.appendChild(el("h2", { class: "sec-title" }, "Roster"));
     const rcard = el("div", { class: "card" });
     if (!roster.length) rcard.appendChild(empty("No students enrolled yet.", "users"));
     roster.forEach(r => {
@@ -287,7 +288,7 @@ const AttendancePage = (() => {
     }
     if (records) {
       rcard.appendChild(el("hr", { class: "hr" }));
-      rcard.appendChild(el("div", { class: "sec-title", style: "margin:0 0 var(--sp-10)" }, "Documents & exports"));
+      rcard.appendChild(el("h2", { class: "sec-title", style: "margin:0 0 var(--sp-10)" }, "Documents & exports"));
       rcard.appendChild(el("div", { class: "actions" }, [
         dlBtn("Roster (PDF)", "print", `/api/stakes/${stakeId}/courses/${courseId}/roster.pdf`,
           `roster-course-${courseId}.pdf`),
@@ -305,7 +306,7 @@ const AttendancePage = (() => {
 
     // ---------- Summary ----------
     if (summary && summary.completed_sessions > 0) {
-      content.appendChild(el("div", { class: "sec-title" }, "Attendance summary"));
+      content.appendChild(el("h2", { class: "sec-title" }, "Attendance summary"));
       const c2 = el("div", { class: "card" });
       const table = el("table");
       table.innerHTML = "<thead><tr><th>Student</th><th>Present</th><th>Rate</th></tr></thead>";
@@ -325,7 +326,7 @@ const AttendancePage = (() => {
     // ---------- live QR check-in ----------
     function liveSection(sessions) {
       const wrap = el("div");
-      wrap.appendChild(el("div", { class: "sec-title", style: "margin-top:0" }, "Live check-in"));
+      wrap.appendChild(el("h2", { class: "sec-title", style: "margin-top:0" }, "Live check-in"));
       const card = el("div", { class: "card" });
       const candidates = sessions.filter(s => s.status !== "cancelled");
       if (!candidates.length) {
@@ -350,7 +351,8 @@ const AttendancePage = (() => {
           const live = await API.get(`/api/attendance/sessions/${sel.value}/live`);
           rot = live.rotation_seconds || 30;
           codeEl.textContent = live.code;
-          QR.render(qrHost, JSON.stringify({ s: +sel.value, c: live.code }), 190);
+          QR.render(qrHost, JSON.stringify({ s: +sel.value, c: live.code }), 190,
+            "Check-in code for this session. The same code is written in digits beside it.");
           statusEl.innerHTML = live.open
             ? '<span class="pill green">check-in open</span>'
             : '<span class="pill grey">check-in closed</span>';
@@ -845,7 +847,7 @@ const AttendancePage = (() => {
     if (cover) hero.appendChild(cover);
     hero.appendChild(el("div", { class: "cd-top" }, [
       el("div", { class: "nu-kind" }, UI.CATEGORIES[course.category] || course.category || ""),
-      el("h2", { class: "cd-title" }, course.title),
+      el("h1", { class: "cd-title" }, course.title),
       course.description ? el("div", { class: "cd-desc" }, course.description) : null,
     ]));
     if (skills.length) {
@@ -894,7 +896,7 @@ const AttendancePage = (() => {
       heldCount, booked.length, meetsToday));
 
     // ---------------- sessions ----------------
-    content.appendChild(el("div", { class: "sec-title" }, "Sessions"));
+    content.appendChild(el("h2", { class: "sec-title" }, "Sessions"));
     const scard = el("div", { class: "card" });
     if (!sessions.length) {
       scard.appendChild(empty("No sitting has been booked for this class yet — your teacher "
@@ -925,7 +927,7 @@ const AttendancePage = (() => {
 
     // ---------------- classmates ----------------
     const others = roster.filter(r => r.student_id !== user.id && r.status === "enrolled");
-    content.appendChild(el("div", { class: "sec-title" }, "Who is in this class"));
+    content.appendChild(el("h2", { class: "sec-title" }, "Who is in this class"));
     const pcards = el("div", { class: "card" });
     if (!others.length) {
       pcards.appendChild(empty("No one else is on this class list yet.", "users"));
@@ -937,7 +939,7 @@ const AttendancePage = (() => {
     content.appendChild(pcards);
 
     // ---------------- messages ----------------
-    content.appendChild(el("div", { class: "sec-title" }, "Keep the conversation going"));
+    content.appendChild(el("h2", { class: "sec-title" }, "Keep the conversation going"));
     const mcard = el("div", { class: "card" });
     mcard.appendChild(el("div", { class: "cd-copy" },
       "Notices about this class arrive in Messages. A member writes to an instructor "
