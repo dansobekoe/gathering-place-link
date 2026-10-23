@@ -17,7 +17,7 @@ const StakePage = (() => {
     if (!stakes.length) {
       const content = el("div");
       content.appendChild(el("div", { class: "page-head" }, [
-        el("h2", { class: "page-title" }, "My gathering places"),
+        el("h1", { class: "page-title" }, "My gathering places"),
       ]));
       const mine = await API.get("/api/my-stakes").catch(() => []);
       if (mine.some(s => s.stake_status === "pending_approval")) {
@@ -37,7 +37,7 @@ const StakePage = (() => {
       }
       const joinable = await API.get("/api/auth/stakes/joinable").catch(() => []);
       if (joinable.length) {
-        content.appendChild(el("div", { class: "sec-title" }, "Active places you can join"));
+        content.appendChild(el("h2", { class: "sec-title" }, "Active places you can join"));
         const c = el("div", { class: "card" });
         /* The code is not shown here on purpose — it is what a leader hands over, and
            printing every place's code on one screen would make it worthless. */
@@ -68,7 +68,7 @@ const StakePage = (() => {
     content.appendChild(el("div", { class: "page-head",
         style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
-        el("h2", { class: "page-title" }, dash.stake.name),
+        el("h1", { class: "page-title" }, dash.stake.name),
         el("div", { class: "page-sub" },
           `${word} · ${dash.active_term ? dash.active_term.name : "no active term"}` +
           (seesAll && !runs ? " · viewing only" : "")),
@@ -130,7 +130,7 @@ const StakePage = (() => {
 
   async function placesSection(stakeId, runs, places) {
     const wrap = el("div");
-    wrap.appendChild(el("div", { class: "sec-title" }, "Gathering places & rooms"));
+    wrap.appendChild(el("h2", { class: "sec-title" }, "Gathering places & rooms"));
     const card = el("div", { class: "card" });
     if (!places.length) card.appendChild(empty(runs ? "No gathering places yet — add your first below."
                                                     : "No gathering places have been registered yet.", "pin"));
@@ -145,13 +145,15 @@ const StakePage = (() => {
         runs ? el("button", { class: "btn secondary sm", onclick: () => addRoom(stakeId, p.id) },
           [icon("plus", 15), "Room"]) : null,
         runs && p.is_active ? el("button", { class: "btn ghost icon-only",
-          title: "Archive " + p.name, onclick: () => archivePlace(stakeId, p) },
+          title: "Archive " + p.name,
+          onclick: e => UI.act(e.currentTarget, () => archivePlace(stakeId, p)) },
           [icon("trash", 15)]) : null,
         /* An archived place used to leave the operator with nothing to press at all: the
            row said "(inactive)" and stayed that way for good. Archiving is a pause, so the
            way back has to sit on the same row. */
         runs && !p.is_active ? el("button", { class: "btn secondary sm",
-          onclick: () => reopenPlace(stakeId, p) }, [icon("refresh", 15), "Bring back"]) : null,
+          onclick: e => UI.act(e.currentTarget, () => reopenPlace(stakeId, p)) },
+          [icon("refresh", 15), "Bring back"]) : null,
       ]));
       /* Rooms are listed rather than named in one line, because a room typed with the
          wrong name is the one thing here that can still be taken out completely — and
@@ -169,7 +171,8 @@ const StakePage = (() => {
           ]),
           runs ? el("button", { class: "btn ghost icon-only",
             title: (r.classes ? "What is booked in " : "Remove ") + r.name,
-            onclick: () => removeRoom(stakeId, p, r) }, [icon("trash", 15)]) : null,
+            onclick: e => UI.act(e.currentTarget, () => removeRoom(stakeId, p, r)) },
+            [icon("trash", 15)]) : null,
         ]));
       }
     }
@@ -181,13 +184,14 @@ const StakePage = (() => {
       el("div", { class: "field", style: "flex:2" }, [el("label", {}, "Add a gathering place"), name]),
       el("div", { class: "field", style: "flex:2" }, [el("label", {}, "Address"), addr]),
       el("div", { class: "field", style: "flex:0 0 auto;display:flex;align-items:flex-end" }, [
-        el("button", { class: "btn sm", style: "height:42px", onclick: async () => {
-          if (!name.value) return toast("Enter a place name", "err");
-          try { await API.post(`/api/stakes/${stakeId}/places`,
-            { name: name.value, address: addr.value, place_type: "physical" });
-            toast("Gathering place added"); refresh(stakeId); }
-          catch (e) { toast(e.message, "err"); }
-        }}, [icon("plus", 15), "Add"])]),
+        el("button", { class: "btn sm", style: "height:42px",
+          onclick: e => UI.act(e.currentTarget, "Adding…", async () => {
+            if (!name.value) return toast("Enter a place name", "err");
+            try { await API.post(`/api/stakes/${stakeId}/places`,
+              { name: name.value, address: addr.value, place_type: "physical" });
+              toast("Gathering place added"); refresh(stakeId); }
+            catch (e) { toast(e.message, "err"); }
+          })}, [icon("plus", 15), "Add"])]),
     ]));
     wrap.appendChild(card);
     return wrap;
@@ -243,18 +247,19 @@ const StakePage = (() => {
        is the second half, and deleting the ones that never held anything is the third. */
     const others = el("select", { disabled: "true" });
     others.appendChild(el("option", { value: "" }, "Loading the rooms…"));
-    const move = el("button", { class: "btn sm", disabled: true, onclick: async () => {
-      if (!others.value) return toast("Choose the room to move them into", "err");
-      try {
-        const did = await API.post(`/api/stakes/${stakeId}/rooms/${r.id}/rebook`
-          + `?to_room_id=${others.value}`);
-        toast(`${did.moved} class${did.moved === 1 ? "" : "es"} moved to ${did.to_room}`);
-        UI.announce(`Every class in ${r.name} has been moved to ${did.to_room}. `
-          + `${r.name} can now be removed.`);
-        close();
-        refresh(stakeId);
-      } catch (e) { toast(e.message, "err"); }
-    } }, [icon("refresh", 15), "Move them all"]);
+    const move = el("button", { class: "btn sm", disabled: true,
+      onclick: e => UI.act(e.currentTarget, "Moving…", async () => {
+        if (!others.value) return toast("Choose the room to move them into", "err");
+        try {
+          const did = await API.post(`/api/stakes/${stakeId}/rooms/${r.id}/rebook`
+            + `?to_room_id=${others.value}`);
+          toast(`${did.moved} class${did.moved === 1 ? "" : "es"} moved to ${did.to_room}`);
+          UI.announce(`Every class in ${r.name} has been moved to ${did.to_room}. `
+            + `${r.name} can now be removed.`);
+          close();
+          refresh(stakeId);
+        } catch (e) { toast(e.message, "err"); }
+      }) }, [icon("refresh", 15), "Move them all"]);
     const list = el("div", {}, held.map(b => el("div", { class: "list-item sub" }, [
       el("div", { class: "grow" }, [
         el("div", { class: "title" }, b.title),
@@ -267,19 +272,20 @@ const StakePage = (() => {
             : " · its roster and the attendance taken in it name this room, so it can "
               + "only be moved")),
       ]),
-      b.can_erase ? el("button", { class: "btn danger sm", onclick: async () => {
-        const ok = await UI.confirm(
-          `Delete "${b.title}" for good? Nothing was ever taken in it, so no record is `
-          + `lost — and ${r.name} loses one class holding it.`,
-          { danger: true, okLabel: "Delete", title: `Delete "${b.title}"?` });
-        if (!ok) return;
-        try {
-          await API.del(`/api/stakes/${stakeId}/courses/${b.id}/erase`);
-          toast(`"${b.title}" deleted`);
-          close();
-          refresh(stakeId);
-        } catch (e) { toast(e.message, "err"); }
-      } }, [icon("trash", 15), "Delete"])
+      b.can_erase ? el("button", { class: "btn danger sm",
+        onclick: e => UI.act(e.currentTarget, "Deleting…", async () => {
+          const ok = await UI.confirm(
+            `Delete "${b.title}" for good? Nothing was ever taken in it, so no record is `
+            + `lost — and ${r.name} loses one class holding it.`,
+            { danger: true, okLabel: "Delete", title: `Delete "${b.title}"?` });
+          if (!ok) return;
+          try {
+            await API.del(`/api/stakes/${stakeId}/courses/${b.id}/erase`);
+            toast(`"${b.title}" deleted`);
+            close();
+            refresh(stakeId);
+          } catch (e) { toast(e.message, "err"); }
+        }) }, [icon("trash", 15), "Delete"])
         : el("span", { class: "pill grey" }, "move only"),
     ])));
     const { close } = UI.modal({
@@ -361,7 +367,7 @@ const StakePage = (() => {
     split();
 
     const wrap = el("div");
-    wrap.appendChild(el("div", { class: "sec-title" }, "Academic terms"));
+    wrap.appendChild(el("h2", { class: "sec-title" }, "Academic terms"));
     const card = el("div", { class: "card" });
     const list = el("div");
     card.appendChild(list);
@@ -430,16 +436,21 @@ const StakePage = (() => {
       const tstart = el("input", { type: "date" });
       const tend = el("input", { type: "date" });
       card.appendChild(el("hr", { class: "hr" }));
-      card.appendChild(el("label", {}, "New term"));
-      card.appendChild(tname);
-      card.appendChild(el("div", { class: "row", style: "margin-top:var(--sp-8)" }, [tstart, tend]));
-      card.appendChild(el("button", { class: "btn", style: "margin-top:var(--sp-10)", onclick: async () => {
-        if (!tname.value || !tstart.value || !tend.value) return toast("Fill in the term name and dates", "err");
-        try { await API.post(`/api/stakes/${stakeId}/terms`,
-          { name: tname.value, start_date: tstart.value, end_date: tend.value });
-          toast("Term created — it is the current term now"); reload(); }
-        catch (e) { toast(e.message, "err"); }
-      }}, [icon("plus", 16), "Create term"]));
+      card.appendChild(el("h2", { class: "sec-title", style: "margin-top:0" }, "New term"));
+      card.appendChild(el("div", {}, [el("label", {}, "Term name"), tname]));
+      card.appendChild(el("div", { class: "row", style: "margin-top:var(--sp-8)" }, [
+        el("div", {}, [el("label", {}, "First day"), tstart]),
+        el("div", {}, [el("label", {}, "Last day"), tend]),
+      ]));
+      card.appendChild(el("button", { class: "btn", style: "margin-top:var(--sp-10)",
+        onclick: e => UI.act(e.currentTarget, "Creating…", async () => {
+          if (!tname.value || !tstart.value || !tend.value)
+            return toast("Fill in the term name and dates", "err");
+          try { await API.post(`/api/stakes/${stakeId}/terms`,
+            { name: tname.value, start_date: tstart.value, end_date: tend.value });
+            toast("Term created — it is the current term now"); reload(); }
+          catch (e) { toast(e.message, "err"); }
+        })}, [icon("plus", 16), "Create term"]));
     }
     wrap.appendChild(card);
     return wrap;
@@ -536,7 +547,7 @@ const StakePage = (() => {
 
   async function peopleSection(stakeId, paper, writes) {
     const wrap = el("div");
-    wrap.appendChild(el("div", { class: "sec-title" }, "People"));
+    wrap.appendChild(el("h2", { class: "sec-title" }, "People"));
     const members = await API.get(`/api/stakes/${stakeId}/members`);
     const card = el("div", { class: "card" });
     const byRole = {};
@@ -567,11 +578,15 @@ const StakePage = (() => {
             recipient_name: m.name }) }, [icon("send", 15)]) : null,
         paper && role !== "stake_president"
           ? el("button", { class: "btn ghost icon-only", title: "Remove from this place",
-              onclick: async () => {
-              const ok = await UI.confirm(`Remove ${m.name} from this stake?`, { danger: true, okLabel: "Remove" });
-              if (!ok) return;
-              await API.del(`/api/stakes/${stakeId}/members/${m.user_id}`); toast("Removed"); refresh(stakeId);
-            }}, [icon("trash", 15)]) : null,
+              onclick: e => UI.act(e.currentTarget, async () => {
+                const ok = await UI.confirm(`Remove ${m.name} from this stake?`,
+                  { danger: true, okLabel: "Remove" });
+                if (!ok) return;
+                try {
+                  await API.del(`/api/stakes/${stakeId}/members/${m.user_id}`);
+                  toast("Removed"); refresh(stakeId);
+                } catch (e) { toast(e.message, "err"); }
+              })}, [icon("trash", 15)]) : null,
       ])));
     });
     if (!order.length) card.appendChild(empty(
@@ -580,14 +595,17 @@ const StakePage = (() => {
       card.appendChild(el("hr", { class: "hr" }));
       card.appendChild(el("div", { class: "meta muted", style: "font-size:var(--t-ui)" },
         "Add someone who already has an account, by email:"));
-      const aemail = el("input", { type: "email", placeholder: "person@example.org" });
-      const arole = el("select", {}, GROUPS.map(r => el("option", { value: r }, roleLabel(r))));
+      const aemail = el("input", { type: "email", placeholder: "person@example.org",
+        "aria-label": "Email address of the person to add" });
+      const arole = el("select", { "aria-label": "What they will be at this gathering place" },
+        GROUPS.map(r => el("option", { value: r }, roleLabel(r))));
       card.appendChild(el("div", { class: "row", style: "margin-top:var(--sp-8)" }, [aemail, arole,
-        el("button", { class: "btn sm", style: "align-self:flex-end;height:42px", onclick: async () => {
-          try { await API.post(`/api/stakes/${stakeId}/members?email=${encodeURIComponent(aemail.value)}&role=${arole.value}`);
-            toast("Member added"); refresh(stakeId); }
-          catch (e) { toast(e.message, "err"); }
-        }}, [icon("userplus", 15), "Add"])]));
+        el("button", { class: "btn sm", style: "align-self:flex-end;height:42px",
+          onclick: e => UI.act(e.currentTarget, "Adding…", async () => {
+            try { await API.post(`/api/stakes/${stakeId}/members?email=${encodeURIComponent(aemail.value)}&role=${arole.value}`);
+              toast("Member added"); refresh(stakeId); }
+            catch (e) { toast(e.message, "err"); }
+          })}, [icon("userplus", 15), "Add"])]));
     }
     wrap.appendChild(card);
     return wrap;
@@ -605,7 +623,7 @@ const StakePage = (() => {
      merged, because their records name it. */
   async function wardsSection(stakeId, word) {
     const wrap = el("div");
-    wrap.appendChild(el("div", { class: "sec-title" }, "Wards & branches"));
+    wrap.appendChild(el("h2", { class: "sec-title" }, "Wards & branches"));
     const card = el("div", { class: "card" });
     const list = el("div");
     card.appendChild(list);
@@ -632,7 +650,8 @@ const StakePage = (() => {
            explains itself in the row above, rather than leaving a missing button to guess. */
         w.can_erase ? el("button", { class: "btn ghost icon-only",
           title: "Remove " + w.name + " from the list",
-          onclick: () => removeWard(stakeId, w, reload) }, [icon("trash", 15)]) : null,
+          onclick: e => UI.act(e.currentTarget, () => removeWard(stakeId, w, reload)) },
+          [icon("trash", 15)]) : null,
       ]);
     }
 
@@ -665,13 +684,13 @@ const StakePage = (() => {
       + "the name instead of typing it:"));
     card.appendChild(el("div", { class: "row", style: "margin-top:var(--sp-8)" }, [wname,
       el("button", { class: "btn sm", style: "align-self:flex-end;height:42px",
-        onclick: async () => {
+        onclick: e => UI.act(e.currentTarget, "Adding…", async () => {
           if (!wname.value.trim()) return toast("A ward needs a name", "err");
           try {
             await API.post(`/api/stakes/${stakeId}/wards`, { name: wname.value.trim() });
             toast("Ward added"); wname.value = ""; reload();
           } catch (e) { toast(e.message, "err"); }
-        }}, [icon("plus", 15), "Add"])]));
+        })}, [icon("plus", 15), "Add"])]));
     wrap.appendChild(card);
     return wrap;
   }
@@ -742,7 +761,7 @@ const StakePage = (() => {
 
   function settingsSection(stakeId, stake, paper) {
     const wrap = el("div");
-    wrap.appendChild(el("div", { class: "sec-title" }, "Invite & settings"));
+    wrap.appendChild(el("h2", { class: "sec-title" }, "Invite & settings"));
     const card = el("div", { class: "card" });
     card.appendChild(el("div", { class: "list-item" }, [
       el("div", { class: "grow" }, [
@@ -753,10 +772,13 @@ const StakePage = (() => {
         stake.invite_code || "—"),
     ]));
     if (paper) {
-      card.appendChild(el("button", { class: "btn ghost sm", onclick: async () => {
-        const r = await API.post(`/api/stakes/${stakeId}/invite-code/regenerate`);
-        toast("New invite code: " + r.invite_code); refresh(stakeId);
-      }}, [icon("refresh", 15), "Regenerate code"]));
+      card.appendChild(el("button", { class: "btn ghost sm",
+        onclick: e => UI.act(e.currentTarget, "Regenerating…", async () => {
+          try {
+            const r = await API.post(`/api/stakes/${stakeId}/invite-code/regenerate`);
+            toast("New invite code: " + r.invite_code); refresh(stakeId);
+          } catch (e) { toast(e.message, "err"); }
+        })}, [icon("refresh", 15), "Regenerate code"]));
     }
     const color = el("input", { type: "color", value: stake.color || stake.branding_color || "#085088",
       style: "height:42px;padding:var(--sp-4)" });
@@ -769,10 +791,14 @@ const StakePage = (() => {
     card.appendChild(el("div", { class: "row", style: "align-items:flex-end" }, [
       el("div", { class: "field", style: "flex:0 0 auto" }, [el("label", {}, "Branding color"), color]),
       el("div", { class: "field", style: "flex:0 0 auto" }, [
-        el("button", { class: "btn secondary sm", style: "height:42px", onclick: async () => {
-          await API.patch(`/api/stakes/${stakeId}/settings`, { branding_color: color.value });
-          toast("Branding saved");
-        }}, "Save")]),
+        el("button", { class: "btn secondary sm", style: "height:42px",
+          onclick: e => UI.act(e.currentTarget, "Saving…", async () => {
+            try {
+              await API.patch(`/api/stakes/${stakeId}/settings`,
+                { branding_color: color.value });
+              toast("Branding saved");
+            } catch (e) { toast(e.message, "err"); }
+          })}, "Save")]),
     ]));
     card.appendChild(el("hr", { class: "hr" }));
     card.appendChild(el("div", { class: "title", style: "font-weight:600;margin-bottom:var(--sp-8)" },
@@ -781,13 +807,14 @@ const StakePage = (() => {
       el("div", { class: "field" }, [el("label", {}, "Grace (min before/after start)"), grace]),
       el("div", { class: "field" }, [el("label", {}, "Count as late after (min)"), lateAfter]),
       el("div", { class: "field", style: "flex:0 0 auto" }, [
-        el("button", { class: "btn secondary sm", style: "height:42px", onclick: async () => {
-          try {
-            await API.patch(`/api/stakes/${stakeId}/settings`, {
-              attendance_grace_minutes: +grace.value, late_after_minutes: +lateAfter.value });
-            toast("Check-in window saved");
-          } catch (e) { toast(e.message, "err"); }
-        }}, "Save")]),
+        el("button", { class: "btn secondary sm", style: "height:42px",
+          onclick: e => UI.act(e.currentTarget, "Saving…", async () => {
+            try {
+              await API.patch(`/api/stakes/${stakeId}/settings`, {
+                attendance_grace_minutes: +grace.value, late_after_minutes: +lateAfter.value });
+              toast("Check-in window saved");
+            } catch (e) { toast(e.message, "err"); }
+          })}, "Save")]),
     ]));
     wrap.appendChild(card);
     return wrap;
@@ -803,7 +830,7 @@ const StakePage = (() => {
      navigation bar. */
   function certSection(stakeId, places, paper) {
     const wrap = el("div");
-    wrap.appendChild(el("div", { class: "sec-title" }, "Certificates"));
+    wrap.appendChild(el("h2", { class: "sec-title" }, "Certificates"));
     const card = el("div", { class: "card" });
     if (!places.length) card.appendChild(empty("No gathering places yet.", "pin"));
     for (const p of places) {
