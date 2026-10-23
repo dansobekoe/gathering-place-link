@@ -116,8 +116,17 @@ const Notify = (() => {
     const onOutside = ev => { if (!panel || panel.node.contains(ev.target)) return; close(false); };
     const onKey = e => { if (e.key === "Escape") { e.stopPropagation(); close(true); } };
     const onPage = () => close(false);
+    /* A mouse click closes the panel, and so should walking away from it with Tab. The
+       panel is a region, not a dialog — it does not lock the page up — so the honest
+       behaviour is to put it away when the keyboard has moved on, exactly as a click
+       outside does. The bell itself is exempt: its own click is what closes it. */
+    const onFocusIn = e => {
+      if (!panel || panel.node.contains(e.target) || panel.button === e.target) return;
+      close(false);
+    };
     document.addEventListener("click", onOutside);
     document.addEventListener("keydown", onKey);
+    document.addEventListener("focusin", onFocusIn);
     window.addEventListener("hashchange", onPage);
     // hung from the bell's own wrapper, so it lands under the mark that opened it on a wide
     // screen and spreads to the bar's full width on a phone (see .bell-panel)
@@ -125,6 +134,7 @@ const Notify = (() => {
     panel = { node, button: btn, all, detach: () => {
       document.removeEventListener("click", onOutside);
       document.removeEventListener("keydown", onKey);
+      document.removeEventListener("focusin", onFocusIn);
       window.removeEventListener("hashchange", onPage);
     } };
     drawList();
