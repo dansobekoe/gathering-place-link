@@ -19,10 +19,18 @@ const StakePage = (() => {
       content.appendChild(el("div", { class: "page-head" }, [
         el("h1", { class: "page-title" }, "My gathering places"),
       ]));
+      /* Painted before the two questions, so a person with no place yet still lands on
+         a screen rather than an empty one while the answers come. */
+      const lists = el("div");
+      lists.appendChild(UI.loading(2));
+      content.appendChild(lists);
+      UI.render(target, UI.shell("stake", content, App.nav(), ctx));
+
       const mine = await API.get("/api/my-stakes").catch(() => []);
+      lists.innerHTML = "";
       if (mine.some(s => s.stake_status === "pending_approval")) {
         const pend = mine.find(s => s.stake_status === "pending_approval");
-        content.appendChild(el("div", { class: "card" }, [
+        lists.appendChild(el("div", { class: "card" }, [
           el("div", { class: "list-item", style: "border:none" }, [
             el("div", { class: "grow" }, [
               el("div", { class: "title" }, pend.stake_name),
@@ -32,12 +40,12 @@ const StakePage = (() => {
           ]),
         ]));
       } else {
-        content.appendChild(el("div", { class: "card" },
+        lists.appendChild(el("div", { class: "card" },
           [empty("You haven't joined a stake or district yet. Use an invite code from your leader, or register a new one from the sign-up screen.", "users")]));
       }
       const joinable = await API.get("/api/auth/stakes/joinable").catch(() => []);
       if (joinable.length) {
-        content.appendChild(el("h2", { class: "sec-title" }, "Active places you can join"));
+        lists.appendChild(el("h2", { class: "sec-title" }, "Active places you can join"));
         const c = el("div", { class: "card" });
         /* The code is not shown here on purpose — it is what a leader hands over, and
            printing every place's code on one screen would make it worthless. */
@@ -48,9 +56,8 @@ const StakePage = (() => {
           ]),
           el("span", { class: "pill grey" }, s.org_kind),
         ])));
-        content.appendChild(c);
+        lists.appendChild(c);
       }
-      UI.render(target, UI.shell("stake", content, App.nav(), ctx));
       return;
     }
 
@@ -63,22 +70,42 @@ const StakePage = (() => {
     const paper = Ctx.can(cur, "settings");      // portal admin only: the paperwork
     const writes = Ctx.can(cur, "contacts");     // may reach people from a row
 
-    const dash = await API.get(`/api/stakes/${stakeId_}/dashboard`);
+    /* The name, the kind and this person's rights are already in the context the phone
+       holds, so the screen is painted before the dashboard is asked for. The counts, the
+       term and every section below fill in underneath — one round trip of blank screen
+       saved on a page a leader opens first. */
     const content = el("div");
+    const sub = el("div", { class: "page-sub" },
+      word + (seesAll && !runs ? " · viewing only" : ""));
     content.appendChild(el("div", { class: "page-head",
         style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
-        el("h1", { class: "page-title" }, dash.stake.name),
-        el("div", { class: "page-sub" },
-          `${word} · ${dash.active_term ? dash.active_term.name : "no active term"}` +
-          (seesAll && !runs ? " · viewing only" : "")),
+        el("h1", { class: "page-title" }, cur.name),
+        sub,
       ]),
       el("div", { class: "actions" }, [
         el("a", { class: "btn secondary sm", href: `#/analytics/${stakeId_}` },
           [icon("chart", 15), "Analytics"]),
       ]),
     ]));
-    content.appendChild(el("div", { class: "stat-grid" }, [
+    const lists = el("div");
+    lists.appendChild(UI.loading(3));
+    content.appendChild(lists);
+    UI.render(target, UI.shell("stake", content, App.nav(), ctx));
+
+    let dash;
+    try {
+      dash = await API.get(`/api/stakes/${stakeId_}/dashboard`);
+    } catch (e) {
+      lists.innerHTML = "";
+      lists.appendChild(el("div", { class: "card" }, [
+        icon("alert", 22), el("div", { class: "muted" }, e.message)]));
+      return;
+    }
+    sub.textContent = `${word} · ${dash.active_term ? dash.active_term.name : "no active term"}` +
+      (seesAll && !runs ? " · viewing only" : "");
+    lists.innerHTML = "";
+    lists.appendChild(el("div", { class: "stat-grid" }, [
       tile(dash.gathering_places, "Gathering places"),
       tile(dash.active_courses, "Courses"),
       tile(dash.active_enrollments, "Enrolled"),
@@ -86,7 +113,7 @@ const StakePage = (() => {
     ]));
 
     if (!seesAll) {
-      content.appendChild(el("div", { class: "card", style: "margin-top:var(--sp-16)" }, [
+      lists.appendChild(el("div", { class: "card", style: "margin-top:var(--sp-16)" }, [
         el("div", { class: "list-item", style: "border:none" }, [
           icon("pin", 20),
           el("div", { class: "grow", style: "margin-left:var(--sp-10)" }, [
@@ -96,14 +123,13 @@ const StakePage = (() => {
           ]),
         ]),
       ]));
-      UI.render(target, UI.shell("stake", content, App.nav(), ctx));
       return;
     }
 
     if (cur.status && cur.status !== "active") {
       /* The admin gets here from Portal control with a stake that is not open yet. Saying
          so is the point: the work below is real, and the doors it leads to are not. */
-      content.appendChild(el("div", { class: "card", style: "margin-top:var(--sp-16)" }, [
+      lists.appendChild(el("div", { class: "card", style: "margin-top:var(--sp-16)" }, [
         el("div", { class: "list-item", style: "border:none" }, [
           icon("alert", 20),
           el("div", { class: "grow", style: "margin-left:var(--sp-10)" }, [
@@ -118,14 +144,28 @@ const StakePage = (() => {
       ]));
     }
 
-    const places = await API.get(`/api/stakes/${stakeId_}/places`);
-    content.appendChild(await placesSection(stakeId_, runs, places));
-    content.appendChild(await termsSection(stakeId_, runs));
-    content.appendChild(await peopleSection(stakeId_, paper, writes));
-    content.appendChild(await wardsSection(stakeId_, word));
-    if (runs) content.appendChild(settingsSection(stakeId_, dash.stake, paper));
-    content.appendChild(certSection(stakeId_, places, paper));
-    UI.render(target, UI.shell("stake", content, App.nav(), ctx));
+    /* Each section asks the server for its own thing, so they are asked at once instead
+       of one after another: the page waits for the slowest answer, never their sum. */
+    const later = Promise.all([
+      termsSection(stakeId_, runs),
+      peopleSection(stakeId_, paper, writes),
+      wardsSection(stakeId_, word),
+    ]);
+    let places;
+    try {
+      places = await API.get(`/api/stakes/${stakeId_}/places`);
+    } catch (e) {
+      lists.appendChild(el("div", { class: "card" }, [
+        icon("alert", 22), el("div", { class: "muted" }, e.message)]));
+      return;
+    }
+    const [termsEl, peopleEl, wardsEl] = await later;
+    lists.appendChild(await placesSection(stakeId_, runs, places));
+    lists.appendChild(termsEl);
+    lists.appendChild(peopleEl);
+    lists.appendChild(wardsEl);
+    if (runs) lists.appendChild(settingsSection(stakeId_, dash.stake, paper));
+    lists.appendChild(certSection(stakeId_, places, paper));
   }
 
   async function placesSection(stakeId, runs, places) {
@@ -134,8 +174,12 @@ const StakePage = (() => {
     const card = el("div", { class: "card" });
     if (!places.length) card.appendChild(empty(runs ? "No gathering places yet — add your first below."
                                                     : "No gathering places have been registered yet.", "pin"));
+    /* One round trip per place, all side by side rather than one after the other. */
+    const roomsOf = new Map(await Promise.all(places.map(p =>
+      API.get(`/api/stakes/${stakeId}/places/${p.id}/rooms`)
+        .then(rooms => [p.id, rooms]).catch(() => [p.id, []]))));
     for (const p of places) {
-      const rooms = await API.get(`/api/stakes/${stakeId}/places/${p.id}/rooms`);
+      const rooms = roomsOf.get(p.id) || [];
       card.appendChild(el("div", { class: "list-item" }, [
         el("div", { class: "grow" }, [
           el("div", { class: "title" }, p.name + (p.is_active ? "" : " (inactive)")),
