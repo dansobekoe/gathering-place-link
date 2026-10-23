@@ -182,7 +182,7 @@ const CheckinPage = (() => {
       "Show this to your instructor to be scanned in."));
     const host = el("div", { class: "qr-box" });
     card.appendChild(host);
-    card.appendChild(el("div", { style: "font-weight:700;margin-top:var(--sp-10)" }, API.getUser().full_name));
+    card.appendChild(el("div", { style: "font-weight:600;margin-top:var(--sp-10)" }, API.getUser().full_name));
     const tools = el("div", { class: "actions", style: "margin-top:var(--sp-14);justify-content:center" });
     card.appendChild(tools);
     body.appendChild(card);
