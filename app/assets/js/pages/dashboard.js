@@ -50,7 +50,7 @@ const DashboardPage = (() => {
     return el("div", { class: "page-head",
         style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
-        el("h2", { class: "page-title" }, `Welcome, ${who}`),
+        el("h1", { class: "page-title" }, `Welcome, ${who}`),
         el("div", { class: "page-sub" },
           `${s.name} · ${s.label || UI.roleLabel(s.role)}` +
           (s.monitor ? ` · whole ${(s.kind || "stake").toLowerCase()}` : " · my classes")),
@@ -80,7 +80,7 @@ const DashboardPage = (() => {
     // ---------- needs attention ----------
     if (data.attention.length) {
       const card = el("div", { class: "card", style: "border-color:rgba(225,29,72,.32)" });
-      card.appendChild(el("div", { class: "sec-title", style: "color:#be123c;margin-bottom:var(--sp-8)" },
+      card.appendChild(el("h2", { class: "sec-title", style: "color:#be123c;margin-bottom:var(--sp-8)" },
         [icon("alert", 15), " Needs attendance"]));
       data.attention.forEach(a => card.appendChild(el("div", { class: "list-item" }, [
         el("div", { class: "grow" }, [
@@ -116,22 +116,22 @@ const DashboardPage = (() => {
     ]));
 
     // ---------- classes table ----------
-    wrap.appendChild(el("div", { class: "sec-title" }, monitors ? "Classes in view" : "My classes"));
+    wrap.appendChild(el("h2", { class: "sec-title" }, monitors ? "Classes in view" : "My classes"));
     wrap.appendChild(classesTable(data.courses, ctx));
 
     // ---------- people + upcoming ----------
     const two = el("div", { class: "stack-2" });
     const left = el("div");
-    left.appendChild(el("div", { class: "sec-title" },
+    left.appendChild(el("h2", { class: "sec-title" },
       monitors ? "People" : (stake.student ? "Classmates" : "My students")));
     left.appendChild(peopleTable(data.people, data.people_by_role, ctx));
     two.appendChild(left);
 
     const right = el("div");
-    right.appendChild(el("div", { class: "sec-title" }, "Next classes"));
+    right.appendChild(el("h2", { class: "sec-title" }, "Next classes"));
     right.appendChild(upcomingCard(data.upcoming, ctx));
     if (data.activity && data.activity.length) {
-      right.appendChild(el("div", { class: "sec-title" }, "Recent activity"));
+      right.appendChild(el("h2", { class: "sec-title" }, "Recent activity"));
       right.appendChild(activityCard(data.activity));
     }
     two.appendChild(right);
@@ -154,10 +154,10 @@ const DashboardPage = (() => {
     // on "My record".
     const next = nextUpCard(data, ctx);
     if (next) wrap.appendChild(next);
-    wrap.appendChild(el("div", { class: "sec-title" }, "My classes"));
+    wrap.appendChild(el("h2", { class: "sec-title" }, "My classes"));
     wrap.appendChild(myClasses(data.courses, ctx));
     wrap.appendChild(recordCard(data.mine));
-    wrap.appendChild(el("div", { class: "sec-title" }, "Classmates"));
+    wrap.appendChild(el("h2", { class: "sec-title" }, "Classmates"));
     wrap.appendChild(classmatesCard(data.people));
     return wrap;
   }
