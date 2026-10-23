@@ -6,9 +6,39 @@
    without joining it first. */
 const Ctx = (() => {
   const KEY = "gp_stake";
-  let state = null;          // { user, stakes, fetchedAt }
-  let pending = null;        // in-flight promise, so parallel mounts share one call
-  let unreadState = { total: 0, stakes: [], at: 0 };
+  /* What this tab worked out about the person, kept for the life of the tab so a reload
+     does not have to ask the portal again before it can draw anything. It is erased on
+     sign-out, because the next person to hold the phone is not the last one. */
+  const STORE = "gp_ctx";
+  const UNREAD_KEY = "gp_unread";
+  const KEEP_FOR = 12 * 60 * 60 * 1000;
+
+  /* Kept in the same storage as the sign-in it describes: a remembered device holds
+     both on disk, an unremembered one holds both in the tab. */
+  function shelf() {
+    try { return API.sessionStore(); } catch { return sessionStorage; }
+  }
+
+  function remembered() {
+    try {
+      const raw = JSON.parse(shelf().getItem(STORE) || "null");
+      if (!raw || !Array.isArray(raw.stakes) || !raw.at) return null;
+      if (Date.now() - raw.at > KEEP_FOR) return null;
+      return { user: API.getUser() || {}, stakes: raw.stakes,
+               joined: raw.joined || [], fetchedAt: raw.at };
+    } catch { return null; }
+  }
+  function rememberedUnread() {
+    try {
+      const raw = JSON.parse(shelf().getItem(UNREAD_KEY) || "null");
+      if (!raw || typeof raw.total !== "number" || !raw.at) return null;
+      if (Date.now() - raw.at > KEEP_FOR) return null;
+      return raw;
+    } catch { return null; }
+  }
+  let state = remembered();          // { user, stakes, fetchedAt }
+  let pending = null;                // in-flight promise, so parallel mounts share one call
+  let unreadState = rememberedUnread() || { total: 0, stakes: [], at: 0 };
 
   /* The same three tiers the server enforces (see deps.py):
      admin   — the portal admin, and only them: paperwork, who belongs, the invite code
@@ -40,12 +70,29 @@ const Ctx = (() => {
   };
 
   async function load(force) {
-    if (state && !force && Date.now() - state.fetchedAt < 60000) return state;
-    if (pending && !force) return pending;
+    if (force) return pull();
+    if (state) {
+      /* Answered at once, even when it is older than a minute: a click must never wait
+         for a question this screen already has an answer to. The same question is put
+         to the portal behind the screen, and the correction lands for the next visit. */
+      if (Date.now() - state.fetchedAt > 60000) pull().catch(() => { /* keep what we have */ });
+      return state;
+    }
+    return pull();
+  }
+
+  function pull() {
+    if (pending) return pending;
     pending = (async () => {
       try {
         const user = API.getUser() || {};
-        const mine = await API.get("/api/my-stakes");
+        /* Asked together, not one after the other. Each question costs the same half
+           second on a tunnel, and on an admin's account one of them used to wait for
+           the other to finish before it even started. */
+        const [mine, all] = await Promise.all([
+          API.get("/api/my-stakes"),
+          user.is_super_admin ? API.get("/api/admin/stakes") : Promise.resolve(null),
+        ]);
         const joined = mine
           .filter(s => s.stake_status === "active" && s.member_status === "active")
           .map(s => ({ ...roleFlags(s.role, false),
@@ -53,8 +100,7 @@ const Ctx = (() => {
                        label: s.label || "Stake", kind: s.org_kind || "stake",
                        pending: false }));
         let stakes = joined;
-        if (user.is_super_admin) {
-          const all = await API.get("/api/admin/stakes");
+        if (all) {
           /* Everything except a stake put away for good. A stake that is suspended, or
              still waiting to be approved, has to stay reachable: its places, rooms and
              terms are managed from these pages, and the one person who can put a
@@ -67,6 +113,9 @@ const Ctx = (() => {
             kind: s.org_kind || "stake", status: s.status, pending: false }));
         }
         state = { user, stakes, joined, fetchedAt: Date.now() };
+        try {
+          shelf().setItem(STORE, JSON.stringify({ stakes, joined, at: state.fetchedAt }));
+        } catch { /* a full tab still works for this visit */ }
         return state;
       } finally {
         // Never keep a failure. Left in place, every later call would be handed this same
@@ -82,12 +131,18 @@ const Ctx = (() => {
   }
 
   /* The stake this portal session is pointed at. Remembered per person so switching
-     a stake survives navigation, and validated so a deleted stake never strands us. */
-  async function stake(force) {
-    const s = await load(force);
-    if (!s.stakes.length) return null;
+     a stake survives navigation, and validated so a deleted stake never strands us.
+     The choice is worked out from a state already in hand, without a promise, so a
+     screen can be painted in the same tick a person taps. */
+  function stakeOf(s) {
+    if (!s || !s.stakes.length) return null;
     const saved = +(localStorage.getItem(KEY) || 0);
     return s.stakes.find(x => x.id === saved) || s.stakes[0];
+  }
+
+  async function stake(force) {
+    const s = await load(force);
+    return stakeOf(s);
   }
 
   function setStake(id) {
@@ -95,7 +150,11 @@ const Ctx = (() => {
   }
 
   function clear() { state = null; unreadState = { total: 0, stakes: [], at: 0 };
-    localStorage.removeItem(KEY); }
+    localStorage.removeItem(KEY);
+    [localStorage, sessionStorage].forEach(store => {
+      try { store.removeItem(STORE); store.removeItem(UNREAD_KEY); }
+      catch { /* nothing kept there */ }
+    }); }
 
   /* -------- permissions for the stake currently in view -------- */
   /* Flags for one stake by id — used by the older pages that still work from a
@@ -146,15 +205,22 @@ const Ctx = (() => {
     try {
       const r = await API.get("/api/messages/unread");
       unreadState = { total: r.total, stakes: r.stakes, at: Date.now() };
+      saveUnread();
     } catch { /* keep the last known count */ }
     return unreadState;
   }
+  function saveUnread() {
+    try { shelf().setItem(UNREAD_KEY, JSON.stringify(unreadState)); }
+    catch { /* a full tab still shows the count for this visit */ }
+  }
+  function unreadNow() { return unreadState; }
   function markRead(n) {
     unreadState.total = Math.max(0, unreadState.total - n);
     unreadState.at = Date.now();
+    saveUnread();
   }
-  function resetUnread() { unreadState = { total: 0, stakes: [], at: 0 }; }
+  function resetUnread() { unreadState = { total: 0, stakes: [], at: 0 }; saveUnread(); }
 
-  return { load, current, stake, setStake, clear, can, flags, unread, markRead, resetUnread,
-           ROLE_LABELS, roleFlags };
+  return { load, current, stake, stakeOf, setStake, clear, can, flags, unread, unreadNow,
+           markRead, resetUnread, ROLE_LABELS, roleFlags };
 })();
