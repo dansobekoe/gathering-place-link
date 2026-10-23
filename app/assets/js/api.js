@@ -22,7 +22,15 @@ const API = (() => {
   const NO_ANSWER = "The portal did not answer. It may have just been restarted and be "
     + "settling — wait a minute, then tap Try again.";
 
-  let base = PUBLISHED ? null : "";
+  /* The address a published copy worked out last time. Asking for it costs a file
+     read and a health question before the app can even draw its first screen; keeping
+     it for the life of the tab means a reload goes straight to the door. A name that
+     no longer answers is forgotten in `ready`, which asks the page again. */
+  const BASE_KEY = "gp_portal_base";
+  function savedBase() {
+    try { return PUBLISHED ? localStorage.getItem(BASE_KEY) : ""; } catch { return ""; }
+  }
+  let base = savedBase() || (PUBLISHED ? null : "");
   let looking = null;
 
   function readAddressFile() {
@@ -62,7 +70,10 @@ const API = (() => {
     if (!looking) {
       looking = readAddressFile().then((found) => {
         looking = null;
-        if (found) base = found;
+        if (found) {
+          base = found;
+          try { localStorage.setItem(BASE_KEY, found); } catch { /* a full tab is not a failure */ }
+        }
         return found;
       });
     }
@@ -105,18 +116,102 @@ const API = (() => {
      the app is worth showing. On the portal's own address the answer is yes by
      definition — the page being read came from it. */
   async function ready() {
-    const found = await portalBase();
-    if (found === null) return { open: false, base: "", why: NO_ADDRESS };
-    if (!PUBLISHED) return { open: true, base: found, why: "" };
-    // An address was published, but the laptop may have gone to sleep since. Asking one
-    // small question first is what lets the app say the portal did not answer, instead of
-    // showing a sign-in form that fails after someone has typed their password into it.
-    try {
-      if ((await fetch(found + "/api/health", { cache: "no-store" })).ok) {
-        return { open: true, base: found, why: "" };
-      }
-    } catch (networkError) { /* answered by nothing at all */ }
-    return { open: false, base: found, why: NO_ANSWER };
+    if (!PUBLISHED) {
+      const found = await portalBase();
+      return found === null ? { open: false, base: "", why: NO_ADDRESS }
+                            : { open: true, base: found, why: "" };
+    }
+    /* Published: the address may already be known from earlier in this tab, and a
+       remembered name costs one small question instead of a file read as well. */
+    let found = await portalBase();
+    if (found && await answers(found)) return { open: true, base: found, why: "" };
+    if (found) {
+      // That name is yesterday's tunnel. Forget it and ask the page where today's is.
+      base = null;
+      try { localStorage.removeItem(BASE_KEY); } catch { /* nothing to forget */ }
+      found = await portalBase();
+    }
+    if (found && await answers(found)) return { open: true, base: found, why: "" };
+    return { open: false, base: found || "", why: found ? NO_ANSWER : NO_ADDRESS };
+  }
+
+  async function answers(root) {
+    try { return (await fetch(root + "/api/health", { cache: "no-store" })).ok; }
+    catch (networkError) { return false; }
+  }
+
+  /* ---- what a click costs ----
+
+     Through the public address every question to the portal takes about half a second,
+     whatever it asks, because the answer travels out to Cloudflare and back to this
+     laptop. The laptop itself answers in single-digit milliseconds. So the cost of a
+     screen is the number of trips, and the cure is to stop paying for an answer this tab
+     already has.
+
+     A read is kept here for ten minutes and served the instant a screen asks for it; the
+     same question is put to the portal behind the screen and the newer answer replaces
+     the kept one, so the next visit carries the correction. Any successful write throws
+     the whole store away — the screen after a change must not be the screen from before
+     it. A handful of answers are never kept at all, because being a minute out of date
+     would make them wrong rather than merely old: a rotating code, a sitting's marks, the
+     unread count, the badge, messages, and the admin's shelves. */
+  const READ_FOR = 10 * 60 * 1000;
+  const READ_KEEP = 40;
+  const reads = new Map();
+  const refreshing = new Set();
+  const NEVER_KEEP = [
+    /^\/api\/auth\//,
+    /^\/api\/attendance\/sessions\/\d+\/live/,
+    /^\/api\/attendance\/my-badge/,
+    /^\/api\/stakes\/\d+\/sessions\/\d+\/attendance/,
+    /^\/api\/messages/,
+    /^\/api\/notifications/,
+    /^\/api\/admin\//,
+    /^\/api\/health/,
+  ];
+  /* The doors where a 401 is somebody's typo, not an ended session. */
+  const AUTH_DOORS = /^\/api\/auth\/(login|signup|forgot-password|reset-password|verify-email|resend-code)/;
+  function keepsRead(path) {
+    if (!getToken()) return false;
+    const asking = path.split("?")[0];
+    return !NEVER_KEEP.some(rule => rule.test(asking));
+  }
+  function remember(path, data) {
+    if (!keepsRead(path)) return;
+    // Re-inserting moves the entry to the young end, so the cap drops the coldest read.
+    reads.delete(path);
+    reads.set(path, { data, at: Date.now() });
+    while (reads.size > READ_KEEP) reads.delete(reads.keys().next().value);
+  }
+  function revalidate(path, opts) {
+    if (refreshing.has(path)) return;
+    refreshing.add(path);
+    send("GET", path, undefined, opts)
+      .then(data => remember(path, data))
+      .catch(err => { if (err && err.status === 401) authLost(); })
+      .finally(() => refreshing.delete(path));
+  }
+
+  /* Work in progress, for the thin line across the top of the screen. Counted rather than
+     flagged, because two screens can be loading at once and the line must stay up until
+     the last of them is done. */
+  let working = 0;
+  function busy(delta) {
+    working = Math.max(0, working + delta);
+    document.dispatchEvent(new CustomEvent("gp:busy", { detail: working }));
+  }
+
+  /* Whether the portal is answering at all, said once per outage rather than once per
+     request, and said again when it comes back. */
+  let linkDown = false;
+  function linkState(up, at) {
+    if (up === !linkDown) return;
+    linkDown = !up;
+    document.dispatchEvent(new CustomEvent("gp:link", { detail: { up, at } }));
+  }
+  function authLost() {
+    if (!getToken()) return;
+    document.dispatchEvent(new CustomEvent("gp:auth-lost"));
   }
 
   /* A picture the portal keeps is named by a path from its own root (/media/...), which
@@ -150,11 +245,22 @@ const API = (() => {
     store.setItem(USER_KEY, JSON.stringify(user));
   }
   function setUser(user) { current().setItem(USER_KEY, JSON.stringify(user)); }
+  /* The storage the session itself is in: a remembered device keeps the token on disk,
+     an unremembered one keeps everything in the tab. Anything worked out from the
+     session — the stakes, the unread count — belongs in the same place, so it lasts
+     exactly as long as the sign-in it describes. */
+  function sessionStore() {
+    try { return localStorage.getItem(TOKEN_KEY) ? localStorage : sessionStorage; }
+    catch { return sessionStorage; }
+  }
   function clear() {
     [localStorage, sessionStorage].forEach(store => {
       store.removeItem(TOKEN_KEY);
       store.removeItem(USER_KEY);
     });
+    /* Kept answers are the signed-in person's answers. Once the session is gone they
+       must go with it — a shared phone in a ward is not closed between people. */
+    reads.clear();
   }
 
   /* Two taps on one button issue the same write twice: the row, the letter, the move.
@@ -165,7 +271,7 @@ const API = (() => {
      first attempt is over. */
   const inFlight = new Map();
   function request(method, path, body, opts = {}) {
-    if (method === "GET" || opts.raw) return send(method, path, body, opts);
+    if (method === "GET" || opts.raw) return read(method, path, body, opts);
     let key;
     try {
       key = method + " " + path + " " + (body instanceof FormData ? "[form]"
@@ -180,7 +286,37 @@ const API = (() => {
     return shared;
   }
 
-  async function send(method, path, body, opts = {}) {
+  /* A read is answered from the kept copy the moment it is asked for; the portal is asked
+     behind it so the next visit is current. A copy older than ten minutes is not trusted
+     blind — the call goes out first, and the kept copy is only used if nothing answers. */
+  function read(method, path, body, opts) {
+    const ask = () => send(method, path, body, opts)
+      .then(data => { remember(path, data); return data; });
+    if (method !== "GET" || opts.raw || opts.fresh) return ask();
+    const kept = reads.get(path);
+    if (!kept) return ask();
+    if (Date.now() - kept.at < READ_FOR) {
+      revalidate(path, opts);
+      return Promise.resolve(kept.data);
+    }
+    return ask().catch(err => {
+      if (err && err.status === 0) {
+        linkState(false, kept.at);
+        return kept.data;
+      }
+      throw err;
+    });
+  }
+
+  /* Every question to the portal is counted while it is out, and the port of entry is
+     one function so that the count cannot drift. `sendNow` is the work; this wrapper is
+     what the thin line at the top of the screen is told about. */
+  function send(method, path, body, opts = {}) {
+    busy(1);
+    return sendNow(method, path, body, opts).finally(() => busy(-1));
+  }
+
+  async function sendNow(method, path, body, opts = {}) {
     const root = await portalBase();
     if (root === null) throw down(NO_ADDRESS);
 
@@ -195,9 +331,12 @@ const API = (() => {
         method, headers,
         body: body === undefined ? undefined : (body instanceof FormData ? body : JSON.stringify(body)),
       });
+      // An answer of any kind — even a refusal — proves the portal is reachable.
+      linkState(true);
     } catch (networkError) {
       // Nothing answered at all: the laptop is asleep, the tunnel has gone, or the
       // connection dropped. A raw TypeError from fetch would read as a fault in the app.
+      linkState(false);
       throw down(NO_ANSWER);
     }
 
@@ -208,11 +347,21 @@ const API = (() => {
     if (text) { try { data = JSON.parse(text); } catch { data = text; } }
 
     if (!res.ok) {
+      /* A token the portal no longer accepts is the end of this session, wherever it
+         was discovered. Signing in again is the only way forward, so the shell is told
+         once and every screen stops waiting to be the one that noticed. The sign-in
+         doors are the exception: there a 401 means "those details are wrong", not
+         "your session has ended". */
+      if (res.status === 401 && tok && !AUTH_DOORS.test(path)) authLost();
       const msg = (data && (data.detail || data.message)) || failure(res.status);
       const err = new Error(typeof msg === "string" ? msg : readable(msg));
       err.status = res.status;
       throw err;
     }
+    /* A change landed, so every kept answer describes a world that has moved on. One
+       clear is cheaper than working out which screens the change touched, and the next
+       visit then pays for exactly one fresh answer instead of carrying a stale one. */
+    if (method !== "GET") reads.clear();
     return data;
   }
 
@@ -230,7 +379,7 @@ const API = (() => {
   }
 
   return {
-    getToken, getUser, setSession, setUser, clear, ready, abs,
+    getToken, getUser, setSession, setUser, sessionStore, clear, ready, abs,
     get: (p, o) => request("GET", p, undefined, o),
     post: (p, b, o) => request("POST", p, b, o),
     patch: (p, b, o) => request("PATCH", p, b, o),
