@@ -815,6 +815,19 @@ const StakePage = (() => {
       el("span", { class: "pill blue", style: "font-size:var(--t-body);letter-spacing:.12em;padding:var(--sp-6) var(--sp-12)" },
         stake.invite_code || "—"),
     ]));
+    /* The same invitation as a picture. A code has to be typed exactly; a square can be
+       printed on a notice and pointed at, which is what a leader actually does on a
+       Sunday. It names the place and nothing else — the portal admin still opens the
+       account — so it is safe to print where the whole class can see it. */
+    card.appendChild(el("div", { class: "list-item" }, [
+      el("div", { class: "grow" }, [
+        el("div", { class: "title" }, "Join QR"),
+        el("div", { class: "meta" }, "A square people scan to register with this place already chosen"),
+      ]),
+      el("button", { class: "btn secondary sm", type: "button",
+                     onclick: () => QR.joinModal(stake) },
+        [icon("qr", 15), "Show QR"]),
+    ]));
     if (paper) {
       card.appendChild(el("button", { class: "btn ghost sm",
         onclick: e => UI.act(e.currentTarget, "Regenerating…", async () => {
