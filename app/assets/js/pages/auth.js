@@ -18,7 +18,11 @@ const AuthPage = (() => {
 
   const RESEND_WAIT = 30;        // seconds of courtesy before a second code is offered
 
-  function mount(target) {
+  function mount(target, opts) {
+    /* A join link — the QR a leader prints, or the message they forward — arrives as
+       #/join/<id>. It opens this card on the registration tab, and the search box below
+       is handed that tenant, so nobody has to find the place the link already found. */
+    const joinTarget = opts && Number(opts.joinStake) > 0 ? Number(opts.joinStake) : null;
     /* What this device was left holding, if anything. A person who goes to fetch the code
        the form just asked for often comes back to a page that has been thrown away — a phone
        that needed the memory, a tab that was closed, a reload pressed in confusion — and the
@@ -27,6 +31,8 @@ const AuthPage = (() => {
     const kept = draftRead("auth") || {};
     const SCREENS = ["login", "signup", "verify", "waiting"];
     let mode = SCREENS.indexOf(kept.mode) >= 0 ? kept.mode : "login";
+    // A person who followed a join link is registering, whatever this device was last on.
+    if (joinTarget || (opts && opts.signup)) mode = "signup";
     let keptForm = kept.form || null;
     let waitData = mode === "waiting" ? (draftRead("waiting") || null) : null;
     let verifyData = mode === "verify" ? (draftRead("verify") || null) : null;
@@ -82,6 +88,12 @@ const AuthPage = (() => {
     function draw() {
       stopTimer();
       saveScreen();
+      /* The address said "join this place", and this card is no longer that. Leave the
+         address describing what is on the screen — without routing again, which is what
+         history.replaceState buys over assigning location.hash — so a reload lands on the
+         sign-in card the person can actually see. */
+      if (mode !== "signup" && /^#\/join\b/.test(location.hash))
+        history.replaceState(null, "", location.pathname + location.search + "#/login");
       card.innerHTML = "";
       card.appendChild(el("div", { class: "logo" }, [
         el("img", { class: "brand-img", src: logoUrl(), alt: "Gathering Place" }),
@@ -468,6 +480,11 @@ const AuthPage = (() => {
       const pickWrap = el("div");
       const controls = el("div", {}, [input, chipBar]);
 
+      /* A join link names the tenant it was drawn for, so the first answer from the
+         directory is used to pick it. Only the first: after that the list belongs to the
+         person searching, and picking again would undo their own choice. */
+      let seeded = false;
+
       function run() {
         const my = ++seq;
         list.innerHTML = "";
@@ -476,7 +493,21 @@ const AuthPage = (() => {
         if (q.trim()) params.set("q", q.trim());
         if (kind) params.set("kind", kind);
         API.get("/api/directory?" + params.toString())
-          .then(rows => { if (my !== seq) return; results = Array.isArray(rows) ? rows : []; paint(); })
+          .then(rows => {
+            if (my !== seq) return;
+            results = Array.isArray(rows) ? rows : [];
+            paint();
+            if (seeded || !opt.initial) return;
+            seeded = true;
+            const t = results.find(r => r.id === +opt.initial);
+            if (t) return choose(t);
+            // The link outlived the place: a stake that is suspended or archived is not in
+            // this list. Say which way out rather than leaving a search box that looks
+            // like it ignored the link.
+            list.insertBefore(el("div", { class: "hint picker-warn" },
+              "That place is not taking new accounts right now. Search for your own below."),
+              list.firstChild);
+          })
           .catch(() => { if (my !== seq) return; results = []; paint(true); });
       }
 
@@ -523,19 +554,47 @@ const AuthPage = (() => {
     }
 
     // ---- sign up ----
-    /* The form keeps its values between redraws of the intent block, so choosing
-       "district" does not wipe the name already typed above it. */
+    /* The form keeps its values between redraws of the choice block, so changing your
+       mind here does not wipe the name already typed above it. */
     let form = null;
+
+    /* The five ways in, in the words people use about themselves. Four of them join a
+       place that exists; the fifth starts one. A leader is not one more item in a role
+       dropdown — it is a presidency, and only the portal admin opens those — so the tile
+       says what it means and the block below says it again where the place is chosen. */
+    const CHOICES = [
+      { key: "student", title: "Student", sub: "I'm taking a class", icon: "book" },
+      { key: "instructor", title: "Instructor", sub: "I teach or facilitate a class",
+        icon: "users" },
+      { key: "leader", title: "Leader", sub: "I'm the stake or district president",
+        icon: "shield" },
+      { key: "service_missionary", title: "Service missionary",
+        sub: "I serve the young single adults", icon: "globe" },
+      { key: "setup", title: "Set up a new stake or district",
+        sub: "My place isn't on the portal yet", icon: "plus" },
+    ];
+
+    /* A draft written before this screen asked one question instead of two carries an
+       intent and a role. Read it into the single choice rather than making the person
+       fill the form in again. */
+    function choiceFromDraft(f) {
+      if (f.choice) return f.choice;
+      if (f.intent === "register_stake") return "setup";
+      if (f.role === "instructor" || f.role === "service_missionary" || f.role === "leader")
+        return f.role;
+      return "student";
+    }
 
     function signupForm() {
       // Anything this device already typed goes back into the form before it is drawn, so a
       // reload mid-registration is an inconvenience rather than forty seconds of retyping.
       // keptForm never holds a password: the draft store refuses to write one.
       form = form || Object.assign({ name: "", email: "", password: "", confirm: "",
-                                     phone: "", whatsapp: "", intent: "student", invite: "",
-                                     role: "student", companion: "", gender: "", member: "",
-                                     ward: null, stakeName: "", stakeKind: "stake",
-                                     stakeAddr: "" }, keptForm || {});
+                                     phone: "", whatsapp: "", choice: "", invite: "",
+                                     companion: "", gender: "", member: "",
+                                     ward: null, stakeId: null, stakeName: "",
+                                     stakeKind: "stake", stakeAddr: "" }, keptForm || {});
+      form.choice = choiceFromDraft(form);
       const name = el("input", { placeholder: "Full name", autocomplete: "name", value: form.name });
       const email = el("input", { type: "email", placeholder: "you@example.org",
                                   autocomplete: "email", value: form.email });
@@ -568,28 +627,45 @@ const AuthPage = (() => {
           "I'd rather not say"),
       ]);
 
-      const intent = el("select", { onchange: () => { remember(); renderIntent(); } }, [
-        el("option", { value: "student" }, "I'm joining a class as a student"),
-        el("option", { value: "join_stake" }, "I belong to a stake or district"),
-        el("option", { value: "register_stake" }, "I'm setting up a new stake or district"),
+      /* The five ways in are radios, not a dropdown: a dropdown hides four of the five
+         behind a tap, and the thing a person cannot find is the thing they choose wrongly.
+         A real radio also keeps the arrow keys and the screen reader's "1 of 5" for free. */
+      function choiceTile(c, wide) {
+        const input = el("input", { type: "radio", name: "signup-choice", value: c.key });
+        input.checked = form.choice === c.key;
+        input.addEventListener("change", () => {
+          form.choice = c.key;
+          remember();
+          renderIntent();
+        });
+        const face = el("span", { class: "choice-face" }, [
+          el("span", { class: "ic" }, [icon(c.icon, 19)]),
+          el("span", { class: "tx" }, [el("b", {}, c.title), el("small", {}, c.sub)]),
+        ]);
+        return el("label", { class: "choice" + (wide ? " wide" : "") }, [input, face]);
+      }
+      const choices = el("fieldset", { class: "choice-set" }, [
+        el("legend", { class: "choice-legend" }, "How are you joining?"),
+        el("div", { class: "choice-grid" }, CHOICES.slice(0, 4).map(c => choiceTile(c))),
+        el("div", { class: "choice-or" }, [el("span", {}, "or")]),
+        choiceTile(CHOICES[4], true),
       ]);
-      intent.value = form.intent;
+
       const extra = el("div");
       const consent = Legal.consentRows();
 
-      // per-intent references, reassigned by buildJoin / buildRegister
-      let joinPicker, joinInvite, joinRole, joinRoleField, joinCompanion, joinCompanionField,
-          joinWard;
+      // per-choice references, cleared and reassigned by buildJoin / buildRegister
+      let joinPicker, joinInvite, joinCompanion, joinCompanionField, joinLeaderNote, joinWard;
       let regName, regKind, regAddr;
+      let built = null;          // "join" | "register" — which block `extra` is holding
 
       function remember() {
         form.name = name.value; form.email = email.value; form.password = pass.value;
         form.confirm = again.value;
-        form.intent = intent.value;
         form.phone = phone.get(); form.whatsapp = whatsapp.get();
         form.gender = gender.value; form.member = member.value;
         if (joinInvite) form.invite = joinInvite.value;
-        if (joinRole) form.role = joinRole.value;
+        if (joinPicker) form.stakeId = joinPicker.get();
         if (joinCompanion) form.companion = joinCompanion.value;
         if (joinWard) form.ward = joinWard.payload();
         if (regName) form.stakeName = regName.value;
@@ -599,20 +675,30 @@ const AuthPage = (() => {
       }
 
       function renderIntent() {
+        const want = form.choice === "setup" ? "register" : "join";
+        /* The four ways of joining share one block. Changing your mind between student,
+           instructor, leader and missionary must not throw away the stake already found
+           or the ward already named, so the block is only rebuilt when its kind changes. */
+        if (want === built) { syncCompanion(); return; }
+        built = want;
+        joinPicker = joinInvite = joinCompanion = joinCompanionField = null;
+        joinLeaderNote = joinWard = regName = regKind = regAddr = null;
         extra.innerHTML = "";
-        // A student joins a class by joining the stake or district that runs it, so
-        // the first intent reuses the same picker with the role already decided.
-        if (form.intent === "join_stake") buildJoin(false);
-        else if (form.intent === "student") buildJoin(true);
-        else if (form.intent === "register_stake") buildRegister();
+        if (want === "join") buildJoin(); else buildRegister();
       }
 
-      function buildJoin(studentOnly) {
+      function buildJoin() {
         joinPicker = makeSearchPicker({ placeholder: "Stake or district name",
-          onPick: t => joinWard.load(t.id),
+          // A join link already names the place, so the list is handed its answer; and a
+          // place found before switching to "new stake" comes back with the block.
+          initial: joinTarget || form.stakeId,
+          /* The place is an answer in the half-written form like any other, so it goes
+             into the draft as soon as it is chosen: switching to "new stake" and back,
+             or reloading the tab, must not make the person find it again. */
+          onPick: t => { if (joinWard) joinWard.load(t.id); remember(); },
           // Back to the search box means no tenant picked, so there is no ward list to
           // show — the box goes back to taking the ward's words.
-          onClear: () => joinWard.load(null) });
+          onClear: () => { if (joinWard) joinWard.load(null); remember(); } });
         joinInvite = el("input", { placeholder: "Invite code from your leader", value: form.invite });
         joinInvite.addEventListener("input", () => {
           // A code names a tenant the browser has not seen a list for, so the ward is
@@ -628,31 +714,33 @@ const AuthPage = (() => {
         const pickedStake = joinPicker.get();
         joinWard.load(pickedStake && !joinInvite.value.trim() ? pickedStake : null);
         ["input", "change"].forEach(ev => joinWard.node.addEventListener(ev, remember));
-        joinRole = el("select", { onchange: () => { remember(); syncCompanion(); } }, [
-          el("option", { value: "student" }, "Student"),
-          el("option", { value: "instructor" }, "Instructor"),
-          el("option", { value: "service_missionary" }, "YSA Service Missionary"),
-        ]);
-        joinRole.value = form.role;
         joinCompanion = el("input", { placeholder: "Companion, e.g. Sister Hansen",
                                       value: form.companion });
         joinCompanion.addEventListener("input", remember);
         joinCompanionField = field("Companion name", joinCompanion,
           "You and your companion share one account and one profile picture.");
-        joinRoleField = field("Role", joinRole);
-        if (studentOnly) joinRoleField.style.display = "none";
+        /* Said only where it matters, in the same breath as the tenant: a distinction
+           buried in a tile is a distinction somebody will argue with at the door. */
+        joinLeaderNote = el("div", { class: "hint join-leader-note" }, [
+          "A presidency is never opened by a code: the portal admin confirms who you are "
+          + "before the seat is yours.",
+        ]);
 
         extra.appendChild(field("Search your stake or district", joinPicker.node));
         extra.appendChild(el("div", { class: "hint",
           style: "margin:-6px 0 var(--sp-12)" }, "Searching sends a request the portal admin confirms. An invite code from your leader opens the seat right away."));
         extra.appendChild(field("Invite code (optional)", joinInvite));
         extra.appendChild(joinWard.node);
-        extra.appendChild(joinRoleField);
+        extra.appendChild(joinLeaderNote);
         extra.appendChild(joinCompanionField);
         syncCompanion();
       }
       function syncCompanion() {
-        joinCompanionField.style.display = joinRole.value === "service_missionary" ? "" : "none";
+        if (!joinCompanionField) return;
+        joinCompanionField.style.display =
+          form.choice === "service_missionary" ? "" : "none";
+        if (joinLeaderNote)
+          joinLeaderNote.style.display = form.choice === "leader" ? "" : "none";
       }
 
       function buildRegister() {
@@ -675,13 +763,15 @@ const AuthPage = (() => {
           style: "margin:var(--sp-2) 0 var(--sp-4)" }, "On a brand-new portal this first account becomes its admin and signs straight in."));
       }
 
-      // Only keys that apply to the chosen intent are sent.
+      // Only keys that apply to the chosen path are sent.
       function buildPayload() {
-        const v = intent.value;
-        // "a student" is a join with the role fixed, so the server sees one intent.
-        const joining = v === "join_stake" || v === "student";
+        // Four of the five choices are a join; the fifth starts a place of its own. The
+        // server is told the concrete role, so a president is stored as one and "leader"
+        // never reaches the database.
+        const joining = form.choice !== "setup";
         const p = { email: email.value.trim(), password: pass.value,
-                    full_name: name.value.trim(), intent: joining ? "join_stake" : v };
+                    full_name: name.value.trim(),
+                    intent: joining ? "join_stake" : "register_stake" };
         put(p, "phone", phone.get());
         put(p, "whatsapp", whatsapp.get());
         if (gender.value) p.gender = gender.value;
@@ -690,7 +780,7 @@ const AuthPage = (() => {
         if (member.value === "yes") p.church_member = true;
         else if (member.value === "no") p.church_member = false;
         if (joining) {
-          p.role = v === "student" ? "student" : joinRole.value;
+          p.role = form.choice;
           const code = joinInvite.value.trim();
           if (code) p.invite_code = code.toUpperCase();      // invite takes precedence over a searched stake
           else { const id = joinPicker.get(); if (id) p.stake_id = id; }
@@ -700,7 +790,7 @@ const AuthPage = (() => {
           const ward = joinWard.payload();
           if (ward.ward_id) p.ward_id = ward.ward_id;
           else if (ward.ward_name) p.ward_name = ward.ward_name;
-        } else if (v === "register_stake") {
+        } else {
           p.stake_name = regName.value.trim();
           p.stake_kind = regKind.value;
           put(p, "stake_address", regAddr.value);
@@ -728,7 +818,7 @@ const AuthPage = (() => {
         if (p.intent === "join_stake" && !p.invite_code && !p.stake_id)
           return toast("Search for your stake or district, or enter an invite code", "err");
         // "not listed" with an empty box is half an answer: the ward it names is nothing.
-        if (p.intent === "join_stake" && joinWard.incomplete())
+        if (p.intent === "join_stake" && joinWard && joinWard.incomplete())
           return toast("Write your ward's name, or choose “None recorded”", "err");
         if (p.intent === "register_stake" && !p.stake_name)
           return toast("Give the stake or district a name", "err");
@@ -763,7 +853,12 @@ const AuthPage = (() => {
       }
 
       renderIntent();
+      /* The door comes first. It decides what the rest of the form is — a place to find
+         or a place to start — and it is the one line a join link has already answered, so
+         the person sees the place the square named before they type their name. */
       return el("div", {}, [
+        choices, extra,
+        el("hr", { class: "hr" }),
         field("Full name", name), field("Email", email),
         field("Password", UI.passWrap(pass)),
         field("Confirm password", UI.passWrap(again)),
@@ -773,7 +868,7 @@ const AuthPage = (() => {
           field("Member of the Church?", member,
             "“I'd rather not say” is an answer of its own."),
         ]),
-        field("I want to…", intent), extra, consent.node, btn,
+        consent.node, btn,
       ]);
     }
 
