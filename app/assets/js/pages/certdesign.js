@@ -808,10 +808,10 @@ const CertDesign = (() => {
           return toast("The portal takes the lettering as a TTF file.", "err");
         const form = new FormData();
         form.append("file", chosen);
-        busyButton(fontPick, true, "Saving…");
-        API.post(API_PATHS.font(id(), placeId()), form)
-          .then(() => { toast("Lettering saved"); return reload(); })
-          .catch(e => { busyButton(fontPick, false); toast(e.message, "err"); });
+        UI.act(fontPick, "Saving…", () =>
+          API.post(API_PATHS.font(id(), placeId()), form)
+            .then(() => { toast("Lettering saved"); return reload(); }))
+          .catch(e => toast(e.message, "err"));
       });
       return el("div", { class: "cert-art-card" }, [
         el("div", { class: "cert-row-buttons" }, [pick, drop, file]),
@@ -915,62 +915,52 @@ const CertDesign = (() => {
     }
 
     async function fetchMembers(btn) {
-      busyButton(btn, true, "Loading…");
       try {
-        const found = await API.get(API_PATHS.members(id(), placeId()));
-        S.members = Array.isArray(found) ? found : [];
-        memberSelect.innerHTML = "";
-        memberSelect.appendChild(el("option", { value: "" }, "Try the standing words"));
-        S.members.forEach(m => memberSelect.appendChild(
-          el("option", { value: String(m.enrollment_id) },
-            m.course ? `${m.name} — ${m.course}` : (m.name || "A member"))));
-        memberSelect.value = "";
-        S.pick = null;
-        repaint();
-        toast(S.members.length ? `${S.members.length} member(s) finished here — choose one to try.`
-                               : "Nobody has finished a class at this place yet.");
+        await UI.act(btn, "Loading…", async () => {
+          const found = await API.get(API_PATHS.members(id(), placeId()));
+          S.members = Array.isArray(found) ? found : [];
+          memberSelect.innerHTML = "";
+          memberSelect.appendChild(el("option", { value: "" }, "Try the standing words"));
+          S.members.forEach(m => memberSelect.appendChild(
+            el("option", { value: String(m.enrollment_id) },
+              m.course ? `${m.name} — ${m.course}` : (m.name || "A member"))));
+          memberSelect.value = "";
+          S.pick = null;
+          repaint();
+          toast(S.members.length ? `${S.members.length} member(s) finished here — choose one to try.`
+                                 : "Nobody has finished a class at this place yet.");
+        });
       } catch (e) {
         toast(e.message, "err");
-      } finally {
-        busyButton(btn, false, "Load the members");
       }
     }
 
     /* The layout goes along whether or not a member was chosen: what you see is what prints.
        A member is only named when one was picked, so the key is left out rather than blank. */
     async function makeSample() {
-      busyButton(tryButton, true, "Printing…");
       try {
-        const body = { layout: plain() };
-        if (S.pick) body.enrollment_id = S.pick.enrollment_id;
-        const res = await API.post(API_PATHS.sample(id(), placeId()), body, { raw: true });
-        if (!res.ok) {
-          let message = `The portal would not print a sample (${res.status}).`;
-          try {
-            const j = await res.json();
-            if (typeof j.detail === "string") message = j.detail;
-          } catch (e) { /* an answer that is not words */ }
-          toast(message, "err");
-          return;
-        }
-        const url = URL.createObjectURL(await res.blob());
-        // asking the browser for a fresh tab is the whole point: the PDF is the preview
-        const win = window.open(url, "_blank");
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
-        if (!win) toast("The browser stopped the sample from opening. Allow pop-ups to see it.", "err");
+        await UI.act(tryButton, "Printing…", async () => {
+          const body = { layout: plain() };
+          if (S.pick) body.enrollment_id = S.pick.enrollment_id;
+          const res = await API.post(API_PATHS.sample(id(), placeId()), body, { raw: true });
+          if (!res.ok) {
+            let message = `The portal would not print a sample (${res.status}).`;
+            try {
+              const j = await res.json();
+              if (typeof j.detail === "string") message = j.detail;
+            } catch (e) { /* an answer that is not words */ }
+            toast(message, "err");
+            return;
+          }
+          const url = URL.createObjectURL(await res.blob());
+          // asking the browser for a fresh tab is the whole point: the PDF is the preview
+          const win = window.open(url, "_blank");
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+          if (!win) toast("The browser stopped the sample from opening. Allow pop-ups to see it.", "err");
+        });
       } catch (e) {
         toast(e.message, "err");
-      } finally {
-        busyButton(tryButton, false, "Try one now");
       }
-    }
-
-    // the words inside a button are the only part that changes; its icon stays where it is
-    function busyButton(btn, on, label) {
-      if (!btn) return;
-      btn.disabled = !!on;
-      const text = btn.querySelector("span");
-      if (text && label !== undefined) text.textContent = label;
     }
 
     // ---------- autosave ----------
