@@ -88,7 +88,7 @@ const AdminPage = (() => {
   function head() {
     return el("div", { class: "page-head stack-head" }, [
       el("div", {}, [
-        el("h2", { class: "page-title" }, "Portal control"),
+        el("h1", { class: "page-title" }, "Portal control"),
         el("div", { class: "page-sub" },
           "Let new accounts in, open stakes and districts, register and correct any person, reset passwords, and write to the whole portal."),
       ]),
@@ -213,7 +213,7 @@ const AdminPage = (() => {
       ]),
     ]));
 
-    wrap.appendChild(el("div", { class: "sec-title" }, "Latest portal activity"));
+    wrap.appendChild(el("h2", { class: "sec-title" }, "Latest portal activity"));
     wrap.appendChild(card([
       logs.length ? el("div", {}, logs.map(logRow))
                   : el("div", { class: "muted", style: "font-size:var(--t-ui)" }, "No activity yet."),
@@ -295,7 +295,7 @@ const AdminPage = (() => {
 
   function queueCard(title, note, rows, whenEmpty) {
     const sec = el("div");
-    sec.appendChild(el("div", { class: "sec-title", style: "margin-top:var(--sp-22)" }, title));
+    sec.appendChild(el("h2", { class: "sec-title", style: "margin-top:var(--sp-22)" }, title));
     sec.appendChild(el("div", { class: "meta", style: "margin-bottom:var(--sp-8)" }, note));
     if (!rows.length) { sec.appendChild(empty(whenEmpty, "check")); return sec; }
     const card_ = card([]);
@@ -509,7 +509,7 @@ const AdminPage = (() => {
     const trail = rows.filter(r => r.status !== "open");
 
     wrap.appendChild(card([
-      el("div", { class: "sec-title", style: "margin-top:0" }, "What carrying out a removal does"),
+      el("h2", { class: "sec-title", style: "margin-top:0" }, "What carrying out a removal does"),
       el("div", { class: "meta" }, "Gone: the name, the address, the phone and WhatsApp "
         + "numbers, the ward or branch, the emergency contact, the photograph, the letters "
         + "sent to that address and the sign-in codes. The account stops working."),
@@ -942,7 +942,7 @@ const AdminPage = (() => {
         ? "It stands on its own, exactly as a stake does, and its president is a district president."
         : "It stands on its own, and its president is a stake president.";
       if (isNew) {
-        head.querySelector("h3").textContent = `Register a ${word()}`;
+        head.querySelector("h2").textContent = `Register a ${word()}`;
         primary.textContent = `Create ${word()}`;
       } else {
         m.panel.querySelector(".msub").textContent =
@@ -993,7 +993,7 @@ const AdminPage = (() => {
       }
       shown.forEach(r => list.appendChild(rosterRow(s, r, rows, draw)));
     }
-    body.appendChild(el("div", { class: "sec-title" }, "Roles"));
+    body.appendChild(el("h2", { class: "sec-title" }, "Roles"));
     body.appendChild(chipRow(roleFacets(rows), chip, k => { chip = k; draw(); }));
     body.appendChild(list);
     draw();
@@ -1025,16 +1025,17 @@ const AdminPage = (() => {
       ]),
       el("div", { class: "row-actions" }, [
         sel,
-        el("button", { class: "btn ghost icon-only", title: "Remove from stake", onclick: async () => {
-          const ok = await UI.confirm(`Remove ${r.name} from ${s.name}? Their attendance history stays on file.`,
-            { danger: true, okLabel: "Remove" });
-          if (!ok) return;
-          try {
-            await API.del(`/api/admin/users/${r.user_id}/roles?stake_id=${s.id}`);
-            rows.splice(rows.indexOf(r), 1);
-            toast("Membership removed"); draw();
-          } catch (e) { toast(e.message, "err"); }
-        } }, [icon("trash", 14)]),
+        el("button", { class: "btn ghost icon-only", title: "Remove from stake",
+          onclick: e => UI.act(e.currentTarget, async () => {
+            const ok = await UI.confirm(`Remove ${r.name} from ${s.name}? Their attendance history stays on file.`,
+              { danger: true, okLabel: "Remove" });
+            if (!ok) return;
+            try {
+              await API.del(`/api/admin/users/${r.user_id}/roles?stake_id=${s.id}`);
+              rows.splice(rows.indexOf(r), 1);
+              toast("Membership removed"); draw();
+            } catch (e) { toast(e.message, "err"); }
+          }) }, [icon("trash", 14)]),
       ]),
     ]);
   }
@@ -1294,21 +1295,23 @@ const AdminPage = (() => {
         field("Companion", companion,
               "A missionary and his companion share one account: both names, one picture.")]),
       el("div", { class: "row" }, [field("Emergency contact", emName), emPhone.node]),
-      el("button", { class: "btn secondary sm", onclick: async () => {
-        if (!name.value.trim() || !email.value.trim()) return toast("Name and email cannot be empty", "err");
-        if (ward.incomplete())
-          return toast("Write the ward's name, or choose “None recorded”", "err");
-        try {
-          await API.patch(`/api/admin/users/${d.id}`, {
-            full_name: name.value.trim(), email: email.value.trim(),
-            phone: phone.get() || null, whatsapp: wa.get() || null,
-            ...ward.payload(),
-            companion_name: companion.value.trim() || null,
-            emergency_contact_name: emName.value || null,
-            emergency_contact_phone: emPhone.get() || null });
-          toast("Profile saved"); reload();
-        } catch (e) { toast(e.message, "err"); }
-      } }, [icon("check", 14), "Save profile"]),
+      el("button", { class: "btn secondary sm",
+        onclick: e => UI.act(e.currentTarget, "Saving…", async () => {
+          if (!name.value.trim() || !email.value.trim())
+            return toast("Name and email cannot be empty", "err");
+          if (ward.incomplete())
+            return toast("Write the ward's name, or choose “None recorded”", "err");
+          try {
+            await API.patch(`/api/admin/users/${d.id}`, {
+              full_name: name.value.trim(), email: email.value.trim(),
+              phone: phone.get() || null, whatsapp: wa.get() || null,
+              ...ward.payload(),
+              companion_name: companion.value.trim() || null,
+              emergency_contact_name: emName.value || null,
+              emergency_contact_phone: emPhone.get() || null });
+            toast("Profile saved"); reload();
+          } catch (e) { toast(e.message, "err"); }
+        }) }, [icon("check", 14), "Save profile"]),
     ]));
   }
 
@@ -1317,18 +1320,19 @@ const AdminPage = (() => {
     const options = stakes.filter(s => s.status === "active");
     const stakeSel = el("select", {}, options.map(s => el("option", { value: s.id }, tenantLabel(s))));
     const roleSel = el("select", {}, STAKE_ROLES.map(r => el("option", { value: r }, roleLabel(r))));
-    const add = el("button", { class: "btn secondary sm", disabled: !options.length, onclick: async () => {
-      if (!stakeSel.value) return toast("There is no active stake or district to assign", "err");
-      try {
-        await API.patch(`/api/admin/users/${d.id}/roles`,
-          { stake_id: +stakeSel.value, role: roleSel.value });
-        const picked = stakeById(+stakeSel.value);
-        d.roles.push({ stake_id: +stakeSel.value, stake_name: stakeName(+stakeSel.value),
-                       stake_kind: picked ? picked.org_kind : "stake",
-                       role: roleSel.value, joined_at: new Date().toISOString(), status: "active" });
-        toast("Membership added"); draw(); reload();
-      } catch (e) { toast(e.message, "err"); }
-    } }, [icon("plus", 14), "Add"]);
+    const add = el("button", { class: "btn secondary sm", disabled: !options.length,
+      onclick: e => UI.act(e.currentTarget, "Adding…", async () => {
+        if (!stakeSel.value) return toast("There is no active stake or district to assign", "err");
+        try {
+          await API.patch(`/api/admin/users/${d.id}/roles`,
+            { stake_id: +stakeSel.value, role: roleSel.value });
+          const picked = stakeById(+stakeSel.value);
+          d.roles.push({ stake_id: +stakeSel.value, stake_name: stakeName(+stakeSel.value),
+                         stake_kind: picked ? picked.org_kind : "stake",
+                         role: roleSel.value, joined_at: new Date().toISOString(), status: "active" });
+          toast("Membership added"); draw(); reload();
+        } catch (e) { toast(e.message, "err"); }
+      }) }, [icon("plus", 14), "Add"]);
 
     function draw() {
       list.innerHTML = "";
@@ -1363,22 +1367,25 @@ const AdminPage = (() => {
       ]),
       el("div", { class: "row-actions" }, [
         sel,
-        el("button", { class: "btn ghost sm", onclick: async () => {
-          try {
-            await API.patch(`/api/admin/users/${d.id}/roles`, { stake_id: r.stake_id, role: sel.value });
-            r.role = sel.value; toast("Role updated"); draw();
-          } catch (e) { toast(e.message, "err"); }
-        } }, "Save"),
-        el("button", { class: "btn ghost icon-only", title: "Remove membership", onclick: async () => {
-          const ok = await UI.confirm(`Remove them from ${r.stake_name || "this stake"}?`,
-            { danger: true, okLabel: "Remove" });
-          if (!ok) return;
-          try {
-            await API.del(`/api/admin/users/${d.id}/roles?stake_id=${r.stake_id}`);
-            d.roles = d.roles.filter(x => x !== r);
-            toast("Membership removed"); draw(); reload();
-          } catch (e) { toast(e.message, "err"); }
-        } }, [icon("trash", 14)]),
+        el("button", { class: "btn ghost sm",
+          onclick: e => UI.act(e.currentTarget, "Saving…", async () => {
+            try {
+              await API.patch(`/api/admin/users/${d.id}/roles`,
+                { stake_id: r.stake_id, role: sel.value });
+              r.role = sel.value; toast("Role updated"); draw();
+            } catch (e) { toast(e.message, "err"); }
+          }) }, "Save"),
+        el("button", { class: "btn ghost icon-only", title: "Remove membership",
+          onclick: e => UI.act(e.currentTarget, async () => {
+            const ok = await UI.confirm(`Remove them from ${r.stake_name || "this stake"}?`,
+              { danger: true, okLabel: "Remove" });
+            if (!ok) return;
+            try {
+              await API.del(`/api/admin/users/${d.id}/roles?stake_id=${r.stake_id}`);
+              d.roles = d.roles.filter(x => x !== r);
+              toast("Membership removed"); draw(); reload();
+            } catch (e) { toast(e.message, "err"); }
+          }) }, [icon("trash", 14)]),
       ]),
     ]);
   }
@@ -1431,14 +1438,16 @@ const AdminPage = (() => {
               ? "Can sign in and use every stake they belong to."
               : "Blocked from signing in; their records stay on file."),
           ]),
-          el("button", { class: "btn ghost sm", disabled: isSelf, onclick: async () => {
-            try {
-              await API.patch(`/api/admin/users/${d.id}/active?active=${!d.is_active}`);
-              d.is_active = !d.is_active;
-              toast(d.is_active ? "Account activated" : "Account deactivated");
-              redraw(); reload();
-            } catch (e) { toast(e.message, "err"); }
-          } }, d.is_active ? "Deactivate" : "Activate"),
+          el("button", { class: "btn ghost sm", disabled: isSelf,
+            onclick: e => UI.act(e.currentTarget,
+              d.is_active ? "Deactivating…" : "Activating…", async () => {
+                try {
+                  await API.patch(`/api/admin/users/${d.id}/active?active=${!d.is_active}`);
+                  d.is_active = !d.is_active;
+                  toast(d.is_active ? "Account activated" : "Account deactivated");
+                  redraw(); reload();
+                } catch (e) { toast(e.message, "err"); }
+              }) }, d.is_active ? "Deactivate" : "Activate"),
         ]),
         el("div", { class: "list-item" }, [
           el("div", { class: "grow" }, [
@@ -1448,20 +1457,22 @@ const AdminPage = (() => {
               : "No portal control — this is a stake-level account."),
           ]),
           el("button", { class: "btn " + (d.is_super_admin ? "ghost" : "secondary") + " sm",
-            disabled: isSelf, onclick: async () => {
-              const revoke = d.is_super_admin;
-              if (revoke) {
-                const ok = await UI.confirm(`Revoke portal control from ${d.full_name}? Their stake roles stay as they are.`,
-                  { danger: true, okLabel: "Revoke" });
-                if (!ok) return;
-              }
-              try {
-                await API.post(`/api/admin/users/${d.id}/admin-flag?grant=${!revoke}`);
-                d.is_super_admin = !revoke;
-                toast(revoke ? "Portal access revoked" : "Portal admin granted");
-                redraw(); reload();
-              } catch (e) { toast(e.message, "err"); }
-            } }, d.is_super_admin ? "Revoke" : "Grant"),
+            disabled: isSelf,
+            onclick: e => UI.act(e.currentTarget,
+              d.is_super_admin ? "Revoking…" : "Granting…", async () => {
+                const revoke = d.is_super_admin;
+                if (revoke) {
+                  const ok = await UI.confirm(`Revoke portal control from ${d.full_name}? Their stake roles stay as they are.`,
+                    { danger: true, okLabel: "Revoke" });
+                  if (!ok) return;
+                }
+                try {
+                  await API.post(`/api/admin/users/${d.id}/admin-flag?grant=${!revoke}`);
+                  d.is_super_admin = !revoke;
+                  toast(revoke ? "Portal access revoked" : "Portal admin granted");
+                  redraw(); reload();
+                } catch (e) { toast(e.message, "err"); }
+              }) }, d.is_super_admin ? "Revoke" : "Grant"),
         ]),
         el("div", { class: "list-item" }, [
           el("div", { class: "grow" }, [
@@ -1470,7 +1481,7 @@ const AdminPage = (() => {
           ]),
           el("button", { class: "btn danger sm", disabled: isSelf || d.is_super_admin,
             title: d.is_super_admin ? "A portal admin must be demoted first" : null,
-            onclick: async () => {
+            onclick: e => UI.act(e.currentTarget, "Erasing…", async () => {
               const ok = await UI.confirm(
                 `Permanently erase ${d.full_name} and everything personal to them? This cannot be undone.`,
                 { danger: true, okLabel: "Erase permanently", title: "Erase this account?" });
@@ -1481,7 +1492,7 @@ const AdminPage = (() => {
                 toast("Account erased"); reload();
               }
               catch (e) { toast(e.message, "err"); }
-            } }, [icon("trash", 14), "Erase"]),
+            }) }, [icon("trash", 14), "Erase"]),
         ]),
       ];
     }
@@ -1732,7 +1743,7 @@ const AdminPage = (() => {
     wrap.innerHTML = "";
 
     const state = card([
-      el("div", { class: "sec-title" }, s.configured ? "Mailbox connected" : "No mailbox yet"),
+      el("h2", { class: "sec-title" }, s.configured ? "Mailbox connected" : "No mailbox yet"),
       s.configured
         ? el("div", { class: "meta" },
             `Letters go out as ${s.from_name || "Gathering Place"} <${s.from_address}>`
@@ -1750,7 +1761,7 @@ const AdminPage = (() => {
     wrap.appendChild(state);
 
     const entries = data.entries || [];
-    wrap.appendChild(el("div", { class: "sec-title", style: "margin-top:var(--sp-22)" },
+    wrap.appendChild(el("h2", { class: "sec-title", style: "margin-top:var(--sp-22)" },
       entries.length ? `Last ${entries.length} letters` : "Letters"));
     if (!entries.length) {
       wrap.appendChild(empty("The portal has not tried to send anything yet.", "mail"));
