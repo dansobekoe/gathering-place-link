@@ -20,35 +20,35 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/gabarito-600.woff2?v=87") format("woff2");
+  src: url("../fonts/gabarito-600.woff2?v=97") format("woff2");
 }
 @font-face {
   font-family: "Gabarito";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/gabarito-700.woff2?v=87") format("woff2");
+  src: url("../fonts/gabarito-700.woff2?v=97") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("../fonts/figtree-400.woff2?v=87") format("woff2");
+  src: url("../fonts/figtree-400.woff2?v=97") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/figtree-600.woff2?v=87") format("woff2");
+  src: url("../fonts/figtree-600.woff2?v=97") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/figtree-700.woff2?v=87") format("woff2");
+  src: url("../fonts/figtree-700.woff2?v=97") format("woff2");
 }
 
 :root {
@@ -101,9 +101,9 @@
   --toast-line: rgba(255, 255, 255, .14);
   --toast-err: rgba(190, 18, 60, .9);
   /* Status ink has to stay readable on a tinted pill in both settings. */
-  --ok-ink: #047857;
-  --warn-ink: #b45309;
-  --danger-ink: #be123c;
+  --ok-ink: #046a4f;     /* 5.57:1 on the green wash, 4.94 on the dimmed glass of a dialog */
+  --warn-ink: #92400e;   /* 5.96:1 on the amber wash — #b45309 was 4.22 */
+  --danger-ink: #a30f35; /* 5.48:1 on the red wash — #be123c was 4.38 */
   --info-ink: #1d4ed8;
   --neutral-bg: rgba(100, 116, 139, .14);
   --ok-bg: rgba(5, 150, 105, .14);
@@ -310,7 +310,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 @keyframes menuIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; } }
 .menu .mhead { padding: var(--sp-8) var(--sp-12) var(--sp-6); font-size: var(--t-micro); letter-spacing: .06em;
-               text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+               text-transform: uppercase; color: var(--ink-fine); font-weight: 600; }
 .menu button {
   display: flex; align-items: center; gap: var(--sp-10); width: 100%;
   background: none; border: none; text-align: left;
@@ -350,7 +350,7 @@ button { font-family: inherit; cursor: pointer; }
 .bell-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-10);
              padding: var(--sp-12) var(--sp-14) var(--sp-10); border-bottom: 1px solid var(--hairline); }
 .bell-head .mhead { font-size: var(--t-micro); font-weight: 600; letter-spacing: .06em;
-                    text-transform: uppercase; color: var(--ink-3); }
+                    text-transform: uppercase; color: var(--ink-fine); }
 .bell-all { background: none; border: none; font: inherit; font-size: var(--t-meta); font-weight: 600;
             color: var(--accent); padding: var(--sp-4) var(--sp-8); border-radius: var(--r-sm); cursor: pointer; }
 .bell-all:hover { background: var(--accent-soft); }
@@ -381,7 +381,7 @@ button { font-family: inherit; cursor: pointer; }
 .bell-when { font-size: var(--t-micro); font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
              color: var(--ink-fine); margin-top: var(--sp-4); }
 .bell-seen { flex: none; width: 28px; height: 28px; margin-top: var(--sp-12); border: none;
-             background: none; color: var(--ink-3); border-radius: var(--r-sm); display: grid;
+             background: none; color: var(--ink-fine); border-radius: var(--r-sm); display: grid;
              place-items: center; cursor: pointer; }
 .bell-seen:hover { background: var(--hover); color: var(--ink-2); }
 .bell-older { padding: var(--sp-10) var(--sp-16) var(--sp-12); font-size: var(--t-fine); line-height: 1.5; color: var(--ink-fine);
@@ -433,7 +433,7 @@ button { font-family: inherit; cursor: pointer; }
   padding: var(--sp-18);
   margin-bottom: var(--sp-16);
 }
-.card > h3, .sec-title {
+.card > h2, .sec-title {
   font-size: var(--t-meta); font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
   color: var(--ink-2); margin-bottom: var(--sp-12);
 }
@@ -448,7 +448,7 @@ button { font-family: inherit; cursor: pointer; }
 .stat .n { font-family: var(--font-display); font-size: var(--t-hero);
            font-weight: 700; letter-spacing: -.02em; color: var(--accent); }
 .stat .l { font-size: var(--t-fine); font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
-           color: var(--ink-3); }
+           color: var(--ink-fine); }
 
 /* ---------------- Forms ---------------- */
 label { display: block; font-size: var(--t-meta); font-weight: 600; color: var(--ink-2); margin-bottom: var(--sp-6); }
@@ -460,7 +460,7 @@ input, select, textarea {
   padding: var(--sp-10) var(--sp-12);
   transition: border-color .15s, box-shadow .15s, background .15s;
 }
-input::placeholder { color: var(--ink-3); }
+input::placeholder { color: var(--ink-fine); }
 input:focus, select:focus, textarea:focus {
   outline: none; border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft); background: var(--surface);
@@ -515,7 +515,7 @@ select { appearance: none;
 .list-item.sub .meta { font-size: var(--t-fine); }
 table { width: 100%; border-collapse: collapse; font-size: var(--t-ui); }
 th, td { text-align: left; padding: var(--sp-10) var(--sp-8); border-bottom: 1px solid var(--hairline); }
-th { font-size: var(--t-micro); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+th { font-size: var(--t-micro); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-fine); }
 tr:last-child td { border-bottom: none; }
 
 /* ---------------- Pills ---------------- */
@@ -547,7 +547,7 @@ tr:last-child td { border-bottom: none; }
 .dock-item {
   flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: var(--sp-2);
   padding: var(--sp-8) var(--sp-2) var(--sp-6); border-radius: var(--r-md); border: none; background: none;
-  color: var(--ink-3); font-size: var(--t-micro); font-weight: 600; letter-spacing: .02em;
+  color: var(--ink-fine); font-size: var(--t-micro); font-weight: 600; letter-spacing: .02em;
   transition: color .15s, background .15s;
 }
 .dock-item svg { transition: transform .15s; }
@@ -654,7 +654,7 @@ tr:last-child td { border-bottom: none; }
   animation: rise .2s cubic-bezier(.2, .8, .3, 1);
 }
 @keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; } }
-.modal h3 { font-family: var(--font-display); font-size: var(--t-title);
+.modal h2 { font-family: var(--font-display); font-size: var(--t-title);
             font-weight: 700; letter-spacing: -.012em; margin-bottom: var(--sp-4); }
 .modal .msub { color: var(--ink-2); font-size: var(--t-ui); margin-bottom: var(--sp-14); }
 .modal .mactions { display: flex; gap: var(--sp-10); margin-top: var(--sp-16); }
@@ -664,10 +664,10 @@ tr:last-child td { border-bottom: none; }
 .mhead { display: flex; align-items: flex-start; gap: var(--sp-10); justify-content: space-between;
          margin-bottom: var(--sp-16); }
 .mhead .mt { min-width: 0; }
-.mhead h3 { margin: 0; }
+.mhead h2 { margin: 0; }
 .mhead .msub { margin: var(--sp-4) 0 0; }
 .mclose { flex: none; width: 30px; height: 30px; margin: -5px -5px 0 0; border-radius: var(--r-sm);
-          color: var(--ink-3); }
+          color: var(--ink-fine); }
 .mclose:hover { color: var(--ink); background: var(--hover); }
 .mclose:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -697,7 +697,7 @@ tr:last-child td { border-bottom: none; }
 .muted { color: var(--ink-2); }
 /* A fact nobody has entered yet reads differently from an empty one: it is a prompt
    to fill it in, so it sits quieter than the text around it. */
-.unset { color: var(--ink-3); font-style: italic; }
+.unset { color: var(--ink-fine); font-style: italic; }
 /* A cell that must not widen the table past the screen. The full value stays in the
    title, so nothing is lost to the person who needs to read all of it. */
 .truncate { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -741,7 +741,7 @@ tr:last-child td { border-bottom: none; }
 .crumb-stake { font-size: var(--t-ui); font-weight: 600; color: var(--ink); letter-spacing: -.01em;
                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crumb-role { font-size: var(--t-micro); font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
-              color: var(--ink-3); }
+              color: var(--ink-fine); }
 .menu-btn { display: grid; }
 /* On the narrowest phones the wordmark and the gathering place's name were fighting
    over the same forty pixels, and the name lost: "Test Stake" was being ellipsised to
@@ -759,10 +759,15 @@ tr:last-child td { border-bottom: none; }
     background: var(--drawer-bg);
     -webkit-backdrop-filter: blur(26px) saturate(170%); backdrop-filter: blur(26px) saturate(170%);
     border-right: 1px solid var(--glass-border); box-shadow: var(--shadow-2);
-    transform: translateX(-102%); transition: transform .24s cubic-bezier(.2, .8, .3, 1);
+    /* Off the edge is not the same as gone: `visibility: hidden` waits for the slide to
+       finish, then takes the panel out of hit-testing and the accessibility tree. The
+       JS keeps it `inert` as well, for browsers that do not know `visibility`. */
+    transform: translateX(-102%); visibility: hidden;
+    transition: transform .24s cubic-bezier(.2, .8, .3, 1), visibility 0s .24s;
     overflow-y: auto;
   }
-  body.drawer-open .drawer { transform: translateX(0); }
+  body.drawer-open .drawer { transform: translateX(0); visibility: visible;
+    transition: transform .24s cubic-bezier(.2, .8, .3, 1), visibility 0s 0s; }
   .drawer-scrim {
     position: fixed; inset: 0; z-index: 65; background: var(--scrim);
     -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
@@ -794,7 +799,7 @@ tr:last-child td { border-bottom: none; }
   background: var(--glass-strong); border: 1px solid var(--glass-border);
 }
 .ss-label { font-size: var(--t-micro); font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
-            color: var(--ink-3); margin-bottom: var(--sp-4); }
+            color: var(--ink-fine); margin-bottom: var(--sp-4); }
 .ss-name { font-family: var(--font-display); font-size: var(--t-body);
            font-weight: 700; color: var(--ink); letter-spacing: -.006em; }
 .ss-role { font-size: var(--t-fine); color: var(--accent); font-weight: 600; margin-top: var(--sp-2); }
@@ -803,7 +808,7 @@ tr:last-child td { border-bottom: none; }
 .ss-select:focus { box-shadow: none; }
 .side-nav { display: flex; flex-direction: column; gap: var(--sp-4); flex: 1; overflow-y: auto; }
 .side-sect { font-size: var(--t-micro); font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
-             color: var(--ink-3); margin: var(--sp-14) var(--sp-8) var(--sp-4); }
+             color: var(--ink-fine); margin: var(--sp-14) var(--sp-8) var(--sp-4); }
 .side-item {
   display: flex; align-items: center; gap: var(--sp-12); padding: var(--sp-10) var(--sp-12); border-radius: var(--r-sm);
   color: var(--ink-2); font-size: var(--t-ui); font-weight: 600; letter-spacing: -.01em;
@@ -824,11 +829,11 @@ tr:last-child td { border-bottom: none; }
 .side-user .nm { font-family: var(--font-display); font-size: var(--t-ui);
                  font-weight: 700; white-space: nowrap; overflow: hidden;
                  text-overflow: ellipsis; }
-.side-user .rl { font-size: var(--t-fine); color: var(--ink-3); white-space: nowrap; overflow: hidden;
+.side-user .rl { font-size: var(--t-fine); color: var(--ink-fine); white-space: nowrap; overflow: hidden;
                  text-overflow: ellipsis; }
 .side-signout {
   display: flex; align-items: center; gap: var(--sp-10); padding: var(--sp-10) var(--sp-12); border: none; border-radius: var(--r-sm);
-  background: none; color: var(--danger); font-size: var(--t-ui); font-weight: 600; text-align: left;
+  background: none; color: var(--danger-ink); font-size: var(--t-ui); font-weight: 600; text-align: left;
 }
 .side-signout:hover { background: var(--danger-wash); }
 
@@ -841,7 +846,7 @@ tr:last-child td { border-bottom: none; }
 }
 .filterbar .f { flex: 1 1 148px; min-width: 0; }
 .filterbar .f label { font-size: var(--t-micro); letter-spacing: .07em; text-transform: uppercase;
-                      margin-bottom: var(--sp-4); color: var(--ink-3); }
+                      margin-bottom: var(--sp-4); color: var(--ink-fine); }
 .filterbar .search { flex: 2 1 210px; position: relative; }
 .filterbar input { padding-left: var(--sp-32); }
 .filterbar .search svg { position: absolute; left: 10px; top: 27px; color: var(--ink-3); }
@@ -875,7 +880,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .msg-row .snippet { font-size: var(--t-meta); color: var(--ink-2); overflow: hidden; text-overflow: ellipsis;
                     white-space: nowrap; }
 .msg-row .foot { display: flex; gap: var(--sp-8); align-items: center; margin-top: var(--sp-4); font-size: var(--t-fine);
-                 color: var(--ink-3); flex-wrap: wrap; }
+                 color: var(--ink-fine); flex-wrap: wrap; }
 .msg-body { font-size: var(--t-body); line-height: 1.65; white-space: pre-wrap; color: var(--ink); }
 
 /* roomier content on tablets — the dock is still on screen below 1080px */
@@ -945,7 +950,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .only-wide { display: block; }
   .only-narrow { display: none; }
 }
-.stat .s { font-size: var(--t-fine); color: var(--ink-3); margin-top: var(--sp-4); line-height: 1.35; }
+.stat .s { font-size: var(--t-fine); color: var(--ink-fine); margin-top: var(--sp-4); line-height: 1.35; }
 
 .chips { display: flex; gap: var(--sp-8); flex-wrap: wrap; margin: var(--sp-2) 0 var(--sp-4); }
 .chip {
@@ -992,9 +997,9 @@ tbody tr.is-today td { background: var(--accent-soft); }
            margin: 0 0 var(--sp-14); background: var(--subcard-bg); }
 .subcard:last-child { margin-bottom: 0; }
 .msection { font-size: var(--t-micro); font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
-            color: var(--ink-3); margin-bottom: var(--sp-10); }
+            color: var(--ink-fine); margin-bottom: var(--sp-10); }
 .msection .note { font-weight: 600; letter-spacing: 0; text-transform: none; font-size: var(--t-fine); }
-.hint { font-size: var(--t-fine); color: var(--ink-3); margin-top: var(--sp-4); line-height: 1.35; }
+.hint { font-size: var(--t-fine); color: var(--ink-fine); margin-top: var(--sp-4); line-height: 1.35; }
 .field.inline { display: flex; align-items: center; gap: var(--sp-8); }
 
 /* a generated password appears once, so it gets a surface you cannot mistake */
@@ -1021,7 +1026,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
     --glass: #fff; --glass-strong: #fff; --glass-border: rgba(148, 163, 184, .4);
     --hairline: rgba(148, 163, 184, .35); --surface: #fff; --field: #fff;
     --page-bg: #fff; --subcard-bg: #fff; --track: rgba(148, 163, 184, .25);
-    --ok-ink: #047857; --warn-ink: #b45309; --danger-ink: #be123c; --info-ink: #1d4ed8;
+    --ok-ink: #046a4f; --warn-ink: #92400e; --danger-ink: #a30f35; --info-ink: #1d4ed8;
     --ok-bg: rgba(5, 150, 105, .12); --warn-bg: rgba(217, 119, 6, .14);
     --danger-bg: rgba(225, 29, 72, .1); --info-bg: rgba(37, 99, 235, .1);
     --neutral-bg: rgba(100, 116, 139, .12); --accent-soft: rgba(24, 112, 192, .1);
@@ -1092,7 +1097,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .photo-pick { display: flex; gap: var(--sp-16); align-items: flex-start; }
 .photo-side { flex: 1; min-width: 0; }
 .photo-side .btns { display: flex; flex-wrap: wrap; gap: var(--sp-8); margin-top: var(--sp-10); }
-.photo-note { font-size: var(--t-fine); color: var(--ink-3); margin-top: var(--sp-8); }
+.photo-note { font-size: var(--t-fine); color: var(--ink-fine); margin-top: var(--sp-8); }
 
 /* Choosing a stake, district or person from a search box. */
 .picker { display: flex; flex-direction: column; gap: var(--sp-6); margin-top: var(--sp-10);
@@ -1112,7 +1117,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .picker-item .nm { font-family: var(--font-display); font-size: var(--t-ui);
                    font-weight: 700; color: var(--ink); }
 .picker-item .sub { font-size: var(--t-fine); color: var(--ink-2); margin-top: 1px; }
-.picker-empty { padding: var(--sp-14); font-size: var(--t-meta); color: var(--ink-3); text-align: center; }
+.picker-empty { padding: var(--sp-14); font-size: var(--t-meta); color: var(--ink-fine); text-align: center; }
 .picked {
   display: flex; align-items: center; gap: var(--sp-10); padding: var(--sp-10) var(--sp-12); margin-top: var(--sp-10);
   border-radius: var(--r-md); background: var(--accent-soft); border: 1px solid var(--accent-line);
@@ -1134,7 +1139,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
   place-items: center; color: var(--accent); background: var(--accent-soft);
   border: 1px solid var(--accent-line);
 }
-.waiting h3, .verify h3 { font-family: var(--font-display); font-size: var(--t-title);
+.waiting h2, .verify h2 { font-family: var(--font-display); font-size: var(--t-title);
                          font-weight: 700; margin-bottom: var(--sp-6); }
 .waiting p { font-size: var(--t-ui); color: var(--ink-2); }
 .wait-steps { text-align: left; margin: var(--sp-16) auto var(--sp-4); max-width: 330px;
@@ -1174,7 +1179,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
    belongs to the SMS gateway rather than the screen, so it is never shown or asked for. */
 .phone-input { font-size: var(--t-body); }
 .phone-input::placeholder { letter-spacing: .04em; }
-.phone-note { font-size: var(--t-fine); color: var(--ink-3); margin-top: var(--sp-6); line-height: 1.35; }
+.phone-note { font-size: var(--t-fine); color: var(--ink-fine); margin-top: var(--sp-6); line-height: 1.35; }
 
 /* ---------------- Showing a password ----------------
    The switch belongs inside the box it speaks for, so it reads as part of that field and
@@ -1186,7 +1191,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
   position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
   width: var(--sp-34); height: var(--sp-34); padding: 0; display: flex; align-items: center;
   justify-content: center; border: none; border-radius: var(--r-sm); cursor: pointer;
-  background: transparent; color: var(--ink-3); transition: color .15s, background .15s;
+  background: transparent; color: var(--ink-fine); transition: color .15s, background .15s;
 }
 .pass-eye:hover { color: var(--accent); background: var(--accent-soft); }
 .pass-eye:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
@@ -1224,19 +1229,19 @@ tbody tr.is-today td { background: var(--accent-soft); }
 /* ---------------- The policy pages ---------------- */
 .doc { max-width: 720px; margin: 0 auto; }
 .doc-head { margin-bottom: var(--sp-18); }
-.doc-head h2 { font-family: var(--font-display); font-size: var(--t-hero);
+.doc-head h1 { font-family: var(--font-display); font-size: var(--t-hero);
                font-weight: 700; letter-spacing: -.012em; margin-bottom: var(--sp-6); }
 .doc-head .who { font-size: var(--t-ui); color: var(--ink-2); }
 .doc-meta {
   display: flex; flex-wrap: wrap; gap: var(--sp-6) var(--sp-18); padding: var(--sp-12) var(--sp-14); margin-bottom: var(--sp-20);
   border-radius: var(--r-md); background: var(--subcard-bg); border: 1px solid var(--hairline);
 }
-.doc-meta div { font-size: var(--t-fine); color: var(--ink-3); }
+.doc-meta div { font-size: var(--t-fine); color: var(--ink-fine); }
 .doc-meta b { display: block; font-size: var(--t-meta); font-weight: 600; color: var(--ink);
               letter-spacing: -.005em; }
 .doc-sec { padding: var(--sp-16) var(--sp-2) var(--sp-2); border-top: 1px solid var(--hairline); }
 .doc-sec:first-of-type { border-top: none; padding-top: 0; }
-.doc-sec h3 { font-family: var(--font-display); font-size: var(--t-card);
+.doc-sec h2 { font-family: var(--font-display); font-size: var(--t-card);
               font-weight: 700; letter-spacing: -.008em; margin-bottom: var(--sp-8); }
 .doc-sec p { font-size: var(--t-body); line-height: 1.72; color: var(--ink-2); margin-bottom: var(--sp-10); }
 .doc-sec p:last-child { margin-bottom: var(--sp-4); }
@@ -1283,12 +1288,12 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .rights-note svg { flex: none; margin-top: var(--sp-2); color: var(--ink-3); }
 .kv { width: 100%; border-collapse: collapse; }
 .kv th { width: 42%; font-size: var(--t-fine); font-weight: 600; letter-spacing: .05em;
-         text-transform: uppercase; color: var(--ink-3); padding: var(--sp-8) var(--sp-10) var(--sp-8) 0;
+         text-transform: uppercase; color: var(--ink-fine); padding: var(--sp-8) var(--sp-10) var(--sp-8) 0;
          border-bottom: 1px solid var(--hairline); vertical-align: top; }
 .kv td { font-size: var(--t-ui); color: var(--ink); padding: var(--sp-8) 0; word-break: break-word;
          border-bottom: 1px solid var(--hairline); }
 .kv tr:last-child th, .kv tr:last-child td { border-bottom: none; }
-.kv td.none { color: var(--ink-3); }
+.kv td.none { color: var(--ink-fine); }
 .not-held { display: flex; flex-wrap: wrap; gap: var(--sp-6); margin: var(--sp-2) 0 0; padding: 0; }
 .not-held li { list-style: none; font-size: var(--t-fine); font-weight: 600; color: var(--ink-2);
                padding: var(--sp-4) var(--sp-10); border-radius: 999px; background: var(--neutral-bg); }
@@ -1433,7 +1438,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 /* The held sittings are the same rows as the coming ones, just looked at from the other
    side of today — so they get a divider rather than a second card. */
 .cd-sub { font-size: var(--t-micro); font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
-          color: var(--ink-3); margin: var(--sp-16) 0 0; padding-top: var(--sp-14);
+          color: var(--ink-fine); margin: var(--sp-16) 0 0; padding-top: var(--sp-14);
           border-top: 1px solid var(--hairline); }
 .cd-copy { font-size: var(--t-ui); color: var(--ink-2); line-height: 1.6; max-width: 66ch; }
 .cd-copy + .actions { margin-top: var(--sp-14); }
@@ -1457,7 +1462,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
    button's ground, not a hole in the page: it says what belongs here, in words, to the only
    two people on the screen who can do anything about it. */
 .cd-cover-blank { display: flex; align-items: center; justify-content: center; gap: var(--sp-10);
-                  aspect-ratio: 2.4 / 1; color: var(--ink-3); font-size: var(--t-meta); font-weight: 600;
+                  aspect-ratio: 2.4 / 1; color: var(--ink-fine); font-size: var(--t-meta); font-weight: 600;
                   background: linear-gradient(180deg, var(--accent-soft), var(--subcard-bg)); }
 @media (min-width: 700px) { .cd-cover-blank { aspect-ratio: 3 / 1; } }
 .cd-cover-blank svg { opacity: .7; }
@@ -1487,9 +1492,12 @@ tbody tr.is-today td { background: var(--accent-soft); }
 /* ---------------- Install banner (PWA) ----------------
    Offers the home-screen icon where an icon makes sense: a phone, the app not
    already installed, not waved away in the last two weeks. Sits above the dock,
-   below the toasts, and prints nothing. */
+   below the toasts, and prints nothing.
+   It is a suggestion, so it waits behind the things a person opened on purpose: the
+   drawer, the account menu and any dialog. At 110 it covered all three. 50 still
+   clears the dock (45) and the bar (40), and the toasts (120) still speak last. */
 #pwa-banner {
-  position: fixed; left: 50%; z-index: 110;
+  position: fixed; left: 50%; z-index: 50;
   transform: translate(-50%, 0);
   bottom: calc(max(14px, env(safe-area-inset-bottom)) + 76px);
   width: min(420px, calc(100% - 22px));
@@ -1510,7 +1518,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 #pwa-banner p { margin: var(--sp-4) 0 0; font-size: var(--t-meta); line-height: 1.45; color: var(--ink-2); }
 #pwa-banner .pwa-close { flex: none; display: grid; place-items: center; width: 28px; height: 28px;
                          margin: -4px -4px 0 0; border: none; border-radius: var(--r-sm); background: none;
-                         color: var(--ink-3); cursor: pointer; }
+                         color: var(--ink-fine); cursor: pointer; }
 #pwa-banner .pwa-close:hover { color: var(--ink); background: var(--hover); }
 #pwa-banner .pwa-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #pwa-banner .pwa-actions { display: flex; gap: var(--sp-8); }
@@ -1580,7 +1588,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
    of the person who has to supply it, and keeps the sheet the size it will be. */
 .cert-frame { position: absolute; inset: 0; display: flex; flex-direction: column;
               align-items: center; justify-content: center; gap: var(--sp-8); text-align: center;
-              padding: var(--sp-22); color: var(--ink-3);
+              padding: var(--sp-22); color: var(--ink-fine);
               background: repeating-linear-gradient(135deg, transparent 0 12px,
                                                     var(--hover) 12px 13px); }
 .cert-frame-t { font-size: var(--t-ui); font-weight: 600; color: var(--ink-2); }
@@ -1640,7 +1648,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .cert-row-top .cert-row-name { flex: 1; min-width: 0; }
 .cert-row-name span { overflow-wrap: anywhere; }
 .cert-state { font-size: var(--t-micro); font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
-              color: var(--ink-3); white-space: nowrap; }
+              color: var(--ink-fine); white-space: nowrap; }
 .cert-state.is-on { color: var(--ok-ink); }
 .cert-pick { flex: none; width: auto; }
 /* A line's controls open only for the chosen one. Twelve rows left open would be a form and
