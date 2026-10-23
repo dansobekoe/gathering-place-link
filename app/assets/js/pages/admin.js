@@ -760,11 +760,16 @@ const AdminPage = (() => {
   function inviteModal(s) {
     const box = secretBox(s.invite_code);
     modal({
-      title: "Invite code · " + s.name,
-      sub: "People enter this code when they sign up or join the stake.",
-      body: el("div", {}, [box,
-        el("div", { class: "meta muted", style: "margin-top:var(--sp-10)" },
-          "Rotate it if the code has spread beyond the stake — anyone who has not joined yet will need the new one.")]),
+      title: "Invite · " + s.name,
+      sub: "A code people type, or a square they scan — both open registration with this "
+           + "stake already found.",
+      body: el("div", {}, [
+        box,
+        el("div", { class: "msection", style: "margin:var(--sp-18) 0 var(--sp-4)" }, "Join QR"),
+        QR.joinBlock(s.id),
+        el("div", { class: "meta muted", style: "margin-top:var(--sp-12)" },
+          "Rotate the code if it has spread beyond the stake — anyone who has not joined yet will need the new one. The QR keeps working either way, because it carries the stake, not the code."),
+      ]),
       actions: [
         { label: "Rotate code", kind: "danger", onClick: async close => {
             const ok = await UI.confirm(`Issue a new invite code for ${s.name}? The current one stops working.`,
