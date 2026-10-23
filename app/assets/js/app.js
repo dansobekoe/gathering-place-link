@@ -32,12 +32,23 @@ const App = (() => {
 
   function root() { return document.getElementById("app"); }
 
+  function ctx() { return shellCtx; }
+
+  /* The shell can be described from a state already in hand, without waiting for a
+     promise: every navigation starts with this, so the page it names is drawn in the
+     same beat as the tap. `prepare` is for the case where there is nothing to describe. */
+  function adopt(st) {
+    shellCtx = { user: st.user, stake: Ctx.stakeOf(st), stakes: st.stakes,
+                 joined: st.joined, unread: Ctx.unreadNow().total };
+    return shellCtx;
+  }
+
   async function prepare(force) {
-    const st = await Ctx.load(force);
-    const stake = await Ctx.stake(force);
-    const unread = await Ctx.unread(force);
-    shellCtx = { user: st.user, stake, stakes: st.stakes, joined: st.joined,
-                 unread: unread.total };
+    /* The two questions are asked together. Each one costs about half a second on the
+       public address, and asking them one after the other made the second start only
+       after the first had finished. */
+    const [st, unread] = await Promise.all([Ctx.load(force), Ctx.unread(force)]);
+    adopt(st);
     /* The bell is asked here rather than by each page: every navigation lands on this
        function, so one call covers the app, and its own throttle means a person who moves
        about quickly still asks the portal once in a while rather than once per screen.
@@ -45,7 +56,6 @@ const App = (() => {
     if (typeof Notify !== "undefined") { Notify.watch(); Notify.poll(); }
     return shellCtx;
   }
-  function ctx() { return shellCtx; }
 
   /* One navigation list per role. `group` headings organise the sidebar; the first
      four entries are what the phone dock shows, so they carry the everyday actions. */
@@ -216,26 +226,38 @@ const App = (() => {
       newScreen(previous);
       return;
     }
-    try {
-      await prepare();
-    } catch (err) {
-      /* The device still holds a token, but the portal no longer recognises it — it aged
-         out, or the account behind it has since been removed. Either way this person is
-         not signed in, and rendering a page over an empty context would show them a
-         dashboard with nothing in it. Say plainly what happened and start again. */
-      if (err.status === 401) { signOut("Your session has ended. Please sign in again."); return; }
-      UI.toast(err.message || "The portal could not load your details.");
-      UI.render(root(), UI.el("div", { class: "auth-wrap" }, [
-        UI.el("div", { class: "auth-card down-card" }, [
-          UI.el("h1", { class: "down-title" }, ["Nothing loaded"]),
-          UI.el("p", { class: "down-why" },
-                [err.message || "The portal could not reach the server."]),
-          UI.el("button", { class: "btn", type: "button", onclick: () => route() },
-                ["Try again"]),
-        ]),
-      ]));
-      newScreen(previous);
-      return;
+    /* A click is painted from what this tab already worked out, and the context is
+       asked again behind the screen. Waiting here for that answer was the difference
+       between a screen that appears on the tap and one that appears after the tunnel
+       had finished talking — and on a first open it could be three questions in a row.
+       A session the portal has ended is handled where it is discovered: the auth-lost
+       event below signs out whichever screen found it. */
+    const known = Ctx.current();
+    if (known) {
+      adopt(known);
+      prepare().catch(() => { /* keep the shell that is already on screen */ });
+    } else {
+      try {
+        await prepare();
+      } catch (err) {
+        /* The device still holds a token, but the portal no longer recognises it — it aged
+           out, or the account behind it has since been removed. Either way this person is
+           not signed in, and rendering a page over an empty context would show them a
+           dashboard with nothing in it. Say plainly what happened and start again. */
+        if (err.status === 401) { signOut("Your session has ended. Please sign in again."); return; }
+        UI.toast(err.message || "The portal could not load your details.");
+        UI.render(root(), UI.el("div", { class: "auth-wrap" }, [
+          UI.el("div", { class: "auth-card down-card" }, [
+            UI.el("h1", { class: "down-title" }, ["Nothing loaded"]),
+            UI.el("p", { class: "down-why" },
+                  [err.message || "The portal could not reach the server."]),
+            UI.el("button", { class: "btn", type: "button", onclick: () => route() },
+                  ["Try again"]),
+          ]),
+        ]));
+        newScreen(previous);
+        return;
+      }
     }
     document.body.classList.remove("drawer-open");
 
@@ -301,9 +323,59 @@ const App = (() => {
     if (!state.open) { downScreen(state.why); return; }
     if (downTimer) { window.clearInterval(downTimer); downTimer = null; }
     Legal.load().catch(() => { /* the sign-up links retry when they are clicked */ });
-    if (API.getToken()) await refreshUser();
+    if (API.getToken()) {
+      if (Ctx.current()) {
+        /* The profile we already hold is good until the portal says otherwise. Asking for
+           it in front of the first screen puts half a second of tunnel between the tap on
+           the icon and anything on the page — and a body that expires signs out through
+           the auth-lost event below. */
+        API.get("/api/auth/me").then(u => API.setUser(u)).catch(() => { /* the next call says */ });
+      } else {
+        await refreshUser();
+      }
+    }
     route();
   }
+
+  /* ---- the thin line, the end of a session, and a road that has gone ----
+
+     A click on the public address travels out to Cloudflare and back to this laptop, so
+     a screen can take half a second to fill. The line appears only if a request is still
+     out after a moment, which keeps a local answer — five milliseconds — from flashing
+     the screen. It is a horizon, not a spinner: no text for a screen reader to trip over,
+     and it never takes a tap. */
+  let waiting = 0;
+  let railTimer = null;
+  function rail(n) {
+    waiting = n;
+    const bar = document.getElementById("progress");
+    if (!bar) return;
+    if (n > 0) {
+      if (!railTimer && !bar.classList.contains("on")) {
+        railTimer = window.setTimeout(() => { bar.classList.add("on"); railTimer = null; }, 140);
+      }
+      return;
+    }
+    if (railTimer) { window.clearTimeout(railTimer); railTimer = null; }
+    bar.classList.remove("on");
+  }
+  document.addEventListener("gp:busy", e => rail(e.detail || 0));
+
+  document.addEventListener("gp:auth-lost", () => {
+    if (!API.getToken()) return;
+    signOut("Your session has ended. Please sign in again.");
+  });
+
+  /* The portal answering or not answering is a fact about the whole app, not one screen.
+     It is said once when the road goes and once when it comes back, so a tunnel hiccup
+     reads as an explanation rather than five identical errors. */
+  document.addEventListener("gp:link", e => {
+    const detail = e.detail || {};
+    if (detail.up) { UI.toast("Back online."); return; }
+    const when = detail.at ? new Date(detail.at) : new Date();
+    const clock = when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    UI.toast(`No connection — showing what was on this phone at ${clock}.`, "err");
+  });
 
   window.addEventListener("hashchange", route);
   window.addEventListener("DOMContentLoaded", boot);
