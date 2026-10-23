@@ -87,6 +87,15 @@ const AuthPage = (() => {
         el("img", { class: "brand-img", src: logoUrl(), alt: "Gathering Place" }),
         el("div", { class: "tag" }, "Courses, attendance & community for YSA gathering places"),
       ]));
+      /* The card is organised by its tabs, and a tab is a control, not a name. The heading
+         is for the tab and for a screen reader; the logo and tabs already say it on screen,
+         so it is not repeated there. It follows the card from state to state, because
+         "Sign in" is not the name of a screen asking for a code. */
+      card.appendChild(el("h1", { class: "sr-only" },
+        mode === "signup" ? "Create your account"
+          : mode === "verify" ? "Confirm your email"
+          : mode === "waiting" ? "Waiting for approval"
+          : mode === "reset" ? "Reset your password" : "Sign in"));
       // only the screens that took something back say so; the sign-in tab kept nothing
       if (restored && mode !== "login") {
         card.appendChild(el("div", { class: "keep-note" }, [
@@ -150,7 +159,7 @@ const AuthPage = (() => {
       const req = Array.isArray(d.requested) ? d.requested : [];
       return el("div", { class: "waiting" }, [
         el("div", { class: "mark" }, [icon(byMail ? "mail" : "clock", 26)]),
-        el("h3", {}, "Your registration is with the portal admin"),
+        el("h2", {}, "Your registration is with the portal admin"),
         el("p", {}, d.message || "Your registration has been sent for approval."),
         req.length ? el("div", { class: "card", style: "margin-top:var(--sp-16);text-align:left" },
           req.map(r => el("div", { class: "list-item" }, [
@@ -255,7 +264,7 @@ const AuthPage = (() => {
       countdown(d.just_sent ? RESEND_WAIT : 0);
       return el("div", { class: "verify" }, [
         el("div", { class: "mark" }, [icon(byMail ? "mail" : "key", 26)]),
-        el("h3", { style: "margin-bottom:var(--sp-4)" }, "Confirm your email address"),
+        el("h2", { style: "margin-bottom:var(--sp-4)" }, "Confirm your email address"),
         el("p", { class: "muted", style: "font-size:var(--t-ui);line-height:1.6;margin-bottom:var(--sp-14)" },
           d.message || (byMail
             ? "A six-digit code went to the address you registered with. Enter it and " +
@@ -353,12 +362,13 @@ const AuthPage = (() => {
       const body = el("div", {}, [
         el("div", { id: "fp-step1" }, [
           field("Account email", email),
-          el("button", { class: "btn", onclick: async () => {
-            try {
-              const r = await API.post("/api/auth/forgot-password", { email: email.value });
-              showStep2(r);
-            } catch (e) { toast(e.message, "err"); }
-          }}, [icon("mail", 17), "Send reset code"]),
+          el("button", { class: "btn",
+            onclick: e => UI.act(e.currentTarget, "Sending…", async () => {
+              try {
+                const r = await API.post("/api/auth/forgot-password", { email: email.value });
+                showStep2(r);
+              } catch (e) { toast(e.message, "err"); }
+            })}, [icon("mail", 17), "Send reset code"]),
         ]),
         step2,
       ]);
@@ -394,18 +404,19 @@ const AuthPage = (() => {
         step2.appendChild(field("Reset code", code));
         step2.appendChild(field("New password", UI.passWrap(np)));
         step2.appendChild(field("Confirm new password", UI.passWrap(cp)));
-        step2.appendChild(el("button", { class: "btn", onclick: async () => {
-          if (np.value.length < 8)
-            return toast("A new password needs at least 8 characters", "err");
-          if (!UI.passAgree(np, cp, "new passwords")) return;
-          try {
-            await API.post("/api/auth/reset-password",
-              { email: email.value, code: code.value, new_password: np.value });
-            draftDrop("reset");
-            m.close(); toast("Password updated — sign in with your new password");
-            mode = "login"; draw();
-          } catch (e) { toast(e.message, "err"); }
-        }}, [icon("lock", 17), "Set new password"]));
+        step2.appendChild(el("button", { class: "btn",
+          onclick: e => UI.act(e.currentTarget, "Saving…", async () => {
+            if (np.value.length < 8)
+              return toast("A new password needs at least 8 characters", "err");
+            if (!UI.passAgree(np, cp, "new passwords")) return;
+            try {
+              await API.post("/api/auth/reset-password",
+                { email: email.value, code: code.value, new_password: np.value });
+              draftDrop("reset");
+              m.close(); toast("Password updated — sign in with your new password");
+              mode = "login"; draw();
+            } catch (e) { toast(e.message, "err"); }
+          })}, [icon("lock", 17), "Set new password"]));
         step2.appendChild(el("div", { class: "keep-note", style: "margin-top:var(--sp-12)" }, [
           el("button", { class: "linkbtn", type: "button", onclick: backToStep1 },
             "Ask for a new code"),
