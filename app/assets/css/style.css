@@ -20,35 +20,35 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/gabarito-600.woff2?v=97") format("woff2");
+  src: url("../fonts/gabarito-600.woff2?v=101") format("woff2");
 }
 @font-face {
   font-family: "Gabarito";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/gabarito-700.woff2?v=97") format("woff2");
+  src: url("../fonts/gabarito-700.woff2?v=101") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("../fonts/figtree-400.woff2?v=97") format("woff2");
+  src: url("../fonts/figtree-400.woff2?v=101") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/figtree-600.woff2?v=97") format("woff2");
+  src: url("../fonts/figtree-600.woff2?v=101") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/figtree-700.woff2?v=97") format("woff2");
+  src: url("../fonts/figtree-700.woff2?v=101") format("woff2");
 }
 
 :root {
@@ -275,6 +275,34 @@ button { font-family: inherit; cursor: pointer; }
   backdrop-filter: var(--blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-1);
+}
+
+/* ---------------- The horizon ----------------
+   A screen that is still arriving says so with a line across the top, not with a blank
+   page: the thin edge is the same two pixels the rest of the shell uses, and the sweep is
+   slow enough to read as waiting rather than as decoration. It takes no taps and has no
+   words of its own — a screen reader is already told when the page changes. */
+.progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 120;
+  pointer-events: none; opacity: 0; transition: opacity .18s;
+}
+.progress.on { opacity: 1; }
+.progress.on::before {
+  content: ""; display: block; height: 100%; width: 38%;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent-2), transparent);
+  animation: horizon 1.15s ease-in-out infinite;
+}
+@keyframes horizon {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(320%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* A line that marches across the top is motion, and some people have asked not to be
+     shown it. The line still says work is out; it just holds still. */
+  .progress.on::before {
+    width: 100%; transform: none; animation: none;
+    background: var(--accent); opacity: .7;
+  }
 }
 
 /* ---------------- Top bar ---------------- */
