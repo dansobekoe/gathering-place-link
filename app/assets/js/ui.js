@@ -640,6 +640,39 @@ const UI = (() => {
     pic.addEventListener("error", () => { pic.style.display = "none"; }, { once: true });
     return pic;
   }
+  /* One mark for every seat a class holds: filled as people take them, outlined while
+     the seat is free. The row is the portal's one repeated signature, at the foot of
+     the classes a member sees. Sixteen marks is as long as the line may grow; a hall
+     with more seats keeps the same width as a strip filled in proportion, so a large
+     class never becomes a line of specks on a phone. The sentence above the marks is
+     the whole record: the marks repeat it as a shape and are hidden from a screen
+     reader, which must not hear the same seat count twice. */
+  const SEAT_MARKS_MAX = 16;
+  function seatRow(enrolled, capacity, waitlisted, extraClass) {
+    const taken = Math.max(0, Number(enrolled) || 0);
+    const seats = Math.max(0, Number(capacity) || 0);
+    const waiting = Math.max(0, Number(waitlisted) || 0);
+    const row = el("div", { class: "seat-row" + (extraClass ? " " + extraClass : "") }, [
+      el("div", { class: "seat-text" }, [
+        el("span", { class: "seat-label" }, seats
+          ? `${taken} of ${seats} seat${seats === 1 ? "" : "s"} taken`
+          : `${taken} enrolled · room capacity not set`),
+        waiting ? el("span", { class: "seat-wait" }, `${waiting} waiting`) : null,
+      ]),
+    ]);
+    if (!seats) return row;
+    const marks = el("div", { class: "seat-marks" + (seats > SEAT_MARKS_MAX ? " seat-strip" : ""),
+                              "aria-hidden": "true" });
+    if (seats > SEAT_MARKS_MAX) {
+      marks.appendChild(el("i", { class: "seat-fill",
+        style: `width:${Math.min(100, Math.round(taken / seats * 100))}%` }));
+    } else {
+      for (let i = 0; i < seats; i += 1)
+        marks.appendChild(el("i", { class: "seat" + (i < taken ? " taken" : "") }));
+    }
+    row.appendChild(marks);
+    return row;
+  }
   function personName(u) {
     return (u && (u.display_name || u.full_name || u.name)) || "";
   }
@@ -1048,7 +1081,7 @@ const UI = (() => {
            empty, loading, WEEKDAYS, CATEGORIES, ROLES, roleLabel, fmtTime, fmtDate,
            ago, opensLabel, startsAt, hoursText,
            logAction, logDetail, logKind,
-           statusPill, initials, avatar, coverTile, personName, shortName,
+           statusPill, initials, avatar, coverTile, seatRow, personName, shortName,
            tile, barSection, stackSection, primaryRoleLabel,
            theme, setTheme, toggleTheme, themeButton, phoneField, wardField, passWrap, passAgree,
            draftSave, draftRead, draftDrop, draftClear };
