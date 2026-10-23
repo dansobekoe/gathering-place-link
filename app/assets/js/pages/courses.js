@@ -39,7 +39,7 @@ const CoursesPage = (() => {
 
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
-      el("h2", { class: "page-title" }, "Courses"),
+      el("h1", { class: "page-title" }, "Courses"),
       el("div", { class: "page-sub" },
         (activeTerm ? activeTerm.name : "No active term yet") + ` · ${st.name}`),
     ]));
@@ -143,7 +143,7 @@ const CoursesPage = (() => {
           return;
         }
         const card = el("div", { class: "card" });
-        card.appendChild(el("div", { class: "sec-title" },
+        card.appendChild(el("h2", { class: "sec-title" },
           `${data.count} ${data.count === 1 ? "class" : "classes"} on offer`));
         data.courses.forEach(r => card.appendChild(catalogueRow(r)));
         rowsHost.appendChild(card);
@@ -295,7 +295,7 @@ const CoursesPage = (() => {
 
     function openCard(open) {
       const card = el("div", { class: "card" });
-      card.appendChild(el("div", { class: "sec-title" }, "Open classes to claim"));
+      card.appendChild(el("h2", { class: "sec-title" }, "Open classes to claim"));
       card.appendChild(el("div", { class: "meta", style: "margin-bottom:var(--sp-6)" },
         "Published by the admin or a service missionary, waiting for an instructor."));
       open.forEach(c => card.appendChild(el("div", { class: "list-item" }, [
@@ -457,7 +457,7 @@ const CoursesPage = (() => {
     function courseForm(course) {
       const editing = !!course;
       const sec = el("div");
-      sec.appendChild(el("div", { class: "sec-title", style: "margin-top:var(--sp-22)" },
+      sec.appendChild(el("h2", { class: "sec-title", style: "margin-top:var(--sp-22)" },
         editing ? `Edit “${course.title}”` : "Create a class"));
       const card = el("div", { class: "card" });
       const title = el("input", { placeholder: "Course title", value: editing ? course.title : "" });
@@ -782,7 +782,7 @@ const CoursesPage = (() => {
           const items = grid[day] || [];
           if (!items.length) return;
           any = true;
-          wrap.appendChild(el("div", { class: "sec-title", style: "margin:var(--sp-14) 0 var(--sp-4)" }, day));
+          wrap.appendChild(el("h2", { class: "sec-title", style: "margin:var(--sp-14) 0 var(--sp-4)" }, day));
           items.forEach(i => wrap.appendChild(el("div", { class: "list-item" }, [
             el("div", { class: "grow" }, [
               el("div", { class: "title" }, i.title),
