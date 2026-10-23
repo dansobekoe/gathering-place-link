@@ -77,7 +77,7 @@ const CertificatesPage = (() => {
     return el("div", { class: "page-head",
         style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
-        el("h2", { class: "page-title" }, "Certificates"),
+        el("h1", { class: "page-title" }, "Certificates"),
         el("div", { class: "page-sub" }, chosen
           ? `${stake.name} · ${places.length === 1 ? "the one gathering place here"
                         : `${places.length} gathering places`} — choose one to place its lines`
@@ -121,7 +121,7 @@ const CertificatesPage = (() => {
     const wrap = el("div");
     wrap.appendChild(el("div", { class: "page-head" }, [
       el("div", {}, [
-        el("h2", { class: "page-title" }, "Certificates"),
+        el("h1", { class: "page-title" }, "Certificates"),
         el("div", { class: "page-sub" }, stake.name),
       ]),
     ]));
