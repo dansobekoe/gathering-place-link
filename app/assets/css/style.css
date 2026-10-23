@@ -20,35 +20,35 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/gabarito-600.woff2?v=83") format("woff2");
+  src: url("../fonts/gabarito-600.woff2?v=87") format("woff2");
 }
 @font-face {
   font-family: "Gabarito";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/gabarito-700.woff2?v=83") format("woff2");
+  src: url("../fonts/gabarito-700.woff2?v=87") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("../fonts/figtree-400.woff2?v=83") format("woff2");
+  src: url("../fonts/figtree-400.woff2?v=87") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/figtree-600.woff2?v=83") format("woff2");
+  src: url("../fonts/figtree-600.woff2?v=87") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/figtree-700.woff2?v=83") format("woff2");
+  src: url("../fonts/figtree-700.woff2?v=87") format("woff2");
 }
 
 :root {
@@ -156,6 +156,12 @@
      happened to have, and no two people saw the same portal. */
   --font: "Figtree", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto,
           "Helvetica Neue", Arial, sans-serif;
+  /* Only the three weights the shipped files own, and each has one job: 400 is
+     reading text, 600 is every label, control, table head and name in a list, and
+     700 belongs to the display face and to a numeral that is the content of its
+     tile — a count, a code, a date. A label is not a headline; asking for a
+     weight no file owns (500 was doing that once) picks the nearest face and
+     makes a label look like unremarkable text. */
   /* Gabarito for the headings and the numbers worth noticing: the face a title
      wears, falling back to the body face rather than to the system. */
   --font-display: "Gabarito", "Figtree", "Segoe UI", -apple-system, Roboto,
@@ -343,9 +349,9 @@ button { font-family: inherit; cursor: pointer; }
 }
 .bell-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-10);
              padding: var(--sp-12) var(--sp-14) var(--sp-10); border-bottom: 1px solid var(--hairline); }
-.bell-head .mhead { font-size: var(--t-micro); font-weight: 700; letter-spacing: .06em;
+.bell-head .mhead { font-size: var(--t-micro); font-weight: 600; letter-spacing: .06em;
                     text-transform: uppercase; color: var(--ink-3); }
-.bell-all { background: none; border: none; font: inherit; font-size: var(--t-meta); font-weight: 700;
+.bell-all { background: none; border: none; font: inherit; font-size: var(--t-meta); font-weight: 600;
             color: var(--accent); padding: var(--sp-4) var(--sp-8); border-radius: var(--r-sm); cursor: pointer; }
 .bell-all:hover { background: var(--accent-soft); }
 .bell-list { max-height: min(56vh, 430px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -366,13 +372,13 @@ button { font-family: inherit; cursor: pointer; }
 .bell-ic.result { background: var(--ok-bg); color: var(--ok-ink); }
 .bell-ic.account { background: var(--info-bg); color: var(--info-ink); }
 .bell-words { display: flex; flex-direction: column; min-width: 0; }
-.bell-title { font-size: var(--t-ui); font-weight: 700; letter-spacing: -.01em; color: var(--ink); }
+.bell-title { font-size: var(--t-ui); font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
 .bell-body { font-size: var(--t-meta); line-height: 1.55; color: var(--ink-2); margin-top: var(--sp-2);
              display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3;
              -webkit-box-orient: vertical; overflow: hidden; }
 /* --ink-fine, not --ink-3: how long ago a notice arrived is information a person reads,
    and the sheet's own rule reserves --ink-3 for decoration that may fail to be read. */
-.bell-when { font-size: var(--t-micro); font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+.bell-when { font-size: var(--t-micro); font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
              color: var(--ink-fine); margin-top: var(--sp-4); }
 .bell-seen { flex: none; width: 28px; height: 28px; margin-top: var(--sp-12); border: none;
              background: none; color: var(--ink-3); border-radius: var(--r-sm); display: grid;
@@ -383,7 +389,7 @@ button { font-family: inherit; cursor: pointer; }
 .bell-foot { border-top: 1px solid var(--hairline); padding: var(--sp-12) var(--sp-14) var(--sp-14);
              background: var(--subcard-bg); }
 .bell-alerts { display: flex; align-items: center; gap: var(--sp-10); cursor: pointer;
-               font-size: var(--t-meta); font-weight: 700; color: var(--ink); }
+               font-size: var(--t-meta); font-weight: 600; color: var(--ink); }
 /* The switch is drawn rather than the checkbox shown: a tick box asks nothing of a thumb,
    while a sliding face says what the other half of the sentence would be. */
 .bell-check { appearance: none; -webkit-appearance: none; flex: none; position: relative;
@@ -428,7 +434,7 @@ button { font-family: inherit; cursor: pointer; }
   margin-bottom: var(--sp-16);
 }
 .card > h3, .sec-title {
-  font-size: var(--t-meta); font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  font-size: var(--t-meta); font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
   color: var(--ink-2); margin-bottom: var(--sp-12);
 }
 .sec-title { margin: var(--sp-22) var(--sp-2) var(--sp-10); }
@@ -509,7 +515,7 @@ select { appearance: none;
 .list-item.sub .meta { font-size: var(--t-fine); }
 table { width: 100%; border-collapse: collapse; font-size: var(--t-ui); }
 th, td { text-align: left; padding: var(--sp-10) var(--sp-8); border-bottom: 1px solid var(--hairline); }
-th { font-size: var(--t-micro); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+th { font-size: var(--t-micro); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
 tr:last-child td { border-bottom: none; }
 
 /* ---------------- Pills ---------------- */
@@ -732,11 +738,19 @@ tr:last-child td { border-bottom: none; }
 .topbar .logo { gap: var(--sp-12); }
 .brand-mobile { height: 26px; }
 .crumb { display: flex; flex-direction: column; min-width: 0; }
-.crumb-stake { font-size: var(--t-ui); font-weight: 700; color: var(--ink); letter-spacing: -.01em;
+.crumb-stake { font-size: var(--t-ui); font-weight: 600; color: var(--ink); letter-spacing: -.01em;
                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crumb-role { font-size: var(--t-micro); font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
               color: var(--ink-3); }
 .menu-btn { display: grid; }
+/* On the narrowest phones the wordmark and the gathering place's name were fighting
+   over the same forty pixels, and the name lost: "Test Stake" was being ellipsised to
+   its first letter. The wordmark is already at the head of the drawer and on the sign-in
+   card, so there it stays; here the bar keeps the one label that changes what the page
+   means. At 440px both fit, and from there up nothing changes. */
+@media (max-width: 439px) {
+  .topbar .logo .brand-mobile { display: none; }
+}
 
 @media (max-width: 1079px) {
   .drawer {
@@ -779,16 +793,16 @@ tr:last-child td { border-bottom: none; }
   margin: 0 var(--sp-2); padding: var(--sp-12) var(--sp-14); border-radius: var(--r-md);
   background: var(--glass-strong); border: 1px solid var(--glass-border);
 }
-.ss-label { font-size: var(--t-micro); font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+.ss-label { font-size: var(--t-micro); font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
             color: var(--ink-3); margin-bottom: var(--sp-4); }
 .ss-name { font-family: var(--font-display); font-size: var(--t-body);
            font-weight: 700; color: var(--ink); letter-spacing: -.006em; }
 .ss-role { font-size: var(--t-fine); color: var(--accent); font-weight: 600; margin-top: var(--sp-2); }
-.ss-select { font-size: var(--t-ui); font-weight: 700; padding: var(--sp-4) var(--sp-28) var(--sp-4) 0; border: none;
+.ss-select { font-size: var(--t-ui); font-weight: 600; padding: var(--sp-4) var(--sp-28) var(--sp-4) 0; border: none;
              background: transparent; color: var(--ink); }
 .ss-select:focus { box-shadow: none; }
 .side-nav { display: flex; flex-direction: column; gap: var(--sp-4); flex: 1; overflow-y: auto; }
-.side-sect { font-size: var(--t-micro); font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+.side-sect { font-size: var(--t-micro); font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
              color: var(--ink-3); margin: var(--sp-14) var(--sp-8) var(--sp-4); }
 .side-item {
   display: flex; align-items: center; gap: var(--sp-12); padding: var(--sp-10) var(--sp-12); border-radius: var(--r-sm);
@@ -838,7 +852,7 @@ tr:last-child td { border-bottom: none; }
 .table-wrap table { min-width: 560px; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .row-actions { display: flex; gap: var(--sp-6); justify-content: flex-end; flex-wrap: wrap; }
-.mini-pill { font-size: var(--t-micro); font-weight: 700; padding: var(--sp-2) var(--sp-8); border-radius: 999px;
+.mini-pill { font-size: var(--t-micro); font-weight: 600; padding: var(--sp-2) var(--sp-8); border-radius: 999px;
              background: var(--neutral-bg); color: var(--ink-2); }
 .mini-pill.hot { background: var(--danger-bg); color: var(--danger-ink); }
 .mini-pill.ok { background: var(--ok-bg); color: var(--ok-ink); }
@@ -955,7 +969,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
         background: var(--accent-soft); color: var(--accent); }
 .when .d { font-family: var(--font-display); font-size: var(--t-title);
            font-weight: 700; line-height: 1.05; }
-.when .m { font-size: var(--t-micro); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.when .m { font-size: var(--t-micro); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 
 /* composer: the resolved recipient line under the audience picker */
 .to-line { font-size: var(--t-meta); font-weight: 600; color: var(--ink); padding: var(--sp-10) var(--sp-12);
@@ -977,7 +991,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .subcard { border: 1px solid var(--hairline); border-radius: var(--r-md); padding: var(--sp-14) var(--sp-16);
            margin: 0 0 var(--sp-14); background: var(--subcard-bg); }
 .subcard:last-child { margin-bottom: 0; }
-.msection { font-size: var(--t-micro); font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+.msection { font-size: var(--t-micro); font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
             color: var(--ink-3); margin-bottom: var(--sp-10); }
 .msection .note { font-weight: 600; letter-spacing: 0; text-transform: none; font-size: var(--t-fine); }
 .hint { font-size: var(--t-fine); color: var(--ink-3); margin-top: var(--sp-4); line-height: 1.35; }
@@ -1255,7 +1269,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 }
 .rights-row .ic.red { background: var(--danger-bg); color: var(--danger-ink); }
 .rights-row .grow { flex: 1; min-width: 0; }
-.rights-row .t { font-size: var(--t-body); font-weight: 700; letter-spacing: -.01em; }
+.rights-row .t { font-size: var(--t-body); font-weight: 600; letter-spacing: -.01em; }
 .rights-row .d { font-size: var(--t-meta); color: var(--ink-2); line-height: 1.55; margin: var(--sp-4) 0 var(--sp-10); }
 .rights-row .btn { width: auto; }
 /* What just happened, said in the portal's own voice rather than as a popup that
@@ -1268,7 +1282,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 }
 .rights-note svg { flex: none; margin-top: var(--sp-2); color: var(--ink-3); }
 .kv { width: 100%; border-collapse: collapse; }
-.kv th { width: 42%; font-size: var(--t-fine); font-weight: 700; letter-spacing: .05em;
+.kv th { width: 42%; font-size: var(--t-fine); font-weight: 600; letter-spacing: .05em;
          text-transform: uppercase; color: var(--ink-3); padding: var(--sp-8) var(--sp-10) var(--sp-8) 0;
          border-bottom: 1px solid var(--hairline); vertical-align: top; }
 .kv td { font-size: var(--t-ui); color: var(--ink); padding: var(--sp-8) 0; word-break: break-word;
@@ -1315,7 +1329,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .nextup .when { width: 58px; padding: var(--sp-8) 0; }
 .nextup .when .d { font-family: var(--font-display); font-size: 23px; }
 .nextup .when .m { font-size: var(--t-micro); }
-.nu-kind { font-size: var(--t-micro); font-weight: 700; letter-spacing: .08em;
+.nu-kind { font-size: var(--t-micro); font-weight: 600; letter-spacing: .08em;
            text-transform: uppercase; color: var(--accent); }
 .nextup .nu-name { font-family: var(--font-display); font-size: var(--t-title);
                    font-weight: 700; letter-spacing: -.012em; margin: var(--sp-4) 0 var(--sp-4); }
@@ -1363,6 +1377,29 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .mc-who { display: flex; gap: var(--sp-12); align-items: flex-start; flex: 1; min-width: 0; }
 .mc-who .mc-text { flex: 1; min-width: 0; }
 
+/* ---------------- The seat row ----------------
+   One mark per seat, at the foot of every class a member sees: filled as people take
+   them, outlined while the seat is free. This is the portal's one repeated signature,
+   and it answers the first question anyone asks of a class without a sentence to read.
+   The count is written as the record; the marks are the shape of it. Past sixteen
+   seats the row keeps its footprint as a proportional strip, so a large room does not
+   turn into a line of specks on a phone. */
+.seat-row { display: flex; align-items: flex-end; justify-content: space-between;
+            gap: var(--sp-12); flex-wrap: wrap; margin-top: var(--sp-12);
+            padding-top: var(--sp-10); border-top: 1px solid var(--hairline); }
+.seat-text { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.seat-label { font-size: var(--t-fine); font-weight: 600; color: var(--ink-fine);
+              font-variant-numeric: tabular-nums; }
+.seat-wait { font-size: var(--t-fine); font-weight: 600; color: var(--warn-ink);
+             font-variant-numeric: tabular-nums; }
+.seat-marks { display: flex; align-items: center; gap: var(--sp-4); margin-left: auto; }
+.seat-marks .seat { display: block; flex: none; width: 8px; height: 8px;
+                    border-radius: 3px; border: 1px solid var(--accent-line); }
+.seat-marks .seat.taken { background: var(--accent); border-color: var(--accent); }
+.seat-strip { width: 168px; max-width: 100%; height: 8px; gap: 0; overflow: hidden;
+              border: 1px solid var(--accent-line); border-radius: 3px; }
+.seat-strip .seat-fill { display: block; height: 100%; background: var(--accent); }
+
 /* ---------------- A member's class page ---------------- */
 /* The design had a photograph across the top of this page. A class now carries one, so the
    photograph does that job: it runs edge to edge under the top rule, and the accent wash
@@ -1384,14 +1421,18 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .cd-fact svg { color: var(--accent); flex: none; margin-top: var(--sp-2); }
 .cd-foot { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-12);
            flex-wrap: wrap; margin-top: var(--sp-18); padding-top: var(--sp-14); border-top: 1px solid var(--hairline); }
+/* The signature sits between what the class is and what a member can do about it.
+   It brings its own rule, so the status line under it gives up the second one. */
+.cd-seats { margin-top: var(--sp-18); padding-top: var(--sp-14); }
+.cd-seats + .cd-foot { border-top: 0; padding-top: 0; margin-top: var(--sp-14); }
 .cd-state { display: flex; align-items: center; gap: var(--sp-8); flex-wrap: wrap; }
 .cd-plain { font-size: var(--t-meta); color: var(--ink-2); }
 .cd-next { display: flex; gap: var(--sp-8); align-items: center; margin-top: var(--sp-14); font-size: var(--t-ui);
-           font-weight: 700; color: var(--accent); }
+           font-weight: 600; color: var(--accent); }
 .cd-next svg { flex: none; }
 /* The held sittings are the same rows as the coming ones, just looked at from the other
    side of today — so they get a divider rather than a second card. */
-.cd-sub { font-size: var(--t-micro); font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+.cd-sub { font-size: var(--t-micro); font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
           color: var(--ink-3); margin: var(--sp-16) 0 0; padding-top: var(--sp-14);
           border-top: 1px solid var(--hairline); }
 .cd-copy { font-size: var(--t-ui); color: var(--ink-2); line-height: 1.6; max-width: 66ch; }
@@ -1506,7 +1547,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .cert-card { background: var(--surface); border: 1px solid var(--hairline);
              border-radius: var(--r-lg); box-shadow: var(--shadow-1); padding: var(--sp-16);
              margin-bottom: var(--sp-14); }
-.cert-sec { font-size: var(--t-fine); font-weight: 700; letter-spacing: .075em; text-transform: uppercase;
+.cert-sec { font-size: var(--t-fine); font-weight: 600; letter-spacing: .075em; text-transform: uppercase;
             color: var(--ink-2); margin-bottom: var(--sp-12); }
 .cert-hint { font-size: var(--t-meta); line-height: 1.5; color: var(--ink-fine); margin-top: var(--sp-8); }
 .cert-plain { font-size: var(--t-ui); line-height: 1.6; color: var(--ink-2); }
@@ -1542,7 +1583,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
               padding: var(--sp-22); color: var(--ink-3);
               background: repeating-linear-gradient(135deg, transparent 0 12px,
                                                     var(--hover) 12px 13px); }
-.cert-frame-t { font-size: var(--t-ui); font-weight: 700; color: var(--ink-2); }
+.cert-frame-t { font-size: var(--t-ui); font-weight: 600; color: var(--ink-2); }
 .cert-frame-s { font-size: var(--t-meta); line-height: 1.5; max-width: 42ch; color: var(--ink-fine); }
 
 /* A line, held by the point that is stored. The plate under the words is the portal's, not
@@ -1564,7 +1605,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
    as one box with a word in it instead of a piece of text. */
 .cert-chip-code { display: grid; place-items: center; padding: 0;
              background: rgba(255, 255, 255, .8); }
-.cert-qr { font-size: 9px; font-weight: 700; letter-spacing: .06em; color: var(--ink-2); }
+.cert-qr { font-size: 9px; font-weight: 600; letter-spacing: .06em; color: var(--ink-2); }
 
 /* The two hairlines a placement is judged against, and the numbers it was set to. */
 .cert-guide { position: absolute; display: none; pointer-events: none;
@@ -1598,7 +1639,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .cert-row-top { display: flex; align-items: center; gap: var(--sp-10); }
 .cert-row-top .cert-row-name { flex: 1; min-width: 0; }
 .cert-row-name span { overflow-wrap: anywhere; }
-.cert-state { font-size: var(--t-micro); font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+.cert-state { font-size: var(--t-micro); font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
               color: var(--ink-3); white-space: nowrap; }
 .cert-state.is-on { color: var(--ok-ink); }
 .cert-pick { flex: none; width: auto; }
@@ -1647,7 +1688,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
               border-color: var(--accent-line); }
 .cert-body-head { display: flex; align-items: baseline; justify-content: space-between;
                   gap: var(--sp-10); margin-bottom: var(--sp-8); }
-.cert-body-head label { font-size: var(--t-meta); font-weight: 700; color: var(--ink); }
+.cert-body-head label { font-size: var(--t-meta); font-weight: 600; color: var(--ink); }
 .cert-count { font-size: var(--t-fine); color: var(--ink-fine); font-variant-numeric: tabular-nums; }
 .cert-words { display: flex; flex-wrap: wrap; gap: var(--sp-6); margin-top: var(--sp-10); }
 .cert-word { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -1669,7 +1710,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
              flex-wrap: wrap; margin-top: var(--sp-4); padding-top: var(--sp-12);
              border-top: 1px solid var(--hairline); }
 .cert-foot .cert-hint { margin-top: 0; }
-.cert-status { font-size: var(--t-meta); font-weight: 700; color: var(--ink-fine);
+.cert-status { font-size: var(--t-meta); font-weight: 600; color: var(--ink-fine);
                font-variant-numeric: tabular-nums; }
 .cert-status.is-ok { color: var(--ok-ink); }
 .cert-status.is-err { color: var(--danger-ink); }
