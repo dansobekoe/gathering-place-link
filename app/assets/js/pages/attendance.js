@@ -4,7 +4,7 @@
    far it has run, whether they were in it, and who else is coming. */
 const AttendancePage = (() => {
   const { el, toast, icon, statusPill, fmtDate, fmtTime, opensLabel, startsAt, hoursText,
-          modal, empty } = UI;
+          modal, empty, seatRow } = UI;
   const STATUSES = ["present", "late", "excused", "absent"];
   const ATT_WORD = { present: "Present", late: "Late", excused: "Excused", absent: "Absent" };
   let liveTimer = null;
@@ -860,11 +860,11 @@ const AttendancePage = (() => {
       fact("calendar", course.course_start_date
         ? `Runs ${fmtDate(course.course_start_date)} – ${fmtDate(course.course_end_date)}`
         : "No dates set for this class"),
-      fact("users", course.capacity
-        ? `${course.enrolled_count} of ${course.capacity} seats taken`
-          + (course.waitlist_count ? ` · ${course.waitlist_count} waiting` : "")
-        : `${course.enrolled_count} enrolled`),
     ]));
+    // The room at a glance, in the same row the member's home uses: the count is the
+    // record, and the marks turn it into a shape rather than a sum to work out.
+    hero.appendChild(seatRow(course.enrolled_count, course.capacity,
+                             course.waitlist_count, "cd-seats"));
     hero.appendChild(el("div", { class: "cd-foot" }, [
       el("div", { class: "cd-state" }, [
         seat && seat.status === "enrolled"
@@ -934,11 +934,6 @@ const AttendancePage = (() => {
       UI.avatar({ name: r.student_name, photo_url: r.photo_url }),
       el("div", { class: "grow" }, [el("div", { class: "title" }, r.student_name)]),
     ])));
-    if (course.waitlist_count) {
-      pcards.appendChild(el("div", { class: "hint" },
-        `${course.waitlist_count} ${course.waitlist_count === 1 ? "person is" : "people are"} `
-        + "waiting for a seat here."));
-    }
     content.appendChild(pcards);
 
     // ---------------- messages ----------------
