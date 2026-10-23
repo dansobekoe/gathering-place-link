@@ -15,7 +15,7 @@ const RecordPage = (() => {
     const page = () => el("div", { class: "page-head",
         style: "display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-12);flex-wrap:wrap" }, [
       el("div", {}, [
-        el("h2", { class: "page-title" }, "My attendance"),
+        el("h1", { class: "page-title" }, "My attendance"),
         el("div", { class: "page-sub" }, "Your check-in record across every course and stake"),
       ]),
       el("div", { class: "actions" }, [
@@ -46,7 +46,7 @@ const RecordPage = (() => {
     }
 
     // rollup tiles
-    body.appendChild(el("div", { class: "sec-title", style: "margin-top:0" }, "By course"));
+    body.appendChild(el("h2", { class: "sec-title", style: "margin-top:0" }, "By course"));
     const grid = el("div", { class: "stat-grid" });
     data.rollup.forEach(r => grid.appendChild(el("div", { class: "stat" }, [
       el("div", { class: "n" }, r.pct + "%"),
@@ -57,12 +57,12 @@ const RecordPage = (() => {
     body.appendChild(grid);
 
     // timeline grouped by course
-    body.appendChild(el("div", { class: "sec-title" }, "Session history"));
+    body.appendChild(el("h2", { class: "sec-title" }, "Session history"));
     const byCourse = {};
     data.history.forEach(h => (byCourse[h.course_title] = byCourse[h.course_title] || []).push(h));
     for (const [title, rows] of Object.entries(byCourse)) {
       const card = el("div", { class: "card" }, [
-        el("h3", {}, title),
+        el("h2", {}, title),
         el("div", { class: "meta muted", style: "margin:-6px 0 var(--sp-8);font-size:var(--t-meta)" },
           rows[0].stake_name + " · " + (CATEGORIES[rows[0].category] || "")),
       ]);
