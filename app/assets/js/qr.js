@@ -212,7 +212,15 @@ const QR = (() => {
       ]));
       host.appendChild(UI.el("div", { class: "qr-note" },
         "Scanning opens the create-account screen with this stake already chosen. The "
-        + "portal admin still approves every account."));
+        + "portal admin still approves every account. "
+        + (r.permanent
+            ? "This square keeps working after the portal restarts — it points at the fixed "
+              + "public page, which finds today's portal by itself."
+            // A portal with no fixed page can only offer today's tunnel. Saying so here is
+            // the difference between a leader printing one flyer and printing a new one
+            // every time the laptop is opened.
+            : "This is today's address: if the portal is restarted, draw the square again "
+              + "before printing more copies.")));
     }
 
     function fail(e) {
