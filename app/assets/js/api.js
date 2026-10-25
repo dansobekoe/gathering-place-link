@@ -248,6 +248,26 @@ const API = (() => {
     store.setItem(USER_KEY, JSON.stringify(user));
   }
   function setUser(user) { current().setItem(USER_KEY, JSON.stringify(user)); }
+
+  /* The profile is filed beside the token. Sometimes the token is there and the profile
+     is not — a store that was half cleared, a session the browser restored, an older copy
+     of the app that filed the token under a different name. A screen asked to draw a
+     person it has never been told about greets "there", and a screen asked for that
+     person's id stops with a blank page. So the portal is asked once and the answer is
+     filed: one request on the rare occasion, none on every other. */
+  let askingUser = null;
+  function ensureUser() {
+    const cached = getUser();
+    if (cached && cached.id) return Promise.resolve(cached);
+    if (!getToken()) return Promise.resolve(null);
+    if (!askingUser) {
+      askingUser = request("GET", "/api/auth/me")
+        .then(u => { if (u && u.id) setUser(u); return u; })
+        .catch(() => null)
+        .finally(() => { askingUser = null; });
+    }
+    return askingUser;
+  }
   /* The storage the session itself is in: a remembered device keeps the token on disk,
      an unremembered one keeps everything in the tab. Anything worked out from the
      session — the stakes, the unread count — belongs in the same place, so it lasts
@@ -382,7 +402,7 @@ const API = (() => {
   }
 
   return {
-    getToken, getUser, setSession, setUser, sessionStore, clear, ready, abs,
+    getToken, getUser, setSession, setUser, ensureUser, sessionStore, clear, ready, abs,
     get: (p, o) => request("GET", p, undefined, o),
     post: (p, b, o) => request("POST", p, b, o),
     patch: (p, b, o) => request("PATCH", p, b, o),
