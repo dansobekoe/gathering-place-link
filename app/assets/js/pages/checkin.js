@@ -3,13 +3,16 @@ const CheckinPage = (() => {
   const { el, toast, icon, empty, fmtDate, startsAt, hoursText } = UI;
   let stopScan = null;
 
-  async function mount(target) {
+  async function mount(target, courseId) {
     if (stopScan) { stopScan(); stopScan = null; }
-    const user = API.getUser();
+    const user = API.getUser() || {};
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
       el("h1", { class: "page-title" }, "Check in"),
       el("div", { class: "page-sub" }, "Scan the code on the classroom screen, or show your badge."),
+      el("div", { class: "muted", style: "font-size:var(--t-ui);margin-top:var(--sp-6)" },
+        "Check-in never closes. You can check in for any sitting of your class — late, or "
+        + "days after it met — and the record will say you were late, and still count you."),
     ]));
 
     const tabs = el("div", { class: "tabs" });
@@ -23,7 +26,7 @@ const CheckinPage = (() => {
       tabs.appendChild(el("button", { class: mode === "badge" ? "active" : "",
         onclick: () => { mode = "badge"; draw(); } }, "My badge"));
       body.innerHTML = "";
-      if (mode === "scan") scanTab(body); else badgeTab(body);
+      if (mode === "scan") scanTab(body, user, courseId); else badgeTab(body);
     }
     content.appendChild(tabs);
     content.appendChild(body);
@@ -32,7 +35,27 @@ const CheckinPage = (() => {
   }
 
   // ---------------- check in ----------------
-  function scanTab(body) {
+  function scanTab(body, user, courseId) {
+    /* What was written down is put on the page, not only in a toast that fades away.
+       "Late" is the one word a student needs to still be able to read a minute later, and
+       it is the word that tells them they were counted rather than turned away. */
+    const resultHost = el("div");
+    body.appendChild(resultHost);
+    function showResult(r) {
+      resultHost.innerHTML = "";
+      const late = r.late || r.status === "late";
+      resultHost.appendChild(el("div", { class: "card" }, [
+        el("div", { style: "margin-bottom:var(--sp-8)" },
+          [el("span", { class: "pill " + (late ? "amber" : "green") },
+            late ? "Checked in late" : "Checked in")]),
+        el("div", { style: "font-weight:600" },
+          r.note || "Your attendance has been recorded."),
+        el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-6)" },
+          late ? "You are counted as late, not absent. The class record keeps both."
+                : "Your attendance has been recorded for this sitting."),
+      ]));
+    }
+
     const card = el("div", { class: "card center" });
     const video = el("video", { class: "scan-video", muted: "muted", playsinline: "true",
       hidden: "hidden" });
@@ -66,7 +89,9 @@ const CheckinPage = (() => {
         if (!payload || !payload.s || !payload.c) return;
         idle("Ready when you are — turn the camera on again to scan another code.",
           "Turn on camera");
-        if (await submit(payload.s, payload.c)) {
+        const r = await submit(payload.s, payload.c);
+        if (r) {
+          showResult(r);
           hint.textContent = "You're checked in.";
           camBtn.hidden = true;
         }
@@ -83,7 +108,8 @@ const CheckinPage = (() => {
       "Turn on camera");
 
     // manual fallback
-    body.appendChild(el("h2", { class: "sec-title" }, "Or enter the code manually"));
+    const secTitle = el("h2", { class: "sec-title" }, "Or enter the code manually");
+    body.appendChild(secTitle);
     const mcard = el("div", { class: "card" });
     /* Which sitting the code belongs to. A class can meet twice on one day, so the date
        alone never picks one out — the hour does — and every sitting still to come is
@@ -106,7 +132,7 @@ const CheckinPage = (() => {
       const opts = [];
       for (const st of stakes) {
         const [mine, courses] = await Promise.all([
-          API.get(`/api/stakes/${st.stake_id}/students/${API.getUser().id}/enrollments`),
+          API.get(`/api/stakes/${st.stake_id}/students/${user.id}/enrollments`),
           API.get(`/api/stakes/${st.stake_id}/courses`),
         ]);
         const titles = {}; courses.forEach(c => { titles[c.id] = c.title; });
@@ -114,37 +140,74 @@ const CheckinPage = (() => {
           opts.push({ stake_id: st.stake_id, course_id: e.course_id,
                       label: `${titles[e.course_id] || "Course"} · ${st.stake_name}` }));
       }
-      if (!opts.length) { loading.remove();
-        mcard.appendChild(empty("You're not enrolled in any courses yet.", "book")); return; }
-      opts.forEach((o, i) => courseSel.appendChild(
-        el("option", { value: i }, o.label)));
+      /* Nothing to enter by hand means nothing to offer. A heading that promises a
+         choice and then says there is no choice is a small let-down, so the heading
+         goes with the field, and the way out is offered instead. */
+      if (!opts.length) {
+        loading.remove();
+        secTitle.remove();
+        mcard.appendChild(empty(
+          "You are not in any class yet. Join one, and its code will work right here.",
+          "book"));
+        mcard.appendChild(el("a", { class: "btn secondary", style: "margin-top:var(--sp-12)",
+          href: "#/courses" }, "Find a class"));
+        return;
+      }
+      opts.forEach((o) => courseSel.appendChild(
+        el("option", { value: o.course_id }, o.label)));
+      /* The class a student tapped on the Classes page comes with them, so the class they
+         meant is already chosen when they arrive. */
+      if (courseId && opts.some(o => o.course_id === courseId)) courseSel.value = String(courseId);
+      const checkBtn = el("button", { class: "btn", style: "margin-top:var(--sp-12)",
+        onclick: async () => {
+          const r = await submit(sessionId, codeIn.value);
+          if (r) showResult(r);
+        } },
+        [icon("check", 17), "Check in"]);
       async function loadSessions() {
-        const o = opts[+courseSel.value];
+        const o = opts.find(x => x.course_id === +courseSel.value);
         const all = (await API.get(
           `/api/stakes/${o.stake_id}/courses/${o.course_id}/sessions`))
           .filter(s => s.status !== "cancelled")
           .sort((a, b) => startsAt(a) - startsAt(b));
-        const today = new Date().toISOString().slice(0, 10);
-        /* Today counts, even if the class has already finished: the door stays open for an
-           hour after the bell, and a student who is typing the code in by hand is exactly
-           the person who may be using it. */
-        const ahead = all.filter(s => s.scheduled_date >= today);
-        const list = ahead.length ? ahead : (all.length ? [all[all.length - 1]] : []);
         sessSel.innerHTML = "";
-        if (!list.length) {
+        if (!all.length) {
           sessionId = null;
           sessSel.appendChild(el("option", { value: "" }, "No sitting to check in to"));
           sessSel.disabled = true;
+          checkBtn.disabled = true;
           sessHint.textContent = "This class has no date on the calendar yet.";
           return;
         }
         sessSel.disabled = false;
-        list.forEach(s => sessSel.appendChild(
-          el("option", { value: s.id }, `${fmtDate(s.scheduled_date)} · ${hoursText(s)}`)));
-        sessionId = +sessSel.value;
-        sessHint.textContent = list.length > 1
-          ? "Pick the sitting you are in — a class can meet more than once on a day."
-          : "The code on the screen belongs to this sitting.";
+        checkBtn.disabled = false;
+        /* Every sitting is offered — the ones still to come and the ones already gone.
+           The door no longer shuts, so a student who was on the way, or who is checking in
+           days later, is not refused for want of a choice. They are listed under two
+           headings because "12 Oct" on its own does not tell anybody whether that class
+           has happened yet. */
+        const now = Date.now();
+        const ahead = all.filter(s => startsAt(s) >= now);
+        const past = all.filter(s => startsAt(s) < now).reverse();
+        const group = (label, rows) => {
+          if (!rows.length) return;
+          const g = el("optgroup", { label });
+          rows.forEach(s => g.appendChild(el("option", { value: s.id },
+            `${fmtDate(s.scheduled_date)} · ${hoursText(s)}`)));
+          sessSel.appendChild(g);
+        };
+        group("Still to come", ahead);
+        group("Already happened", past);
+        /* The sitting nearest to now is the one the student means: the class that is
+           running, or the one that has just finished. */
+        const nearest = all.slice().sort((a, b) =>
+          Math.abs(startsAt(a) - now) - Math.abs(startsAt(b) - now))[0];
+        sessSel.value = String(nearest.id);
+        sessionId = nearest.id;
+        sessHint.textContent = past.length
+          ? "Pick the sitting you are in. One that has already happened is still open — "
+            + "you will be marked late."
+          : "Pick the sitting you are in — a class can meet more than once on a day.";
       }
       courseSel.addEventListener("change", loadSessions);
       sessSel.addEventListener("change", () => { sessionId = +sessSel.value; });
@@ -154,25 +217,24 @@ const CheckinPage = (() => {
       mcard.appendChild(sessHint);
       mcard.appendChild(el("div", { class: "field", style: "margin-top:var(--sp-10)" },
         [el("label", {}, "Code on screen"), codeIn]));
-      mcard.appendChild(el("button", { class: "btn", style: "margin-top:var(--sp-12)",
-        onclick: () => sessionId && submit(sessionId, codeIn.value) },
-        [icon("check", 17), "Check in"]));
+      mcard.appendChild(checkBtn);
       await loadSessions();
     })().catch(e => { loading.remove(); toast(e.message, "err"); });
   }
 
-  /* True on success so the caller can leave the camera alone once the name is in. */
+  /* The answer, so the caller can leave the camera alone once the name is in — and put
+     what was recorded on the screen instead of letting a toast carry it away. */
   async function submit(sessionId, code) {
     if (sessionId == null || !String(code).trim()) {
       toast("Pick the course and type the 6-digit code on the screen", "err");
-      return false;
+      return null;
     }
     try {
       const r = await API.post("/api/attendance/checkin",
         { session_id: +sessionId, code: String(code).trim() });
-      toast(`Checked in — ${r.status}`, "ok");
-      return true;
-    } catch (e) { toast(e.message, "err"); return false; }
+      toast(r.note || `Checked in — ${r.status}`, "ok");
+      return r;
+    } catch (e) { toast(e.message, "err"); return null; }
   }
 
   // ---------------- my badge ----------------
@@ -182,7 +244,8 @@ const CheckinPage = (() => {
       "Show this to your instructor to be scanned in."));
     const host = el("div", { class: "qr-box" });
     card.appendChild(host);
-    card.appendChild(el("div", { style: "font-weight:600;margin-top:var(--sp-10)" }, API.getUser().full_name));
+    card.appendChild(el("div", { style: "font-weight:600;margin-top:var(--sp-10)" },
+      (API.getUser() || {}).full_name || ""));
     const tools = el("div", { class: "actions", style: "margin-top:var(--sp-14);justify-content:center" });
     card.appendChild(tools);
     body.appendChild(card);
