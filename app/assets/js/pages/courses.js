@@ -18,12 +18,13 @@ const CoursesPage = (() => {
   const CERT_TEXT_MAX = 600;   // likewise cert_layout.MAX_BODY_TEXT
 
   async function mount(target) {
-    const user = API.getUser();
+    const user = API.getUser() || {};
     const ctx = App.ctx();
     const st = ctx.stake;
     if (!st) {
       UI.render(target, UI.shell("courses",
-        empty("Join or register a stake first — see the Stake tab.", "users"), App.nav(), ctx));
+        UI.notice("Courses", "Join or register a stake first — see the Stake tab.", "users"),
+        App.nav(), ctx));
       return;
     }
     const stakeId = st.id;
