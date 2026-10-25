@@ -927,7 +927,7 @@ const CertDesign = (() => {
           memberSelect.value = "";
           S.pick = null;
           repaint();
-          toast(S.members.length ? `${S.members.length} member(s) finished here — choose one to try.`
+          toast(S.members.length ? `${UI.plural(S.members.length, "member")} finished here — choose one to try.`
                                  : "Nobody has finished a class at this place yet.");
         });
       } catch (e) {
@@ -1063,12 +1063,13 @@ const CertDesign = (() => {
       const [pw, ph] = [S.layout.page_w_pt, S.layout.page_h_pt];
       headLine.replaceChildren(
         el("div", { class: "cert-head-name" }, data.place_name || (ctx.place || {}).name || "This place"),
+        /* Two facts, one under the other. Run together with a middot, the dot was left
+           hanging at the end of a line whenever the first sentence filled it. */
         el("div", { class: "cert-head-meta" }, [
-          el("span", {}, S.style === "custom" && data.design
+          el("div", {}, S.style === "custom" && data.design
             ? "Certificates for this place print on its own artwork."
             : "Certificates for this place print on the portal's own design."),
-          el("span", { class: "cert-sep" }, "·"),
-          el("span", {}, data.design
+          el("div", {}, data.design
             ? `The sheet is ${round(pw, 1)} by ${round(ph, 1)} points, ${pw >= ph ? "wide" : "upright"}`
             : "No artwork on file yet — the page is A4 landscape, 841.9 by 595.3 points"),
         ]));
