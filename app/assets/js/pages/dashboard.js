@@ -8,7 +8,7 @@
 const DashboardPage = (() => {
   const { el, icon, toast, shell, loading, empty, render, fmtDate, fmtTime,
           tile, barSection, stackSection, statusPill, logAction, logDetail, coverTile,
-          seatRow } = UI;
+          seatRow, notice } = UI;
 
   let filters = {};
   let filtersStake = null;
@@ -18,7 +18,7 @@ const DashboardPage = (() => {
     if (filtersStake !== (ctx.stake ? ctx.stake.id : null)) { filters = {}; filtersStake = ctx.stake ? ctx.stake.id : null; }
     if (!ctx.stake) {
       return render(target, shell("home",
-        empty("Pick a stake to see its dashboard.", "home"), App.nav(), ctx));
+        notice("Dashboard", "Pick a stake to see its dashboard.", "home"), App.nav(), ctx));
     }
     const content = el("div");
     content.appendChild(head(ctx));
@@ -85,7 +85,7 @@ const DashboardPage = (() => {
       data.attention.forEach(a => card.appendChild(el("div", { class: "list-item" }, [
         el("div", { class: "grow" }, [
           el("div", { class: "title" }, a.course),
-          el("div", { class: "meta" }, `${a.sessions} session(s) recorded as done with no roster`),
+          el("div", { class: "meta" }, `${UI.plural(a.sessions, "session")} recorded as done with no roster`),
         ]),
         el("a", { class: "btn sm", href: `#/course/${stake.id}/${a.course_id}` },
           [icon("check", 15), "Take attendance"]),
@@ -208,9 +208,10 @@ const DashboardPage = (() => {
     const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}` +
                 `-${String(today.getDate()).padStart(2, "0")}`;
     rows.forEach(r => {
-      // A code only opens around the sitting itself, so check-in is offered on the day the
-      // class meets. Handing a member a camera on a Tuesday for a Saturday class reads as
-      // "the scanner is broken", and the scanner is not.
+      // The shortcut is offered on the day the class meets, because that is the class the
+      // student is standing in. The door itself never shuts: a student checking in for a
+      // class that has already met goes to "Check in" in the sidebar, where that sitting
+      // is still waiting to be marked late.
       const meetsToday = r.next_session_date === iso;
       wrap.appendChild(el("div", { class: "card" }, [
         el("div", { class: "mc-head" }, [
@@ -276,7 +277,7 @@ const DashboardPage = (() => {
         el("span", {}, [el("i", { class: "att-cell " + k }), ATT_WORD[k]]))));
     if (m.skipped) {
       card.appendChild(el("div", { class: "hint" },
-        `${m.skipped} earlier session(s) are kept on the full record.`));
+        `The full record holds ${UI.plural(m.skipped, "earlier session")}.`));
     }
     return card;
   }
@@ -372,6 +373,9 @@ const DashboardPage = (() => {
     return card;
   }
 
+  /* The buttons a class can be reached by. On the wide table the next date rides
+     along with them; on the card it sits with the facts about the class instead,
+     because a date is information and a button is an action. */
   function actionsCell(r, stakeId, ctx) {
     const acts = el("div", { class: "row-actions" });
     if (ctx.stake.student) {
@@ -393,16 +397,44 @@ const DashboardPage = (() => {
     return acts;
   }
 
+  function classButtons(r, stakeId, ctx) {
+    const acts = el("div", { class: "row-actions" });
+    if (ctx.stake.student) {
+      acts.appendChild(el("a", { class: "btn secondary sm", href: `#/course/${stakeId}/${r.id}` },
+        [icon("idcard", 14), "Class"]));
+      acts.appendChild(el("a", { class: "btn sm", href: "#/checkin" }, [icon("qr", 14), "Check in"]));
+      return acts;
+    }
+    if (r.needs_attendance) {
+      acts.appendChild(el("a", { class: "btn sm", href: `#/course/${stakeId}/${r.id}` },
+        [icon("check", 14), `Roster (${r.needs_attendance})`]));
+    } else if (r.is_mine || ctx.stake.manage) {
+      acts.appendChild(el("a", { class: "btn secondary sm", href: `#/course/${stakeId}/${r.id}` },
+        [icon("list", 14), "Attendance"]));
+    }
+    return acts;
+  }
+
+  /* A class on a phone: the picture and the name of the class, the facts under them,
+     then the marks and the buttons on a line of their own. Sharing one line would
+     squeeze the name of the class into a single word wide, which is how a title
+     becomes unreadable. */
   function classCard(r, stakeId, ctx) {
-    return el("div", { class: "list-item" }, [
-      coverTile(r.cover_url),
-      el("div", { class: "grow" }, [
-        el("div", { class: "title" }, r.title),
-        el("div", { class: "meta" }, `${r.category_label} · ${r.when}`),
-        el("div", { class: "meta" }, `${r.room || "no room"} · ${r.instructor}` +
-          ` · ${r.enrolled}${r.capacity ? "/" + r.capacity : ""} enrolled` +
-          (r.waitlisted ? ` · ${r.waitlisted} waitlisted` : "")),
-        el("div", { class: "meta", style: "display:flex;gap:var(--sp-6);margin-top:var(--sp-6);flex-wrap:wrap" }, [
+    return el("div", { class: "class-card" }, [
+      el("div", { class: "class-card-head" }, [
+        coverTile(r.cover_url),
+        el("div", { class: "grow" }, [
+          el("div", { class: "title" }, r.title),
+          el("div", { class: "meta" }, `${r.category_label} · ${r.when}`),
+          el("div", { class: "meta" }, `${r.room || "no room"} · ${r.instructor}` +
+            ` · ${r.enrolled}${r.capacity ? "/" + r.capacity : ""} enrolled` +
+            (r.waitlisted ? ` · ${r.waitlisted} waitlisted` : "")),
+        ]),
+      ]),
+      el("div", { class: "class-card-foot" }, [
+        el("div", { class: "class-card-marks" }, [
+          r.next_session_date ? el("span", { class: "mini-pill" },
+            "Next " + fmtDate(r.next_session_date)) : null,
           r.attendance_rate == null ? el("span", { class: "mini-pill" }, "no roster yet")
             : el("span", { class: "mini-pill " + (r.attendance_rate >= 75 ? "ok" : "") },
                  r.attendance_rate + "% attendance"),
@@ -410,8 +442,8 @@ const DashboardPage = (() => {
             `${r.sessions_completed}/${r.sessions_total} held`) : null,
           r.is_mine ? el("span", { class: "mini-pill mine" }, "mine") : null,
         ]),
+        classButtons(r, stakeId, ctx),
       ]),
-      actionsCell(r, stakeId, ctx),
     ]);
   }
 
@@ -433,7 +465,8 @@ const DashboardPage = (() => {
       el("div", { class: "grow" }, [
         el("div", { class: "title" }, p.name),
         el("div", { class: "meta" }, `${p.role_label}${p.ward ? " · " + p.ward : ""}`),
-        el("div", { class: "meta" }, p.course_count ? `${p.course_count} class(es)` : "no classes"),
+        el("div", { class: "meta" }, p.course_count
+          ? UI.plural(p.course_count, "class") : "no classes"),
       ]),
       personActions(p, ctx),
     ])));
