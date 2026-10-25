@@ -8,8 +8,8 @@
    From here an instructor can open a class, project its check-in QR, or write to
    the whole roster without detouring through the course list. */
 const ClassesPage = (() => {
-  const { el, icon, shell, loading, empty, render, fmtDate, fmtTime, opensLabel,
-          tile, modal, statusPill } = UI;
+  const { el, icon, shell, loading, empty, render, fmtDate, fmtTime, doorLabel, doorPill,
+          tile, modal, notice } = UI;
 
   const SCOPE_KEY = "gp_class_scope";
   let liveTimer = null;
@@ -23,9 +23,12 @@ const ClassesPage = (() => {
     state.q = "";
     if (!stake) {
       return render(target, shell("classes",
-        empty("Pick a stake to see its classes.", "home"), App.nav(), ctx));
+        notice("Classes", "Pick a stake to see its classes.", "home"), App.nav(), ctx));
     }
     const scope = scopeFor(stake);
+    /* The roster chip only exists for the people who can fill a roster in, so a chip
+       left over from another account would otherwise filter the list to nothing. */
+    if (state.chip === "needs" && stake.student) state.chip = "all";
     const content = el("div");
     content.appendChild(head(stake, scope));
     content.appendChild(loading(3));
@@ -78,26 +81,83 @@ const ClassesPage = (() => {
     ]);
   }
 
+  /* One class, not one sitting. A student enrolled in a single class was seeing that
+     class written out once for every date it meets — twenty rows of the same title on a
+     page called Classes — so the class is what the row is, and the sittings live inside
+     it: which one is next, which one is today, which ones have no roster yet. */
+  function groupClasses(rows) {
+    const map = new Map();
+    rows.forEach(r => {
+      let c = map.get(r.course_id);
+      if (!c) {
+        c = {
+          course_id: r.course_id, title: r.title, category_label: r.category_label,
+          room: r.room, place: r.place, instructor: r.instructor, enrolled: r.enrolled,
+          waitlisted: r.waitlisted, is_mine: r.is_mine, rows: [],
+          today: null, next: null, upcoming: null, last: null, needs: [], rate: null,
+        };
+        map.set(r.course_id, c);
+      }
+      c.rows.push(r);
+      if (r.is_today) c.today = r;
+      if (r.needs_attendance) c.needs.push(r);
+      if (r.is_upcoming && (!c.upcoming || when(r) < when(c.upcoming))) c.upcoming = r;
+      /* The most recent sitting that still stands. The door never closes, so a class whose
+         sittings have all gone by still has one a student can be counted into — late. */
+      if (r.status !== "cancelled" && (!c.last || when(r) > when(c.last))) c.last = r;
+    });
+    const list = Array.from(map.values());
+    list.forEach(c => {
+      c.next = c.today || c.upcoming;
+      const rates = c.rows.map(r => r.attendance_rate).filter(v => v != null);
+      c.rate = rates.length
+        ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : null;
+    });
+    list.sort((a, b) => {
+      const aw = a.next ? when(a.next) : "9999";
+      const bw = b.next ? when(b.next) : "9999";
+      if (aw !== bw) return aw < bw ? -1 : 1;
+      return a.title.localeCompare(b.title);
+    });
+    return list;
+  }
+  function when(r) { return r.date + " " + (r.time || ""); }
+
+  /* The numbers count classes now, the same way the list does. A class that meets today
+     is counted as today and not again as upcoming, so the four figures add up. */
+  function classCounts(list) {
+    return {
+      total: list.length,
+      today: list.filter(c => c.today).length,
+      upcoming: list.filter(c => !c.today && c.next).length,
+      needs: list.filter(c => c.needs.length).length,
+      finished: list.filter(c => !c.next).length,
+    };
+  }
+
   function body(data, ctx, scope) {
     const stake = ctx.stake;
-    const rows = data.sessions;
     const wrap = el("div");
+    const classes = groupClasses(data.sessions);
+    const counts = classCounts(classes);
 
-    wrap.appendChild(el("div", { class: "stat-grid" }, [
-      tile(data.counts.total, "In view"),
-      tile(data.counts.today, "Today"),
-      tile(data.counts.upcoming, "Upcoming"),
-      tile(data.counts.needs_attendance, "Needs roster"),
-    ]));
+    const tiles = [
+      tile(counts.total, "In view"),
+      tile(counts.today, "Today"),
+      tile(counts.upcoming, "Upcoming"),
+    ];
+    /* A student has no roster to fill in, so the figure would always read zero. */
+    if (!stake.student) tiles.push(tile(counts.needs, "Needs roster"));
+    wrap.appendChild(el("div", { class: "stat-grid" + (stake.student ? " three" : "") }, tiles));
 
-    const past = rows.filter(r => !r.is_today && !r.is_upcoming).length;
-    wrap.appendChild(chips([
-      { key: "all", label: "All", n: data.counts.total },
-      { key: "today", label: "Today", n: data.counts.today },
-      { key: "upcoming", label: "Upcoming", n: data.counts.upcoming },
-      { key: "needs", label: "Needs roster", n: data.counts.needs_attendance },
-      { key: "past", label: "Held", n: past },
-    ]));
+    const defs = [
+      { key: "all", label: "All", n: counts.total },
+      { key: "today", label: "Today", n: counts.today },
+      { key: "upcoming", label: "Upcoming", n: counts.upcoming },
+    ];
+    if (!stake.student) defs.push({ key: "needs", label: "Needs roster", n: counts.needs });
+    defs.push({ key: "finished", label: "Finished", n: counts.finished });
+    wrap.appendChild(chips(defs));
 
     const search = el("input", { type: "search", placeholder: "Search class, room or instructor",
       value: state.q, oninput: ev => { state.q = ev.target.value.toLowerCase(); repaint(); } });
@@ -108,11 +168,11 @@ const ClassesPage = (() => {
     const host = el("div");
     wrap.appendChild(host);
     repaint = () => {
-      const shown = rows.filter(matches);
+      const shown = classes.filter(matches);
       host.innerHTML = "";
       if (!shown.length) {
         host.appendChild(el("div", { class: "card" }, [empty(
-          rows.length ? "No class matches this filter."
+          classes.length ? "No class matches this filter."
             : scope === "mine" && !stake.student
               ? "You do not teach a class in this stake yet." : "Nothing scheduled.",
           "calendar")]));
@@ -124,15 +184,15 @@ const ClassesPage = (() => {
     return wrap;
   }
 
-  function matches(r) {
-    if (state.chip === "today" && !r.is_today) return false;
-    if (state.chip === "upcoming" && !r.is_upcoming) return false;
-    if (state.chip === "needs" && !r.needs_attendance) return false;
-    if (state.chip === "past" && (r.is_today || r.is_upcoming)) return false;
+  function matches(c) {
+    if (state.chip === "today" && !c.today) return false;
+    if (state.chip === "upcoming" && (c.today || !c.next)) return false;
+    if (state.chip === "needs" && !c.needs.length) return false;
+    if (state.chip === "finished" && c.next) return false;
     const q = state.q;
-    if (q && !(r.title.toLowerCase().includes(q)
-      || String(r.instructor || "").toLowerCase().includes(q)
-      || String(r.room || "").toLowerCase().includes(q))) return false;
+    if (q && !(c.title.toLowerCase().includes(q)
+      || String(c.instructor || "").toLowerCase().includes(q)
+      || String(c.room || c.place || "").toLowerCase().includes(q))) return false;
     return true;
   }
 
@@ -151,91 +211,115 @@ const ClassesPage = (() => {
   }
 
   // ---------------- rows ----------------
-  function view(rows, ctx) {
+  function view(list, ctx) {
     const card = el("div", { class: "card" });
-    const list = el("div", { class: "only-narrow" });
-    rows.forEach(r => list.appendChild(sessionCard(r, ctx)));
-    card.appendChild(list);
+    const narrow = el("div", { class: "only-narrow" });
+    list.forEach(c => narrow.appendChild(classCard(c, ctx)));
+    card.appendChild(narrow);
 
     card.appendChild(el("div", { class: "table-wrap only-wide" }, [el("table", {}, [
       el("thead", {}, [el("tr", {}, [
-        el("th", {}, "When"), el("th", {}, "Class"), el("th", {}, "Room"),
+        el("th", {}, "Next"), el("th", {}, "Class"), el("th", {}, "Room"),
         el("th", {}, "Instructor"), el("th", { class: "num" }, "Enrolled"),
         el("th", { class: "num" }, "Attendance"), el("th", {}, "")])]),
-      el("tbody", {}, rows.map(r => el("tr", { class: r.is_today ? "is-today" : "" }, [
+      el("tbody", {}, list.map(c => el("tr", { class: c.today ? "is-today" : "" }, [
         el("td", { style: "white-space:nowrap" }, [
-          el("div", { style: "font-weight:600" }, fmtDate(r.date)),
-          el("div", { class: "muted", style: "font-size:var(--t-meta)" }, fmtTime(r.time) || "TBA"),
-          r.is_today ? el("span", { class: "mini-pill mine" }, "today") : null]),
-        el("td", {}, [el("div", { style: "font-weight:600" }, r.title),
+          el("div", { style: "font-weight:600" }, c.next ? fmtDate(c.next.date) : "—"),
           el("div", { class: "muted", style: "font-size:var(--t-meta)" },
-            r.category_label + (r.status === "cancelled" ? " · cancelled" : ""))]),
-        el("td", {}, r.room || r.place || "—"),
-        el("td", {}, [r.instructor, r.is_mine && !ctx.stake.student
+            c.next ? (fmtTime(c.next.time) || "TBA") : "no sitting left"),
+          c.today ? el("span", { class: "mini-pill mine" }, "today") : null]),
+        el("td", {}, [el("div", { style: "font-weight:600" }, c.title),
+          el("div", { class: "muted", style: "font-size:var(--t-meta)" },
+            `${c.rows.length} sitting${c.rows.length === 1 ? "" : "s"} · ${c.category_label}`)]),
+        el("td", {}, c.room || c.place || "—"),
+        el("td", {}, [c.instructor, c.is_mine && !ctx.stake.student
           ? el("span", { class: "mini-pill mine" }, "mine") : null]),
-        el("td", { class: "num" }, String(r.enrolled) + (r.waitlisted ? ` (+${r.waitlisted})` : "")),
-        el("td", { class: "num" }, r.attendance_rate == null
-          ? (r.needs_attendance ? el("span", { class: "mini-pill hot" }, "unrecorded") : "—")
-          : el("span", { class: "mini-pill " + (r.attendance_rate >= 75 ? "ok"
-                        : r.attendance_rate >= 50 ? "" : "hot") },
-            `${r.present}/${r.recorded} · ${r.attendance_rate}%`)),
-        el("td", {}, actionsCell(r, ctx)),
+        el("td", { class: "num" }, String(c.enrolled) + (c.waitlisted ? ` (+${c.waitlisted})` : "")),
+        el("td", { class: "num" }, c.rate == null
+          ? (c.needs.length ? el("span", { class: "mini-pill hot" }, "unrecorded") : "—")
+          : el("span", { class: "mini-pill " + (c.rate >= 75 ? "ok"
+                        : c.rate >= 50 ? "" : "hot") }, `${c.rate}%`)),
+        el("td", {}, actionsCell(c, ctx)),
       ]))),
     ])]));
     return card;
   }
 
-  function sessionCard(r, ctx) {
-    const facts = [r.category_label, r.room || r.place || "no room",
-                   `${r.instructor} · ${r.enrolled} enrolled`];
-    if (r.waitlisted) facts.push(`${r.waitlisted} waitlisted`);
-    if (r.recorded) facts.push(`${r.present}/${r.recorded} present`);
-    return el("div", { class: "list-item" + (r.is_today ? " is-today" : "") }, [
-      el("div", { class: "grow" }, [
-        el("div", { class: "title" }, [r.title, el("span", { html: statusPill(r.status) })]),
-        el("div", { class: "meta" }, `${fmtDate(r.date)} · ${fmtTime(r.time) || "TBA"}`),
-        el("div", { class: "meta" }, facts.join(" · ")),
-        el("div", { class: "meta", style: "display:flex;gap:var(--sp-6);margin-top:var(--sp-6);flex-wrap:wrap" }, [
-          r.is_today ? el("span", { class: "mini-pill mine" }, "today") : null,
-          r.needs_attendance ? el("span", { class: "mini-pill hot" }, "roster not recorded") : null,
-          r.attendance_rate != null
-            ? el("span", { class: "mini-pill " + (r.attendance_rate >= 75 ? "ok" : "") },
-                 r.attendance_rate + "% present") : null,
-          r.is_mine && !ctx.stake.student ? el("span", { class: "mini-pill mine" }, "mine") : null,
+  /* A class on a phone: what it is, where it meets, and then the marks and the buttons
+     on a line of their own. */
+  function classCard(c, ctx) {
+    const facts = [`${c.rows.length} sitting${c.rows.length === 1 ? "" : "s"}`,
+                   c.category_label, c.room || c.place || "no room"];
+    const who = [`${c.instructor} · ${c.enrolled} enrolled`];
+    if (c.waitlisted) who.push(`${c.waitlisted} waitlisted`);
+
+    const cancelled = c.rows.filter(r => r.status === "cancelled").length;
+    const marks = [];
+    if (c.today) marks.push(el("span", { class: "mini-pill mine" },
+      "Today · " + (fmtTime(c.today.time) || "TBA")));
+    else if (c.next) marks.push(el("span", { class: "mini-pill" },
+      "Next " + fmtDate(c.next.date) + " · " + (fmtTime(c.next.time) || "TBA")));
+    else marks.push(el("span", { class: "mini-pill" }, "no sittings left"));
+    if (cancelled) marks.push(el("span", { class: "mini-pill hot" },
+      cancelled === c.rows.length ? "cancelled" : cancelled + " cancelled"));
+    if (c.needs.length) marks.push(el("span", { class: "mini-pill hot" },
+      c.needs.length === 1 ? "roster not recorded" : `${c.needs.length} rosters to record`));
+    if (c.rate != null) marks.push(el("span", { class: "mini-pill " + (c.rate >= 75 ? "ok" : "") },
+      c.rate + "% present"));
+
+    return el("div", { class: "class-card" + (c.today ? " is-today" : "") }, [
+      el("div", { class: "class-card-head" }, [
+        el("div", { class: "grow" }, [
+          el("div", { class: "title" }, c.title),
+          el("div", { class: "meta" }, facts.join(" · ")),
+          el("div", { class: "meta" }, who.join(" · ")),
         ]),
       ]),
-      actionsCell(r, ctx),
+      el("div", { class: "class-card-foot" }, [
+        el("div", { class: "class-card-marks" }, marks),
+        actionsCell(c, ctx),
+      ]),
     ]);
   }
 
   /* Recording a roll is not the same as watching one: the class's own instructor,
      the missionary who runs the place, or the portal admin. A president sees every
      class in the tenant but fills in none of them. */
-  function canRun(r, stake) {
-    return !!stake.manage || (stake.instructor && r.is_mine);
+  function canRun(c, stake) {
+    return !!stake.manage || (stake.instructor && c.is_mine);
   }
 
-  function actionsCell(r, ctx) {
+  function actionsCell(c, ctx) {
     const stake = ctx.stake;
     const acts = el("div", { class: "row-actions" });
     if (stake.student) {
-      acts.appendChild(el("a", { class: "btn sm", href: "#/checkin" }, [icon("qr", 14), "Check in"]));
-      acts.appendChild(el("a", { class: "btn secondary sm", href: `#/course/${stake.id}/${r.course_id}` },
+      /* Check-in belongs to a sitting, and the door never closes — so a class whose
+         sittings have all passed still has one to be counted into, marked late. */
+      if (c.rows.some(r => r.status !== "cancelled"))
+        acts.appendChild(el("a", { class: "btn sm", href: `#/checkin/${c.course_id}` },
+          [icon("qr", 14), "Check in"]));
+      acts.appendChild(el("a", { class: "btn secondary sm", href: `#/course/${stake.id}/${c.course_id}` },
         [icon("idcard", 14), "Class"]));
       return acts;
     }
-    const run = canRun(r, stake);
+    const run = canRun(c, stake);
+    const needs = c.needs.length > 0;
     acts.appendChild(el("a", {
-      class: "btn" + (run || r.needs_attendance ? " sm" : " secondary sm"),
-      href: `#/course/${stake.id}/${r.course_id}` },
-      [icon(run || r.needs_attendance ? "check" : "list", 14),
-       run || r.needs_attendance ? "Attendance" : "Open"]));
+      class: "btn" + (run || needs ? " sm" : " secondary sm"),
+      href: `#/course/${stake.id}/${c.course_id}` },
+      [icon(run || needs ? "check" : "list", 14),
+       run || needs ? "Attendance" : "Open"]));
     if (run) {
-      acts.appendChild(el("button", { class: "btn secondary icon-only", title: "Project check-in QR",
-        onclick: () => qrModal(r, stake.id) }, [icon("qr", 15)]));
+      /* The code belongs to a sitting, so it is projected for the one that is next — or
+         for the last one when the class has already met, because that is the sitting a
+         student is checking in to late. */
+      const project = c.next || c.last;
+      if (project) acts.appendChild(el("button", { class: "btn secondary icon-only",
+        title: "Project check-in QR", onclick: () => qrModal(project, stake.id) },
+        [icon("qr", 15)]));
       acts.appendChild(el("button", { class: "btn ghost icon-only", title: "Message this class",
-        onclick: () => MessagesPage.compose({ audience: "course", course_id: r.course_id,
-          course_title: r.title }) }, [icon("send", 15)]));
+        onclick: () => MessagesPage.compose({ audience: "course", course_id: c.course_id,
+          course_title: c.title }) }, [icon("send", 15)]));
     }
     return acts;
   }
@@ -249,19 +333,23 @@ const ClassesPage = (() => {
     const qrHost = el("div", { class: "qr-box" });
     const statusEl = el("div", { style: "margin-top:var(--sp-8)" });
     const countEl = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-4)" });
+    const tickEl = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-2)" });
     const body = el("div", {}, [
       el("div", { class: "live-grid" }, [
-        el("div", {}, [codeEl, statusEl, countEl]),
+        el("div", {}, [codeEl, statusEl, countEl, tickEl]),
         qrHost,
       ]),
       el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-10)" },
         "Students scan this or type the six digits — the code changes on its own."),
+      el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-4)" },
+        "Once the door opens it stays open. A student who checks in late — or days later — "
+        + "is still counted, marked late."),
     ]);
 
     /* The code rotates while the dialog is up, so it has to stop however the dialog is
        left — the X, Escape, a tap on the backdrop, or one of the buttons. `onClose` is the
        one place all four arrive at. */
-    let rot = 30, last = 0, closed = false;
+    let rot = 30, last = 0, closed = false, standing = false;
     function shutdown() { closed = true; clearInterval(liveTimer); }
 
     modal({
@@ -286,16 +374,15 @@ const ClassesPage = (() => {
         codeEl.textContent = live.code;
         QR.render(qrHost, JSON.stringify({ s: row.session_id, c: live.code }), 190,
           "Check-in code for this class. The same code is written in digits beside it.");
-        statusEl.innerHTML = live.open ? '<span class="pill green">check-in open</span>'
-                                       : '<span class="pill grey">check-in closed</span>';
-        if (!live.open) countEl.textContent = opensLabel(live);
+        statusEl.innerHTML = doorPill(live);
+        countEl.textContent = doorLabel(live);
+        standing = !!live.open;
       } catch (e) { if (!closed) statusEl.textContent = e.message; }
     }
     function tick() {
       if (closed) return;
       const remaining = rot - (Math.floor(Date.now() / 1000) % rot);
-      if (statusEl.querySelector(".pill.green"))
-        countEl.textContent = `New code in ${remaining}s`;
+      if (standing) tickEl.textContent = `New code in ${remaining}s`;
       if (Date.now() - last > 4000) { last = Date.now(); fetchLive(); }
     }
     last = Date.now(); fetchLive();
