@@ -16,7 +16,7 @@ const App = (() => {
     course: p => AttendancePage.mount(root(), +p[0], +p[1]),
     attendance: p => AttendancePage.mount(root(), +p[0], +p[1]),
     classes: () => ClassesPage.mount(root()),
-    checkin: () => CheckinPage.mount(root()),
+    checkin: p => CheckinPage.mount(root(), p[0] ? +p[0] : null),
     messages: p => MessagesPage.mount(root(), p[0]),
     certificates: p => CertificatesPage.mount(root(), p[0] ? +p[0] : null),
     analytics: p => AnalyticsPage.mount(root(), p[0]),
@@ -234,6 +234,12 @@ const App = (() => {
       newScreen(previous);
       return;
     }
+    /* The profile is filed beside the token. Before any screen is asked to draw the
+       person, the portal is asked for that profile once — and only once, and only if
+       the device does not already have it. A device holding a token without a profile
+       would otherwise greet "there" and leave the class and profile screens blank. */
+    await API.ensureUser();
+
     /* A click is painted from what this tab already worked out, and the context is
        asked again behind the screen. Waiting here for that answer was the difference
        between a screen that appears on the tap and one that appears after the tunnel
@@ -286,6 +292,15 @@ const App = (() => {
       if (name !== "stake") { location.hash = "#/stake"; return; }
     }
     if (name === "admin" && !shellCtx.user.is_super_admin) { homeFor(); return; }
+
+    /* A class is named by the stake it sits in and by the class itself. An address that
+       carries neither cannot name one, and asking the server for "/stakes/NaN" only
+       earns four failed calls and a blank page. The list of classes is where a person
+       who followed such a link can pick the class they meant. */
+    if (name === "course" || name === "attendance") {
+      const s = Number(params[0]), c = Number(params[1]);
+      if (!(s > 0) || !(c > 0)) { location.hash = "#/courses"; return; }
+    }
 
     const handler = routes[name];
     if (handler) { handler(params); newScreen(previous); }
