@@ -11,14 +11,15 @@
    up or move a line. The designer asks the certificate route for both, and this page only
    mirrors the same rule so the tabs and the notice agree with what will actually be accepted. */
 const CertificatesPage = (() => {
-  const { el, icon, shell, render, empty, loading } = UI;
+  const { el, icon, shell, render, empty, notice, loading } = UI;
 
   async function mount(target, placeId) {
     const ctx = App.ctx();
     const stake = ctx.stake;
     if (!stake) {
       return render(target, shell("certificates",
-        empty("Pick a stake or a district to see the certificates its places print.", "home"),
+        notice("Certificates",
+          "Pick a stake or a district to see the certificates its places print.", "home"),
         App.nav(), ctx));
     }
 
@@ -79,8 +80,9 @@ const CertificatesPage = (() => {
       el("div", {}, [
         el("h1", { class: "page-title" }, "Certificates"),
         el("div", { class: "page-sub" }, chosen
-          ? `${stake.name} · ${places.length === 1 ? "the one gathering place here"
-                        : `${places.length} gathering places`} — choose one to place its lines`
+          ? (places.length === 1
+              ? `${stake.name} · its one gathering place — open it to place the lines`
+              : `${stake.name} · ${places.length} gathering places — choose one to place its lines`)
           : "The lines that change on a place's own artwork: a member's name, their class, " +
             "the date, and who signed."),
       ]),
