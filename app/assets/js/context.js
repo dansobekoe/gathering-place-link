@@ -72,6 +72,11 @@ const Ctx = (() => {
   async function load(force) {
     if (force) return pull();
     if (state) {
+      /* The profile can arrive after the context was first worked out: a device that
+         held the token but not the profile, or a picture that was just uploaded. The
+         context holds the person as they are now, not as they were when the tab
+         opened — otherwise the greeting says "there" and the avatar stays empty. */
+      freshen();
       /* Answered at once, even when it is older than a minute: a click must never wait
          for a question this screen already has an answer to. The same question is put
          to the portal behind the screen, and the correction lands for the next visit. */
@@ -126,7 +131,23 @@ const Ctx = (() => {
     return pending;
   }
 
+  /* The person on the device is the person the shell must show.
+
+     The context is remembered from a moment ago, and in that moment the profile can have
+     changed: a picture just uploaded, a name just corrected, or a whole other person
+     signed in on a shared phone. So the profile is read again here and folded in, and
+     the shell never greets somebody who is not the one holding the token. */
+  function freshen() {
+    const live = API.getUser();
+    if (!state || !live || !live.id) return;
+    if (!state.user || state.user.id !== live.id
+        || state.user.photo_url !== live.photo_url) {
+      state = { ...state, user: live };
+    }
+  }
+
   function current() {
+    freshen();
     return state;
   }
 
