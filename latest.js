@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://howard-earlier-reflect-cole.trycloudflare.com","updated_at":"2026-10-25T17:25:22Z"};
+window.GATHERING_PLACE = {"url":"https://zshops-alias-copyrighted-territory.trycloudflare.com","updated_at":"2026-10-25T18:12:32Z"};
