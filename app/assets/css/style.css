@@ -20,35 +20,35 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/gabarito-600.woff2?v=108") format("woff2");
+  src: url("../fonts/gabarito-600.woff2?v=112") format("woff2");
 }
 @font-face {
   font-family: "Gabarito";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/gabarito-700.woff2?v=108") format("woff2");
+  src: url("../fonts/gabarito-700.woff2?v=112") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("../fonts/figtree-400.woff2?v=108") format("woff2");
+  src: url("../fonts/figtree-400.woff2?v=112") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/figtree-600.woff2?v=108") format("woff2");
+  src: url("../fonts/figtree-600.woff2?v=112") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/figtree-700.woff2?v=108") format("woff2");
+  src: url("../fonts/figtree-700.woff2?v=112") format("woff2");
 }
 
 :root {
@@ -467,7 +467,15 @@ button { font-family: inherit; cursor: pointer; }
 }
 .sec-title { margin: var(--sp-22) var(--sp-2) var(--sp-10); }
 
+/* A quiet label over one part of a list — what is still to come, what has already been.
+   It says which half of the list you are looking at without competing with the heading
+   above it for attention. */
+.group-label { font-size: var(--t-ui); font-weight: 600; color: var(--ink-2);
+               margin: var(--sp-16) var(--sp-2) var(--sp-8); }
+
 .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-12); }
+/* A student sees three figures, not four: a roster to fill in is not theirs to do. */
+.stat-grid.three { grid-template-columns: repeat(3, 1fr); }
 .stat {
   background: var(--surface);
   border: 1px solid var(--hairline); border-radius: var(--r-md);
@@ -499,6 +507,14 @@ select { appearance: none;
 .field { margin-bottom: var(--sp-14); }
 .row { display: flex; gap: var(--sp-10); }
 .row > * { flex: 1; min-width: 0; }
+/* A row that gives way. Three boxes side by side on a phone cut the words inside them
+   off, so on a narrow screen each box takes a line of its own and the button follows
+   them down. On a wide screen there is room for all three and nothing changes. */
+@media (max-width: 640px) {
+  .row.give { flex-wrap: wrap; }
+  .row.give > * { flex: 1 1 100%; }
+  .row.give > *:last-child { flex: 0 0 auto; }
+}
 
 /* ---------------- Buttons ---------------- */
 .btn {
@@ -541,6 +557,28 @@ select { appearance: none;
   border-left: 1px solid var(--hairline); }
 .list-item.sub .title { font-weight: 600; font-size: var(--t-ui); }
 .list-item.sub .meta { font-size: var(--t-fine); }
+
+/* A class row: the picture and the name of the class, the facts under them, then the
+   marks and the buttons on a line of their own. Holding all of it on one line squeezes
+   the name of a class to a single word wide and pushes the facts off the edge, which
+   is how a title stops being readable on a phone. */
+.class-card { padding: var(--sp-12) var(--sp-2); border-bottom: 1px solid var(--hairline); }
+.class-card:last-child { border-bottom: none; }
+.class-card.is-today { background: linear-gradient(90deg, var(--accent-soft), transparent 55%);
+                       border-radius: var(--r-sm); }
+.class-card-head { display: flex; align-items: flex-start; gap: var(--sp-12); }
+.class-card-head .grow { flex: 1; min-width: 0; }
+.class-card-head .title { font-family: var(--font-display); font-weight: 600;
+                           font-size: var(--t-body); letter-spacing: -.006em; }
+.class-card-head .meta { font-size: var(--t-meta); color: var(--ink-2); }
+.class-card-foot { display: flex; align-items: center; justify-content: space-between;
+                   gap: var(--sp-10); flex-wrap: wrap; margin-top: var(--sp-10);
+                   padding-top: var(--sp-10); border-top: 1px solid var(--hairline); }
+.class-card-marks { display: flex; gap: var(--sp-6); flex-wrap: wrap; align-items: center; }
+/* A list of people separates them from each other, not from what comes after: the line
+   belongs between two rows, so the last one carries none. */
+.class-card.sep-top { border-bottom: none; }
+.class-card.sep-top + .class-card.sep-top { border-top: 1px solid var(--hairline); }
 table { width: 100%; border-collapse: collapse; font-size: var(--t-ui); }
 th, td { text-align: left; padding: var(--sp-10) var(--sp-8); border-bottom: 1px solid var(--hairline); }
 th { font-size: var(--t-micro); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-fine); }
@@ -886,6 +924,7 @@ tr:last-child td { border-bottom: none; }
   .topbar { padding-left: calc(var(--rail-w) + var(--sp-24)); }
   .container { margin-left: var(--rail-w); max-width: 1180px; padding: var(--sp-30) var(--sp-32) var(--sp-56); }
   .stat-grid { grid-template-columns: repeat(4, 1fr); }
+  .stat-grid.three { grid-template-columns: repeat(3, 1fr); }
 }
 
 .side-brand { display: flex; align-items: center; padding: var(--sp-2) var(--sp-6) var(--sp-6); }
@@ -984,6 +1023,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .container { padding: var(--sp-30) var(--sp-26) var(--sp-120); }
   .topbar { padding: var(--sp-12) var(--sp-26); }
   .stat-grid { grid-template-columns: repeat(4, 1fr); }
+  .stat-grid.three { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* ---- QR check-in ---- */
@@ -1531,11 +1571,15 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .cd-next { display: flex; gap: var(--sp-8); align-items: center; margin-top: var(--sp-14); font-size: var(--t-ui);
            font-weight: 600; color: var(--accent); }
 .cd-next svg { flex: none; }
+/* A sitting called off is news, not a call to action: it reads in the quiet ink so it is
+   not mistaken for the day the class is on. */
+.cd-next.off { color: var(--ink-2); }
 /* The held sittings are the same rows as the coming ones, just looked at from the other
    side of today — so they get a divider rather than a second card. */
 .cd-sub { font-size: var(--t-micro); font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
           color: var(--ink-fine); margin: var(--sp-16) 0 0; padding-top: var(--sp-14);
           border-top: 1px solid var(--hairline); }
+.cd-sub.first { margin-top: 0; padding-top: 0; border-top: none; }
 .cd-copy { font-size: var(--t-ui); color: var(--ink-2); line-height: 1.6; max-width: 66ch; }
 .cd-copy + .actions { margin-top: var(--sp-14); }
 
@@ -1569,7 +1613,7 @@ tbody tr.is-today td { background: var(--accent-soft); }
 /* The two taps that reach the person. They sit under the name rather than out at the end
    of the row with the paperwork, because a number belongs to the person it rings. */
 .rsr-contacts { display: flex; flex-wrap: wrap; gap: var(--sp-6); margin-top: var(--sp-8); }
-.rsr-contacts .btn { font-size: var(--t-meta); }
+.rsr-contacts .btn { font-size: var(--t-meta); white-space: nowrap; }
 
 /* ---------------- Night setting, where a token cannot reach ---------------- */
 /* The mark is printed in the brand blues. On a dark plate the navy half of it
@@ -1635,9 +1679,8 @@ tbody tr.is-today td { background: var(--accent-soft); }
 .cert-head-line { display: flex; flex-direction: column; gap: var(--sp-4); margin-bottom: var(--sp-4); }
 .cert-head-name { font-family: var(--font-display); font-size: var(--t-title);
                   font-weight: 700; letter-spacing: -.012em; color: var(--ink); }
-.cert-head-meta { display: flex; flex-wrap: wrap; gap: var(--sp-6); align-items: baseline;
+.cert-head-meta { display: flex; flex-direction: column; gap: var(--sp-2);
                   font-size: var(--t-meta); color: var(--ink-fine); }
-.cert-sep { color: var(--ink-3); }
 .cert-loading { padding: var(--sp-18); font-size: var(--t-ui); color: var(--ink-2); }
 
 /* Advice that only appears when there is something to advise about — a new sheet of a
