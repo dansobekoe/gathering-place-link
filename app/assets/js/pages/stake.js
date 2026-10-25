@@ -224,9 +224,9 @@ const StakePage = (() => {
     const name = el("input", { placeholder: "New gathering place name" });
     const addr = el("input", { placeholder: "Address (optional)" });
     card.appendChild(el("hr", { class: "hr" }));
-    card.appendChild(el("div", { class: "row" }, [
-      el("div", { class: "field", style: "flex:2" }, [el("label", {}, "Add a gathering place"), name]),
-      el("div", { class: "field", style: "flex:2" }, [el("label", {}, "Address"), addr]),
+    card.appendChild(el("div", { class: "row give" }, [
+      el("div", { class: "field" }, [el("label", {}, "Add a gathering place"), name]),
+      el("div", { class: "field" }, [el("label", {}, "Address"), addr]),
       el("div", { class: "field", style: "flex:0 0 auto;display:flex;align-items:flex-end" }, [
         el("button", { class: "btn sm", style: "height:42px",
           onclick: e => UI.act(e.currentTarget, "Adding…", async () => {
@@ -643,7 +643,7 @@ const StakePage = (() => {
         "aria-label": "Email address of the person to add" });
       const arole = el("select", { "aria-label": "What they will be at this gathering place" },
         GROUPS.map(r => el("option", { value: r }, roleLabel(r))));
-      card.appendChild(el("div", { class: "row", style: "margin-top:var(--sp-8)" }, [aemail, arole,
+      card.appendChild(el("div", { class: "row give", style: "margin-top:var(--sp-8)" }, [aemail, arole,
         el("button", { class: "btn sm", style: "align-self:flex-end;height:42px",
           onclick: e => UI.act(e.currentTarget, "Adding…", async () => {
             try { await API.post(`/api/stakes/${stakeId}/members?email=${encodeURIComponent(aemail.value)}&role=${arole.value}`);
@@ -859,9 +859,9 @@ const StakePage = (() => {
     ]));
     card.appendChild(el("hr", { class: "hr" }));
     card.appendChild(el("div", { class: "title", style: "font-weight:600;margin-bottom:var(--sp-8)" },
-      "Attendance check-in window"));
-    card.appendChild(el("div", { class: "row", style: "align-items:flex-end" }, [
-      el("div", { class: "field" }, [el("label", {}, "Grace (min before/after start)"), grace]),
+      "Attendance check-in"));
+    card.appendChild(el("div", { class: "row give", style: "align-items:flex-end" }, [
+      el("div", { class: "field" }, [el("label", {}, "Opens (min before start)"), grace]),
       el("div", { class: "field" }, [el("label", {}, "Count as late after (min)"), lateAfter]),
       el("div", { class: "field", style: "flex:0 0 auto" }, [
         el("button", { class: "btn secondary sm", style: "height:42px",
@@ -869,10 +869,13 @@ const StakePage = (() => {
             try {
               await API.patch(`/api/stakes/${stakeId}/settings`, {
                 attendance_grace_minutes: +grace.value, late_after_minutes: +lateAfter.value });
-              toast("Check-in window saved");
+              toast("Check-in settings saved");
             } catch (e) { toast(e.message, "err"); }
           })}, "Save")]),
     ]));
+    card.appendChild(el("div", { class: "hint" },
+      "The door opens before the class and never closes. A student who checks in late — or "
+      + "days after the class met — is still counted, marked late."));
     wrap.appendChild(card);
     return wrap;
   }
