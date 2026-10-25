@@ -160,18 +160,37 @@ const AuthPage = (() => {
     function waitingScreen() {
       const d = waitData || {};
       const byMail = d.email_expected !== false;
+      /* A person who registered with a number has no letterbox to be written to, so
+         what happens next is not a letter but the admin confirming the number in person.
+         Which of the two this is comes from the server; the steps below are only the
+         shape of it. */
+      const byPhone = !byMail && (d.phone_only === true
+                                  || /confirm your number in person/i.test(d.message || ""));
+      /* A paper member is not waiting for anything — nobody sent them a registration.
+         What they need is the way in, and it is a person who gives it. */
+      const byPaper = d.paper === true;
       const steps = el("ol", { class: "wait-steps" },
-        (byMail
+        (byPaper
+          ? ["Ask the portal admin, or the teacher who marks the register, to open an "
+             + "account for you.",
+             "They will set a password with you — there is no code to send you.",
+             "Sign in with your number and that password."]
+          : byMail
           ? ["The portal admin reviews your registration.",
              "An email reaches you the moment it is approved.",
              "Sign in with the same email and password."]
+          : byPhone
+          ? ["The portal admin reviews your registration.",
+             "They confirm your number in person, because there is no mailbox to send a code to.",
+             "Sign in with that number and your password once they have."]
           : ["The portal admin reviews your registration.",
              "Return to sign in with these details to see the decision."]
         ).map((line, i) => waitStep(i + 1, line)));
       const req = Array.isArray(d.requested) ? d.requested : [];
       return el("div", { class: "waiting" }, [
-        el("div", { class: "mark" }, [icon(byMail ? "mail" : "clock", 26)]),
-        el("h2", {}, "Your registration is with the portal admin"),
+        el("div", { class: "mark" }, [icon(byPaper ? "userplus" : byMail ? "mail" : byPhone ? "phone" : "clock", 26)]),
+        el("h2", {}, byPaper ? "This person has no account of their own yet"
+                             : "Your registration is with the portal admin"),
         el("p", {}, d.message || "Your registration has been sent for approval."),
         req.length ? el("div", { class: "card", style: "margin-top:var(--sp-16);text-align:left" },
           req.map(r => el("div", { class: "list-item" }, [
@@ -306,16 +325,29 @@ const AuthPage = (() => {
     }
 
     // ---- sign in ----
+    /* One box, because a person who registered with the number they have should not have
+       to remember that they registered with a number. The box is not an email box: it is
+       typed into with `text` and not `email`, because a browser that refuses "024 123 4567"
+       as not-an-email would refuse the very people this was widened for. */
     function loginForm() {
-      const email = el("input", { type: "email", placeholder: "you@example.org", autocomplete: "username" });
+      /* The box takes either, so the keyboard has to as well: an email keyboard hides
+         the digits a number needs, a phone keyboard hides the @ an address needs. A
+         plain keyboard has both, and the phone's own capitalisation is turned off so
+         "John@Example.org" is never typed for somebody. */
+      const email = el("input", { type: "text", placeholder: "Email address or phone number",
+                                  autocomplete: "username", inputmode: "text",
+                                  autocapitalize: "off", autocorrect: "off",
+                                  spellcheck: "false" });
       const pass = el("input", { type: "password", placeholder: "Your password", autocomplete: "current-password" });
       const keep = el("input", { type: "checkbox", id: "ck-keep" });
       const btn = el("button", { class: "btn", onclick: submit }, [icon("logout", 17), "Sign in"]);
       async function submit() {
+        const id = email.value.trim();
+        if (!id) return toast("Type your email address or your phone number", "err");
         btn.disabled = true;
         try {
           const r = await API.post("/api/auth/login",
-            { email: email.value, password: pass.value, remember: keep.checked });
+            { identifier: id, password: pass.value, remember: keep.checked });
           API.setSession(r.token, r.user, keep.checked);
           toast("Welcome back, " + String((r.user && r.user.full_name) || "").split(" ")[0]);
           App.afterLogin();
@@ -325,14 +357,20 @@ const AuthPage = (() => {
              an address that has never been confirmed, and an account still with the
              administrator. Whether a letter is coming is the server's to say, and it does. */
           if (e.status === 403 && /confirm the email/i.test(e.message)) {
-            verifyData = { email: email.value.trim(), message: e.message, ttl: 30,
+            verifyData = { email: id, message: e.message, ttl: 30,
                            just_sent: false,
                            /* Only the server's own wording says whether a letter is on its
                               way; "the code we sent" is that sentence. */
                            email_expected: /code we sent/i.test(e.message) };
             stopTimer(); mode = "verify"; draw();
-          } else if (e.status === 403 && /approv|active/i.test(e.message)) {
-            showWaiting({ message: e.message, email: email.value.trim(), requested: [],
+          } else if (e.status === 403 && /approv|active|sign-in of their own/i.test(e.message)) {
+            /* The identifier may be a number rather than an address, and the waiting
+               screen says which kind of thing it is waiting for. */
+            const isMail = /@/.test(id);
+            showWaiting({ message: e.message, requested: [],
+                          email: isMail ? id : undefined,
+                          phone: isMail ? undefined : id,
+                          paper: /sign-in of their own/i.test(e.message),
                           email_expected: /email/i.test(e.message) });
           } else {
             toast(e.message, "err");
@@ -340,8 +378,10 @@ const AuthPage = (() => {
         }
       }
       pass.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
+      email.addEventListener("keydown", e => { if (e.key === "Enter") pass.focus(); });
       return el("div", {}, [
-        field("Email", email), field("Password", UI.passWrap(pass)),
+        field("Email address or phone number", email),
+        field("Password", UI.passWrap(pass)),
         el("div", { class: "keep-row" }, [
           el("label", { class: "keep", for: keep.id }, [keep, "Remember this device"]),
           el("button", { class: "linkbtn", onclick: forgot }, "Forgot password?"),
@@ -373,7 +413,10 @@ const AuthPage = (() => {
       const step2 = el("div", { style: "display:none" });
       const body = el("div", {}, [
         el("div", { id: "fp-step1" }, [
-          field("Account email", email),
+          field("Account email", email,
+            "A reset code comes by email, so it needs the address on your account. " +
+            "If you registered with a phone number instead, ask the portal admin or your " +
+            "teacher to set a password for you."),
           el("button", { class: "btn",
             onclick: e => UI.act(e.currentTarget, "Sending…", async () => {
               try {
@@ -597,12 +640,16 @@ const AuthPage = (() => {
       form.choice = choiceFromDraft(form);
       const name = el("input", { placeholder: "Full name", autocomplete: "name", value: form.name });
       const email = el("input", { type: "email", placeholder: "you@example.org",
-                                  autocomplete: "email", value: form.email });
+                                  autocomplete: "email", value: form.email,
+                                  autocapitalize: "off", autocorrect: "off",
+                                  spellcheck: "false" });
       const pass = el("input", { type: "password", placeholder: "Min 8 characters",
                                  autocomplete: "new-password", value: form.password });
       const again = el("input", { type: "password", placeholder: "Type it again",
                                   autocomplete: "new-password", value: form.confirm });
-      const phone = UI.phoneField({ label: "Phone", autocomplete: "tel" });
+      const phone = UI.phoneField({ label: "Phone number", autocomplete: "tel",
+        note: "You sign in with this number. A phone number on its own is enough to "
+              + "register — the email address above is optional." });
       const whatsapp = UI.phoneField({ label: "WhatsApp", autocomplete: "tel",
         note: "Only if you use WhatsApp for class messages. Same number is fine." });
       phone.set(form.phone); whatsapp.set(form.whatsapp);
@@ -769,9 +816,12 @@ const AuthPage = (() => {
         // server is told the concrete role, so a president is stored as one and "leader"
         // never reaches the database.
         const joining = form.choice !== "setup";
-        const p = { email: email.value.trim(), password: pass.value,
+        const p = { password: pass.value,
                     full_name: name.value.trim(),
                     intent: joining ? "join_stake" : "register_stake" };
+        /* Either one is enough, so an empty box is left out of the request entirely
+           rather than sent as an empty string the server would have to read as a value. */
+        put(p, "email", email.value);
         put(p, "phone", phone.get());
         put(p, "whatsapp", whatsapp.get());
         if (gender.value) p.gender = gender.value;
@@ -812,7 +862,8 @@ const AuthPage = (() => {
         if (!gender.value) return toast("Please say whether you are male or female", "err");
         if (!member.value) return toast("Please answer the membership question — " +
                                         "“I'd rather not say” is an answer", "err");
-        if (!p.email) return toast("Please enter your email", "err");
+        if (!p.email && !p.phone)
+          return toast("Give your email address or your phone number — one is enough", "err");
         if (!p.password || p.password.length < 8) return toast("Password needs at least 8 characters", "err");
         if (!UI.passAgree(pass, again)) return;
         if (p.intent === "join_stake" && !p.invite_code && !p.stake_id)
@@ -859,7 +910,10 @@ const AuthPage = (() => {
       return el("div", {}, [
         choices, extra,
         el("hr", { class: "hr" }),
-        field("Full name", name), field("Email", email),
+        field("Full name", name),
+        field("Email address (optional)", email,
+          "Only if you have one. Leave it empty and your phone number is enough to "
+          + "register and to sign in."),
         field("Password", UI.passWrap(pass)),
         field("Confirm password", UI.passWrap(again)),
         el("div", { class: "row" }, [phone.node, whatsapp.node]),
