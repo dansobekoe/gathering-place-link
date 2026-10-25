@@ -16,6 +16,8 @@ const App = (() => {
     course: p => AttendancePage.mount(root(), +p[0], +p[1]),
     attendance: p => AttendancePage.mount(root(), +p[0], +p[1]),
     classes: () => ClassesPage.mount(root()),
+    marking: () => MarkingPage.mount(root()),
+    students: () => StudentsPage.mount(root()),
     checkin: p => CheckinPage.mount(root(), p[0] ? +p[0] : null),
     messages: p => MessagesPage.mount(root(), p[0]),
     certificates: p => CertificatesPage.mount(root(), p[0] ? +p[0] : null),
@@ -75,11 +77,28 @@ const App = (() => {
       items.push({ key: "classes", href: "#/classes", icon: "list", label: "Classes", group: "Overview" });
     }
     items.push({ key: "messages", href: "#/messages", icon: "mail", label: "Messages", group: "Overview" });
-    /* Certificates come straight after Messages, because that is where a leader looks once
-       an awards night is being planned: the sheet each place prints on, and where the
-       member's name, class and date land on it. It is offered to the people whose certificate
-       paperwork it is — a member never places a line — and it stays out of the phone dock so
-       the four everyday buttons are the four that were there before. */
+    /* Attendance comes straight after Messages, because that is where a teacher goes when
+       a class has just met and the roll has not been written down yet. It is offered to
+       the people who hold the pen — the teacher of a class, the missionary who runs the
+       place, the portal admin — and not to a student, who marks nothing. */
+    if ((s.manage || s.instructor) && s.id) {
+      items.push({ key: "marking", href: "#/marking", icon: "check",
+                   label: "Attendance", group: "Overview" });
+    }
+    /* Students is the list of the people of this place, for the people who look after it:
+       a leader looking for somebody, a teacher looking for the students in their own
+       classes. It stays out of the phone dock, so the four everyday buttons are the four
+       that were there before. */
+    if ((s.monitor || s.instructor) && s.id) {
+      items.push({ key: "students", href: "#/students", icon: "users",
+                   label: "Students", group: "Overview" });
+    }
+    /* Certificates sit under the same Overview group, after Attendance and Students: that
+       is where a leader looks once an awards night is being planned — the sheet each place
+       prints on, and where the member's name, class and date land on it. It is offered to
+       the people whose certificate paperwork it is — a member never places a line — and it
+       stays out of the phone dock so the four everyday buttons are the four that were
+       there before. */
     if (monitor && s.id) {
       items.push({ key: "certificates", href: "#/certificates", icon: "award",
                    label: "Certificates", group: "Overview", secondary: true });
@@ -286,8 +305,8 @@ const App = (() => {
     if (name === "login") { homeFor(); return; }
 
     // pages that need a stake in view fall back to the onboarding hub
-    if (["home", "courses", "course", "attendance", "classes", "stake", "analytics",
-         "messages", "certificates"]
+    if (["home", "courses", "course", "attendance", "classes", "marking", "students",
+         "stake", "analytics", "messages", "certificates"]
         .includes(name) && !shellCtx.stake && !shellCtx.user.is_super_admin) {
       if (name !== "stake") { location.hash = "#/stake"; return; }
     }
