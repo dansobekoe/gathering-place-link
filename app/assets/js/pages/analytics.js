@@ -5,7 +5,7 @@
    and the dashboard can never drift apart visually. */
 const AnalyticsPage = (() => {
   const { el, icon, toast, shell, loading, empty, render, tile, barSection,
-          stackSection } = UI;
+          stackSection, notice, plural } = UI;
 
   async function mount(target, stakeId) {
     const ctx = App.ctx();
@@ -15,8 +15,9 @@ const AnalyticsPage = (() => {
 
     if (!stakes.length) {
       return render(target, shell("analytics",
-        empty("Analytics is available to the stake presidency, service missionaries and Portal Admins.",
-              "shield"), App.nav(), ctx));
+        notice("Analytics",
+          "Analytics is available to the stake presidency, service missionaries and Portal Admins.",
+          "shield"), App.nav(), ctx));
     }
     // Portal admins land on the cross-stake overview; a stake id drills into it.
     if (isAdmin && !stakeId) return mountOverview(target, ctx);
@@ -71,21 +72,51 @@ const AnalyticsPage = (() => {
       tile(sum("enrolled"), "Enrolments"), tile(sum("certificates"), "Certificates"),
     ]));
     wrap.appendChild(el("h2", { class: "sec-title" }, "Stakes"));
+
+    /* Forty-five stakes is a wall of names to scroll past. The one stake a reader is
+       looking for is usually one word away — "Ofankor" — so they type it and the list
+       answers, rather than hunting down the alphabet. */
+    let q = "";
+    const search = el("input", { type: "search", placeholder: "Search a stake by name",
+      oninput: ev => { q = ev.target.value.trim().toLowerCase(); paint(); } });
+    wrap.appendChild(el("div", { class: "filterbar" }, [
+      el("div", { class: "f search" }, [el("label", {}, "Search"), icon("search", 15), search]),
+    ]));
+
     const card = el("div", { class: "card" });
-    rows.forEach(r => {
-      const pct = parseInt(r.avg_attendance, 10) || 0;
-      card.appendChild(el("div", { class: "list-item" }, [
-        el("span", { class: "stake-dot", style: `background:${r.color}` }),
-        el("div", { class: "grow" }, [
-          el("div", { class: "title" }, r.stake_name),
-          el("div", { class: "meta" }, `${r.students} students · ${r.courses} courses · ${r.enrolled} enrolments`),
-        ]),
-        el("span", { class: "pill " + (pct >= 75 ? "green" : pct >= 50 ? "amber" : "red") },
-          r.avg_attendance),
-        el("a", { class: "btn secondary sm", href: "#/analytics/" + r.stake_id }, "Open"),
-      ]));
-    });
+    const shown = el("div");
+    card.appendChild(shown);
     wrap.appendChild(card);
+
+    function paint() {
+      const rows2 = q ? rows.filter(r => (r.stake_name || "").toLowerCase().includes(q)) : rows;
+      shown.innerHTML = "";
+      if (!rows2.length) {
+        shown.appendChild(empty(`No stake is called "${search.value.trim()}".`, "search"));
+        return;
+      }
+      rows2.forEach(r => {
+        const pct = parseInt(r.avg_attendance, 10) || 0;
+        /* Three zeros in a row tell a reader nothing about a stake that has not been
+           set up yet, and "1 students" is not English. A stake with nothing in it says
+           so; one with something in it counts it in words. */
+        const bare = !r.students && !r.courses && !r.enrolled;
+        const meta = bare ? "Nothing here yet"
+          : [plural(r.students, "student"), plural(r.courses, "course"),
+             plural(r.enrolled, "enrolment")].join(" · ");
+        shown.appendChild(el("div", { class: "list-item" }, [
+          el("span", { class: "stake-dot", style: `background:${r.color}` }),
+          el("div", { class: "grow" }, [
+            el("div", { class: "title" }, r.stake_name),
+            el("div", { class: "meta" }, meta),
+          ]),
+          el("span", { class: "pill " + (pct >= 75 ? "green" : pct >= 50 ? "amber" : "red") },
+            r.avg_attendance),
+          el("a", { class: "btn secondary sm", href: "#/analytics/" + r.stake_id }, "Open"),
+        ]));
+      });
+    }
+    paint();
     return wrap;
   }
 
