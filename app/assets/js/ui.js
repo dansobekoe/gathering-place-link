@@ -516,25 +516,39 @@ const UI = (() => {
     if (mins < 10080) return `${Math.round(mins / 1440)}d ago`;
     return fmtDate(iso);
   }
-  /* A closed check-in window has to say which edge of it the person is standing outside,
-     or the instructor assumes the code is broken. A class that has not started yet will
-     open; a class that finished more than an hour ago is shut for good, and the hour it
-     shut is the answer to "but I was on my way". The timestamps arrive as the class's own
-     wall clock — every place here is on Ghana time, which is UTC all year — so they are
-     read straight off the string and marked UTC by hand, instead of leaving Date to guess
-     the laptop's zone. */
-  function opensLabel(live) {
+  /* What the check-in door is doing, in the words a teacher can read out to a room.
+     The door opens a few minutes before the class and never shuts again — there is no
+     closing hour to be outside of — so the only thing that changes as the evening runs
+     on is the word written on the register: on time, or late. A teacher standing in front
+     of the screen needs to be able to say that out loud before the class, not read it
+     off a record afterwards.
+
+     The stamps arrive as the class's own wall clock — every place here is on Ghana time,
+     which is UTC all year — so they are read straight off the string and marked UTC by
+     hand, instead of leaving Date to guess the laptop's zone. */
+  function doorLabel(live) {
     const stamp = k => String((live && live[k]) || "").replace(" ", "T");
     const at = stamp("opens_at");
     if (at.length < 16) return "";
     if (new Date(at.slice(0, 19) + "Z") > new Date()) {
       const day = at.slice(0, 10);
       const today = new Date().toISOString().slice(0, 10);
-      return `Check-in opens ${day === today ? "today" : "on " + fmtDate(day)} at ${fmtTime(at.slice(11, 16))}`;
+      return `Check-in opens ${day === today ? "today" : "on " + fmtDate(day)} at `
+           + `${fmtTime(at.slice(11, 16))} and stays open`;
     }
-    const shut = stamp("closes_at");
-    if (shut.length < 16) return "This session's check-in window has passed.";
-    return `Check-in for this session closed at ${fmtTime(shut.slice(11, 16))}`;
+    if (live.late_now) return "Anyone who checks in now is marked late";
+    const cutoff = stamp("late_after");
+    if (cutoff.length >= 16)
+      return `On time until ${fmtTime(cutoff.slice(11, 16))}, late after that`;
+    return "On time";
+  }
+
+  /* The same door, as a lamp: green while it stands open, amber once the people arriving
+     now are being marked late. It is never red, because the door never closes. */
+  function doorPill(live) {
+    if (!live || !live.open) return '<span class="pill grey">not open yet</span>';
+    if (live.late_now) return '<span class="pill amber">open · marked late</span>';
+    return '<span class="pill green">check-in open</span>';
   }
 
   /* A sitting is placed on the timeline by the hour it starts, not by its date alone: a
@@ -545,6 +559,12 @@ const UI = (() => {
   function startsAt(s) {
     return Date.parse(`${s.scheduled_date}T${(s.start_time || "00:00:00").slice(0, 8)}Z`)
         || Date.parse(s.scheduled_date + "T00:00:00Z");
+  }
+
+  /* A count and the word that belongs to it. Spelling the plural at every screen means
+     spelling it wrong somewhere, and "3 session(s)" is not a sentence a person wrote. */
+  function plural(n, one, many) {
+    return `${n} ${n === 1 ? one : (many || one + "s")}`;
   }
 
   /* A sitting is named by its hour as well as its day — a class can meet twice in one day
@@ -709,8 +729,34 @@ const UI = (() => {
     const parts = String(own).trim().split(/\s+/);
     return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1]}` : parts[0];
   }
+  /* The name on the bar, without the word the line underneath already says.
+
+     "Accra Ofankor Ghana Stake" is 166px wide and the bar has 160px for it, so the
+     browser cut it in the middle of the word "Stake". The chip already says STAKE on
+     the line below, so the name does not have to end in it — and taking those two words
+     off leaves "Accra Ofankor Ghana" whole. */
+  function crumbName(name, label) {
+    const kind = String(label || "").trim().toLowerCase();
+    if (kind !== "stake" && kind !== "district") return name;
+    const cut = new RegExp("\\s+" + kind + "$", "i");
+    const trimmed = String(name || "").replace(cut, "").trim();
+    return trimmed || name;
+  }
   function empty(msg, ic = "search") {
     return el("div", { class: "empty" }, [icon(ic, 34), el("div", {}, msg)]);
+  }
+  /* A screen with nothing to show still says what it is.
+
+     The empty state on its own is a message in the middle of a page, and it is right
+     there inside a card. But when it is the whole screen — a person who opened Analytics
+     from a link, or came back with the back button — the tab still carries the name of
+     the last screen they were on, and a screen reader hears no heading at all. So a
+     screen that has nothing to show leads with its name. */
+  function notice(title, msg, ic = "search") {
+    return el("div", {}, [
+      el("div", { class: "page-head" }, [el("h1", { class: "page-title" }, title)]),
+      empty(msg, ic),
+    ]);
   }
   function loading(n = 2) {
     const w = el("div");
@@ -890,7 +936,9 @@ const UI = (() => {
         el("img", { class: "brand-img brand-mobile", src: logoUrl(),
                     alt: "Gathering Place" }),
         ctx && ctx.stake ? el("span", { class: "crumb" }, [
-          el("span", { class: "crumb-stake" }, ctx.stake.name),
+          el("span", { class: "crumb-stake",
+                       title: ctx.stake.name },
+              crumbName(ctx.stake.name, ctx.stake.label || primaryRoleLabel(user))),
           el("span", { class: "crumb-role" }, ctx.stake.label || primaryRoleLabel(user)),
         ]) : null,
       ]),
@@ -1181,8 +1229,8 @@ const UI = (() => {
 
   return { el, render, esc, toast, announce, act, icon, logoUrl, shell, modal, confirm: confirmDialog,
            closeAccountMenu,
-           empty, loading, WEEKDAYS, CATEGORIES, ROLES, roleLabel, fmtTime, fmtDate,
-           ago, opensLabel, startsAt, hoursText,
+           empty, notice, loading, WEEKDAYS, CATEGORIES, ROLES, roleLabel, fmtTime, fmtDate,
+           ago, doorLabel, doorPill, startsAt, hoursText, plural,
            logAction, logDetail, logKind,
            statusPill, initials, avatar, coverTile, seatRow, personName, shortName,
            tile, barSection, stackSection, primaryRoleLabel,
