@@ -154,7 +154,8 @@ const AdminPage = (() => {
           stats.stakes_pending ? "awaiting approval" : "every stake decided"),
      tile(stats.users_total, "People", "across the portal"),
      tile(stats.courses_active, "Open classes",
-          `${stats.enrollments_total} enrolments · ${stats.courses_unassigned || 0} without a teacher`)]
+          `${UI.plural(stats.enrollments_total, "enrolment")} · ` +
+          `${stats.courses_unassigned || 0} without a teacher`)]
       .forEach(t => tilesHost.appendChild(t));
   }
 
@@ -669,7 +670,7 @@ const AdminPage = (() => {
         el("div", { class: "meta" }, whereLine(s)),
         el("div", { class: "meta" }, `Invite ${s.invite_code || "—"}`),
         el("div", { class: "meta" },
-          `Check-in ±${s.attendance_grace_minutes} min, late after ${s.late_after_minutes}`),
+          `Check-in opens ${s.attendance_grace_minutes} min early, late after ${s.late_after_minutes}`),
       ]),
       stakeActions(s),
     ])));
@@ -886,7 +887,7 @@ const AdminPage = (() => {
       bodyNodes.push(el("div", { class: "row" },
         [field("Status", statusSel), field("Branding colour", color)]));
       bodyNodes.push(el("div", { class: "row" },
-        [field("Check-in grace (min)", grace), field("Late after (min)", late)]));
+        [field("Check-in opens (min before)", grace), field("Late after (min)", late)]));
     }
 
     const word = () => (kindSel.value === "district" ? "district" : "stake");
@@ -1352,7 +1353,7 @@ const AdminPage = (() => {
     return subcard("Roles", `${d.roles.length} assignment${d.roles.length === 1 ? "" : "s"}`, el("div", {}, [
       list,
       el("hr", { class: "hr" }),
-      el("div", { class: "row", style: "align-items:flex-end" }, [
+      el("div", { class: "row give", style: "align-items:flex-end" }, [
         el("div", { class: "field" }, [el("label", {}, "Stake or district"), stakeSel]),
         el("div", { class: "field" }, [el("label", {}, "Role"), roleSel]),
         el("div", { class: "field", style: "flex:0 0 auto" }, add),
