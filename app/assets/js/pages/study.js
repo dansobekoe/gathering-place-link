@@ -44,14 +44,23 @@ const StudyPage = (() => {
   }
   /* A frame from another site cannot be read from here, so a frame that never reports
      its load is described rather than guessed at: the hint points at the way out that
-     always works, and it goes away the moment the Library says it is up. */
+     always works, and it goes away the moment the Library says it is up.
+
+     The Library is a heavy page and it can take twenty seconds on a slow line, so the
+     first word is patience, not suspicion. Saying a site "is not obliged to show
+     itself" while it is still loading is accusing a site that was about to answer. */
   function watchBlank() {
     stopTimer();
     blankTimer = setTimeout(() => {
       veil.innerHTML = "";
       veil.appendChild(el("div", { class: "hint" },
-        "Still blank? The Library is not obliged to show itself inside another site — " +
-        "“Open in a new tab” always works."));
+        "Still loading — the Library is a big page and this line may be slow."));
+      blankTimer = setTimeout(() => {
+        veil.innerHTML = "";
+        veil.appendChild(el("div", { class: "hint" },
+          "Still blank? The Library is not obliged to show itself inside another site — " +
+          "“Open in a new tab” always works."));
+      }, 18000);
     }, 12000);
   }
 
