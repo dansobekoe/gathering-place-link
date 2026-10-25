@@ -333,6 +333,12 @@ const AdminPage = (() => {
       el("div", { class: "grow" }, [
         el("div", { class: "title" }, a.name),
         el("div", { class: "meta" }, [a.email, a.phone].filter(Boolean).join(" · ")),
+        /* A person with no mailbox has no code to send, so what decides their account is
+           the admin speaking to them. The queue says which of the two it is, because the
+           two are confirmed in different ways. */
+        a.confirm_by === "phone"
+          ? el("div", { class: "meta" }, "No mailbox — confirm the number in person")
+          : null,
         ...asksOf(a).map(t => el("div", { class: "meta" }, t)),
         el("div", { class: "meta" }, waitedText(a)),
       ]),
@@ -368,7 +374,7 @@ const AdminPage = (() => {
       placeholder: "What is missing, or whom to speak with" });
     modal({
       title: "Turn down this registration",
-      sub: `${a.name} · ${a.email}`,
+      sub: `${a.name} · ${a.email || a.phone || "no address on file"}`,
       body: el("div", {}, [
         el("div", { class: "meta", style: "margin-bottom:var(--sp-10)" },
           mailExpected
@@ -431,7 +437,7 @@ const AdminPage = (() => {
     return el("div", { class: "list-item" }, [
       el("div", { class: "grow" }, [
         el("div", { class: "title" }, a.name),
-        el("div", { class: "meta" }, a.email),
+        el("div", { class: "meta" }, a.email || a.phone || "no address on file"),
         ...asksOf(a).map(t => el("div", { class: "meta" }, t)),
       ]),
       el("div", { class: "row-actions" }, [
@@ -1126,7 +1132,7 @@ const AdminPage = (() => {
         el("div", { class: "title" }, [u.name,
           u.is_super_admin ? el("span", { class: "pill blue" }, "Portal Admin") : null,
           u.is_active ? null : el("span", { class: "pill red" }, "deactivated")]),
-        el("div", { class: "meta" }, u.email),
+        el("div", { class: "meta" }, contactLine(u)),
         el("div", { class: "meta" }, accessLine(u)),
       ]),
       personActions(u),
@@ -1139,7 +1145,7 @@ const AdminPage = (() => {
       el("tbody", {}, list.map(u => el("tr", {}, [
         el("td", {}, [
           el("div", { style: "font-weight:600" }, u.name),
-          el("div", { class: "muted", style: "font-size:var(--t-meta)" }, u.email)]),
+          el("div", { class: "muted", style: "font-size:var(--t-meta)" }, contactLine(u))]),
         el("td", {}, [u.roles.map(roleLabel).join(", ") || "—",
           u.is_super_admin ? el("span", { class: "mini-pill mine" }, "portal admin") : null]),
         el("td", { class: "muted", style: "font-size:var(--t-meta)" }, u.stakes.join(", ") || "—"),
@@ -1156,6 +1162,15 @@ const AdminPage = (() => {
     if (u.roles.length) bits.push(u.roles.map(roleLabel).join(", "));
     if (u.stakes.length) bits.push(u.stakes.join(", "));
     return bits.join(" · ") || "not in a stake yet";
+  }
+
+  /* How this person is reached, and whether they have a way in of their own. A paper
+     member has no address and no sign-in, so the line says both rather than leaving a
+     blank where an email address would be. */
+  function contactLine(u) {
+    const bits = [u.email || u.phone || "no address on file"];
+    if (u.has_account === false) bits.push("no sign-in of their own");
+    return bits.join(" · ");
   }
 
   function personActions(u) {
@@ -1176,10 +1191,34 @@ const AdminPage = (() => {
 
   async function registerModal(stakeId) {
     const name = el("input", { placeholder: "Full name" });
-    const email = el("input", { type: "email", placeholder: "person@example.org" });
+    const email = el("input", { type: "email", placeholder: "person@example.org",
+                                autocapitalize: "off", autocorrect: "off",
+                                spellcheck: "false" });
     const pw = el("input", { placeholder: "leave blank to generate one", autocomplete: "new-password" });
-    const phone = UI.phoneField({ label: "Phone",
-      note: "Optional. A Ghanaian number, with or without the leading 0." });
+    const phone = UI.phoneField({ label: "Phone number",
+      note: "A Ghanaian number, with or without the leading 0. This is how they sign in." });
+    /* Somebody with no phone of their own cannot sign in at all. They are still on the
+       register — name, number, ward, class — but with no password, no code and no
+       mailbox, so there is nothing to lose, share or reset. The record says who vouched
+       for it, and the console can open a real account for them later. */
+    const paper = el("input", { type: "checkbox", style: "width:auto" });
+    const pwField = field("Password", UI.passWrap(pw),
+      "Leave blank and we generate a one-time password you can hand over.");
+    const paperLine = el("div", { class: "field inline" }, [
+      paper,
+      el("label", { style: "margin:0;font-weight:600" },
+         "They have no phone of their own — write them down without an account"),
+    ]);
+    const paperNote = el("div", { class: "hint", style: "margin:-2px 0 var(--sp-14)" },
+      "They are on the register and in the class list, but there is no sign-in, so "
+      + "there is nothing to lose or reset. You can open one for them later from Manage.");
+    paperNote.style.display = "none";
+    function setPaper(on) {
+      pwField.style.display = on ? "none" : "";
+      paperNote.style.display = on ? "" : "none";
+      label.textContent = on ? "Write them down" : "Create account";
+    }
+    paper.addEventListener("change", () => setPaper(paper.checked));
     /* The ward comes off the stake's own list, so the box below the stake choice is the
        one that shows it — and with no stake chosen there is no list, which is said here
        rather than left for the save to refuse. */
@@ -1203,24 +1242,30 @@ const AdminPage = (() => {
     stakeSel.addEventListener("change", () => ward.load(stakeSel.value ? +stakeSel.value : null));
     ward.load(stakeSel.value ? +stakeSel.value : null);
 
+    const label = el("span", {}, "Create account");
     modal({
       wide: true,
       title: "Register a person",
-      sub: "Create an account for someone who cannot sign themselves up — a walk-in, a transfer, a teacher you are calling in.",
+      sub: "Write somebody down — a walk-in, a transfer, a student with no phone of their own.",
       body: el("div", {}, [
-        el("div", { class: "row" }, [field("Full name", name), field("Email", email)]),
-        el("div", { class: "row" }, [field("Password", UI.passWrap(pw),
-          "Leave blank and we generate a one-time password you can hand over."),
-          phone.node]),
+        el("div", { class: "row" }, [
+          field("Full name", name),
+          field("Email address (optional)", email,
+            "Only if they have one. A phone number is enough to sign in with.")]),
+        el("div", { class: "row" }, [pwField, phone.node]),
         el("div", { class: "row" }, [field("Stake or district", stakeSel), field("Role there", roleSel)]),
         el("div", { class: "row" }, [ward.node, companionField]),
+        paperLine, paperNote,
       ]),
       actions: [
         { label: "Cancel", kind: "secondary", onClick: c => c() },
-        { label: "Create account", onClick: async close => {
-            if (!name.value.trim() || !email.value.trim()) {
-              return toast("A name and an email are required", "err");
-            }
+        { label, onClick: async close => {
+            if (!name.value.trim())
+              return toast("A name is required", "err");
+            if (!email.value.trim() && !phone.get())
+              return toast("Give an email address or a phone number — one is enough", "err");
+            if (!paper.checked && pw.value && pw.value.length < 8)
+              return toast("A password needs at least 8 characters", "err");
             if (ward.incomplete())
               return toast("Write the ward's name, or choose “None recorded”", "err");
             const pickedWard = ward.payload();
@@ -1229,19 +1274,27 @@ const AdminPage = (() => {
                            + "a ward is a line on one tenant's list.", "err");
             try {
               const r = await API.post("/api/admin/users", {
-                full_name: name.value.trim(), email: email.value.trim(),
-                password: pw.value || null, phone: phone.get() || null,
+                full_name: name.value.trim(), email: email.value.trim() || null,
+                password: paper.checked ? null : (pw.value || null),
+                phone: phone.get() || null,
+                no_account: paper.checked,
                 companion_name: roleSel.value === MISSIONARY ? (companion.value.trim() || null) : null,
                 stake_id: stakeSel.value ? +stakeSel.value : null,
                 role: stakeSel.value ? roleSel.value : null,
                 ...pickedWard,
               });
               close();
-              toast("Account created");
               reload();
-              if (r.generated_password) {
-                credentialsModal({ name: name.value.trim(), email: r.email,
-                                   password: r.generated_password });
+              if (!r.has_account) {
+                toast(name.value.trim() + " is written down — no sign-in of their own");
+              } else {
+                toast("Account created");
+                if (r.generated_password) {
+                  credentialsModal({ name: name.value.trim(),
+                                     email: r.email || r.phone,
+                                     password: r.generated_password,
+                                     mailExpected: r.mail_expected });
+                }
               }
             } catch (e) { toast(e.message, "err"); }
           } },
@@ -1249,13 +1302,17 @@ const AdminPage = (() => {
     });
   }
 
-  function credentialsModal({ name, email, password }) {
+  function credentialsModal({ name, email, password, mailExpected }) {
     modal({
       title: "Sign-in details · " + name,
       sub: email,
       body: el("div", {}, [secretBox(password),
         el("div", { class: "meta muted", style: "margin-top:var(--sp-10)" },
-          "This is the only time it is shown. Pass it to the person directly — they can change it under My profile.")]),
+          "This is the only time it is shown. Pass it to the person directly — they can change it under My profile."),
+        mailExpected ? null :
+          el("div", { class: "meta muted", style: "margin-top:var(--sp-6)" },
+            "No letter went out — this portal has no mailbox connected, so the password "
+            + "is handed over in person.")]),
       actions: [{ label: "Done", onClick: c => c() }],
     });
   }
@@ -1263,7 +1320,8 @@ const AdminPage = (() => {
   async function manageModal(u) {
     const body = el("div", {}, [loading(3)]);
     const m = modal({ wide: true, title: u.name,
-      sub: u.email + " — every section saves on its own.", body,
+      sub: (u.email || u.phone || "no address on file") + " — every section saves on its own.",
+      body,
       actions: [{ label: "Close", onClick: c => c() }] });
     let d;
     try { d = await API.get(`/api/admin/users/${u.id}`); }
@@ -1401,6 +1459,10 @@ const AdminPage = (() => {
     const must = el("input", { type: "checkbox", style: "width:auto",
                                checked: "checked" });
     const out = el("div");
+    /* A paper member has no sign-in, so this card is the door into one. It says what
+       will happen — the record becomes an account they can sign into with their number,
+       and nothing else about them changes. */
+    const paper = d.has_account === false;
     async function set(value) {
       try {
         const r = await API.post(`/api/admin/users/${d.id}/password`,
@@ -1410,20 +1472,29 @@ const AdminPage = (() => {
           out.appendChild(secretBox(r.generated_password));
           out.appendChild(el("div", { class: "meta muted", style: "margin-top:var(--sp-8)" },
             "Shown once. Copy it before you close this dialog."));
-        } else toast("Password updated");
+          if (paper) out.appendChild(el("div", { class: "meta muted", style: "margin-top:var(--sp-6)" },
+            "Hand it to them in person. They sign in with their phone number and this "
+            + "password."));
+        } else toast(paper ? "Account opened" : "Password updated");
       } catch (e) { toast(e.message, "err"); }
     }
-    return subcard("Password", d.is_super_admin ? "portal admin" : "", el("div", {}, [
-      el("div", { class: "field" }, [el("label", {}, "New password"), UI.passWrap(pw)]),
-      el("div", { class: "field inline" }, [must,
-        el("label", { style: "margin:0;font-weight:600" }, "Require a new one at next sign-in")]),
-      el("div", { class: "row" }, [
-        el("button", { class: "btn secondary sm", onclick: () => set(pw.value) }, "Set this password"),
-        el("button", { class: "btn sm", onclick: () => set("") },
-          [icon("key", 14), "Generate one-time"]),
-      ]),
-      out,
-    ]));
+    return subcard(paper ? "Open an account" : "Password",
+      d.is_super_admin ? "portal admin" : "", el("div", {}, [
+        paper ? el("div", { class: "hint", style: "margin-bottom:var(--sp-12)" },
+          "This person has no sign-in of their own. Setting a password here opens an "
+          + "account for them.") : null,
+        el("div", { class: "field" }, [el("label", {}, paper ? "Their password" : "New password"),
+          UI.passWrap(pw)]),
+        el("div", { class: "field inline" }, [must,
+          el("label", { style: "margin:0;font-weight:600" }, "Require a new one at next sign-in")]),
+        el("div", { class: "row" }, [
+          el("button", { class: "btn secondary sm", onclick: () => set(pw.value) },
+            paper ? "Open the account" : "Set this password"),
+          el("button", { class: "btn sm", onclick: () => set("") },
+            [icon("key", 14), "Generate one-time"]),
+        ]),
+        out,
+      ]));
   }
 
   function accessCard(d, closeAll) {
@@ -1440,7 +1511,9 @@ const AdminPage = (() => {
         el("div", { class: "list-item" }, [
           el("div", { class: "grow" }, [
             el("div", { class: "title" }, "Account status"),
-            el("div", { class: "meta" }, d.is_active
+            el("div", { class: "meta" }, d.has_account === false
+              ? "Written down without a sign-in — counted, marked and printed like anybody else."
+              : d.is_active
               ? "Can sign in and use every stake they belong to."
               : "Blocked from signing in; their records stay on file."),
           ]),
@@ -1848,9 +1921,16 @@ const AdminPage = (() => {
       el("div", { class: "msection" }, [title, note ? el("span", { class: "muted note" }, " · " + note) : null]),
       node]);
   }
+  /* A labelled box. The label is tied to the control it names, so a screen reader says
+     what the box is when focus lands on it rather than only when it is read top down.
+     A wrapped control — the password box, which carries its own show-and-hide button —
+     keeps the plain label, because the id belongs to the input inside it. */
+  let fieldSeq = 0;
   function field(label, input, hint) {
-    return el("div", { class: "field" }, [el("label", {}, label), input,
-      hint ? el("div", { class: "hint" }, hint) : null]);
+    const plain = input && ["INPUT", "SELECT", "TEXTAREA"].includes(input.tagName);
+    if (plain && !input.id) input.id = "f-" + (++fieldSeq);
+    return el("div", { class: "field" }, [el("label", plain ? { for: input.id } : {}, label),
+      input, hint ? el("div", { class: "hint" }, hint) : null]);
   }
   function iconBtn(ic, title, fn) {
     return el("button", { class: "btn ghost icon-only", title, "aria-label": title, onclick: fn },
