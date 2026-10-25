@@ -3,7 +3,7 @@
    member opening the class they attend gets their own view of it — where and when, how
    far it has run, whether they were in it, and who else is coming. */
 const AttendancePage = (() => {
-  const { el, toast, icon, statusPill, fmtDate, fmtTime, opensLabel, startsAt, hoursText,
+  const { el, toast, icon, statusPill, fmtDate, fmtTime, doorLabel, doorPill, startsAt, hoursText,
           modal, empty, seatRow } = UI;
   const STATUSES = ["present", "late", "excused", "absent"];
   const ATT_WORD = { present: "Present", late: "Late", excused: "Excused", absent: "Absent" };
@@ -127,7 +127,7 @@ const AttendancePage = (() => {
 
   async function mount(target, stakeId, courseId) {
     stop();
-    const user = API.getUser();
+    const user = API.getUser() || {};
     const f = await Ctx.flags(stakeId);          // president / missionary / admin / instructor
 
     /* The way back and the shell cost nothing, so they are painted before the class is
@@ -211,7 +211,10 @@ const AttendancePage = (() => {
     content.appendChild(lists);
     UI.render(target, UI.shell("courses", content, App.nav(), App.ctx()));
 
-    const packed = listsP || await fetchLists();
+    /* The await is on the whole expression, not on the fallback: `listsP` is a promise, and
+       an OR in front of an await short-circuits to that promise itself, so every list below
+       would destructure to undefined — a blank Sessions and Roster, with no Attendance button. */
+    const packed = await (listsP || fetchLists());
     if (packed.failed) {
       lists.innerHTML = "";
       lists.appendChild(el("div", { class: "card" }, [
@@ -222,10 +225,21 @@ const AttendancePage = (() => {
     lists.innerHTML = "";
     if (canManage) lists.appendChild(liveSection(sessions));
     lists.appendChild(el("h2", { class: "sec-title", style: canManage ? "" : "margin-top:0" }, "Sessions"));
-    const scard = el("div", { class: "card" });
-    if (!sessions.length) scard.appendChild(empty("No sittings booked yet — build them from the weekly schedule, or book one by hand.", "calendar"));
-    sessions.forEach(s => {
-      const acts = el("div", { style: "display:flex;gap:var(--sp-6);flex:none" });
+
+    /* A register of thirty sittings in one list has no shape: nothing in it says which
+       one is still to come and which one has gone by. The list is split in two — what is
+       still ahead, and what has gone by — so the teacher opens the class and sees the two
+       halves apart. */
+    const clock = new Date();
+    const todayKey = `${clock.getFullYear()}-${String(clock.getMonth() + 1).padStart(2, "0")}-` +
+                     `${String(clock.getDate()).padStart(2, "0")}`;
+
+    /* One sitting, one row that can be read on a phone: the day and the hours on a line
+       of their own, the state of it under them, the buttons on a line below. Held on one
+       line beside the buttons, the hours wrapped to three narrow words and the day the
+       class met stopped being readable. */
+    function sessionRow(s) {
+      const acts = el("div", { class: "row-actions" });
       if (canManage) {
         acts.appendChild(el("button", { class: "btn sm", title: "Record attendance",
           onclick: () => markSession(s) }, [icon("check", 15), "Attendance"]));
@@ -242,45 +256,74 @@ const AttendancePage = (() => {
           acts.appendChild(el("button", { class: "btn ghost icon-only",
             title: "Delete this sitting — no one has been marked in it",
             onclick: () => eraseSession(s) }, [icon("trash", 15)]));
-      } else {
-        acts.appendChild(el("span", { html: statusPill(s.status) }));
       }
-      scard.appendChild(el("div", { class: "list-item" }, [
-        el("div", { class: "grow" }, [
-          el("div", { class: "title" }, fmtDate(s.scheduled_date) + " · " + hoursText(s)),
-          el("div", { class: "meta" }, [el("span", { html: statusPill(s.status) }),
-            s.notes ? el("span", { class: "muted" }, " — " + s.notes) : null]),
+      /* A mark is worth saying out loud. An empty one is worth saying only once the day
+         it was meant for has gone by: that is the gap the teacher can still close. On a
+         day still to come, nobody has been marked in yet, and saying so on every row is
+         noise that teaches the eye to stop reading the row. */
+      const marks = [];
+      if (s.marked) marks.push(el("span", { class: "mini-pill ok" }, `${s.marked} marked in`));
+      else if (s.status !== "cancelled" && s.scheduled_date < todayKey)
+        marks.push(el("span", { class: "mini-pill hot" }, "no one marked in"));
+      return el("div", { class: "class-card" }, [
+        el("div", { class: "class-card-head" }, [
+          el("div", { class: "grow" }, [
+            el("div", { class: "title" }, fmtDate(s.scheduled_date) + " · " + hoursText(s)),
+            el("div", { class: "meta" }, [
+              el("span", { html: statusPill(s.status) }),
+              s.notes ? el("span", { class: "muted" }, " · " + s.notes) : null,
+            ]),
+          ]),
         ]),
-        acts,
-      ]));
-    });
-    if (canManage) {
-      scard.appendChild(el("hr", { class: "hr" }));
-      scard.appendChild(el("div", { class: "actions" }, [
-        el("button", { class: "btn secondary sm",
-          onclick: e => UI.act(e.currentTarget, "Booking…", async () => {
-            try {
-              const r = await API.post(`/api/stakes/${stakeId}/courses/${courseId}/sessions/generate`);
-              toast(r.created
-                ? `${r.created} sitting${r.created === 1 ? "" : "s"} booked` +
-                  (r.skipped ? ` · ${r.skipped} kept their own time` : "")
-                : "Every date in this schedule is already booked");
-              mount(target, stakeId, courseId);
-            }
-            catch (e) { toast(e.message, "err"); }
-          }) }, [icon("refresh", 15), "Generate from weekly schedule"]),
-        el("button", { class: "btn secondary sm", onclick: () => sittingModal(null) },
-          [icon("plus", 15), sessions.length ? "Book another sitting" : "Book a sitting"]),
-      ]));
+        el("div", { class: "class-card-foot" }, [
+          el("div", { class: "class-card-marks" }, marks),
+          acts,
+        ]),
+      ]);
     }
-    lists.appendChild(scard);
+
+    const groups = [
+      { label: "Still to come", rows: sessions.filter(s => s.scheduled_date >= todayKey) },
+      { label: "Earlier", rows: sessions.filter(s => s.scheduled_date < todayKey) },
+    ].filter(g => g.rows.length);
+
+    if (!sessions.length) {
+      lists.appendChild(el("div", { class: "card" }, [
+        empty("No sittings booked yet — build them from the weekly schedule, or book one by hand.", "calendar")]));
+    } else {
+      groups.forEach((g, gi) => {
+        if (groups.length > 1)
+          lists.appendChild(el("div", { class: "group-label" }, g.label));
+        const gcard = el("div", { class: "card" });
+        g.rows.forEach(s => gcard.appendChild(sessionRow(s)));
+        if (canManage && gi === groups.length - 1) {
+          gcard.appendChild(el("div", { class: "actions", style: "margin-top:var(--sp-16)" }, [
+            el("button", { class: "btn secondary sm",
+              onclick: e => UI.act(e.currentTarget, "Booking…", async () => {
+                try {
+                  const r = await API.post(`/api/stakes/${stakeId}/courses/${courseId}/sessions/generate`);
+                  toast(r.created
+                    ? `${r.created} sitting${r.created === 1 ? "" : "s"} booked` +
+                      (r.skipped ? ` · ${r.skipped} kept their own time` : "")
+                    : "Every date in this schedule is already booked");
+                  mount(target, stakeId, courseId);
+                }
+                catch (e) { toast(e.message, "err"); }
+              }) }, [icon("refresh", 15), "Generate from weekly schedule"]),
+            el("button", { class: "btn secondary sm", onclick: () => sittingModal(null) },
+              [icon("plus", 15), sessions.length ? "Book another sitting" : "Book a sitting"]),
+          ]));
+        }
+        lists.appendChild(gcard);
+      });
+    }
 
     // ---------- Roster ----------
     lists.appendChild(el("h2", { class: "sec-title" }, "Roster"));
     const rcard = el("div", { class: "card" });
     if (!roster.length) rcard.appendChild(empty("No students enrolled yet.", "users"));
     roster.forEach(r => {
-      const acts = el("div", { style: "display:flex;gap:var(--sp-6);flex:none" });
+      const acts = el("div", { class: "row-actions" });
       if (canManage && r.status === "enrolled") {
         acts.appendChild(el("button", { class: "btn secondary sm", onclick: () => grade(r) },
           [icon("award", 15), "Grade"]));
@@ -315,21 +358,34 @@ const AttendancePage = (() => {
           "aria-label": `Message ${r.student_name} on WhatsApp` },
           [icon("chat", 15), "WhatsApp"]));
       }
-      rcard.appendChild(el("div", { class: "list-item" }, [
-        UI.avatar({ name: r.student_name, photo_url: r.photo_url }),
-        el("div", { class: "grow" }, [
-          el("div", { class: "title" }, r.student_name),
-          el("div", { class: "meta" }, [
-            r.ward,
-            (r.completion_status || "").replace("_", " "),
-            r.final_grade ? "grade " + r.final_grade : "",
-            r.certificate_issued ? "certificate issued" : "",
-          ].filter(Boolean).join(" · ")),
-          contacts.length ? el("div", { class: "rsr-contacts" }, contacts) : null,
+
+      /* A person, then what is known about them, then the things that can be done with
+         them — each on a line of its own. Held on one line, a name wraps to two words and
+         a phone number breaks across three. */
+      const marks = [el("span", { html: statusPill(r.status) })];
+      if (r.waitlist_position)
+        marks.push(el("span", { class: "mini-pill" }, "position " + r.waitlist_position));
+      if (r.completion_status === "completed")
+        marks.push(el("span", { class: "mini-pill ok" }, "Completed"));
+      else if (r.completion_status === "in_progress")
+        marks.push(el("span", { class: "mini-pill" }, "In progress"));
+      if (r.certificate_issued)
+        marks.push(el("span", { class: "mini-pill ok" }, "Certificate issued"));
+
+      rcard.appendChild(el("div", { class: "class-card sep-top" }, [
+        el("div", { class: "class-card-head" }, [
+          UI.avatar({ name: r.student_name, photo_url: r.photo_url }),
+          el("div", { class: "grow" }, [
+            el("div", { class: "title" }, r.student_name),
+            el("div", { class: "meta" }, [r.ward,
+              r.final_grade ? "grade " + r.final_grade : ""].filter(Boolean).join(" · ")),
+            contacts.length ? el("div", { class: "rsr-contacts" }, contacts) : null,
+          ]),
         ]),
-        el("span", { html: statusPill(r.status) }),
-        r.waitlist_position ? el("span", { class: "pill grey" }, "#" + r.waitlist_position) : null,
-        acts,
+        el("div", { class: "class-card-foot" }, [
+          el("div", { class: "class-card-marks" }, marks),
+          acts,
+        ]),
       ]));
     });
     if (seats) {
@@ -393,8 +449,9 @@ const AttendancePage = (() => {
       const qrHost = el("div", { class: "qr-box" });
       const statusEl = el("div", { style: "margin-top:var(--sp-8)" });
       const countEl = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-4)" });
+      const tickEl = el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-2)" });
 
-      let rot = 30, lastFetch = 0;
+      let rot = 30, lastFetch = 0, standing = false;
       async function fetchLive() {
         try {
           const live = await API.get(`/api/attendance/sessions/${sel.value}/live`);
@@ -402,16 +459,14 @@ const AttendancePage = (() => {
           codeEl.textContent = live.code;
           QR.render(qrHost, JSON.stringify({ s: +sel.value, c: live.code }), 190,
             "Check-in code for this session. The same code is written in digits beside it.");
-          statusEl.innerHTML = live.open
-            ? '<span class="pill green">check-in open</span>'
-            : '<span class="pill grey">check-in closed</span>';
-          if (!live.open) countEl.textContent = opensLabel(live);
+          statusEl.innerHTML = doorPill(live);
+          countEl.textContent = doorLabel(live);
+          standing = !!live.open;
         } catch (e) { statusEl.textContent = e.message; }
       }
       function tick() {
         const remaining = rot - (Math.floor(Date.now() / 1000) % rot);
-        if (statusEl.querySelector(".pill.green"))
-          countEl.textContent = `Code refreshes in ${remaining}s`;
+        if (standing) tickEl.textContent = `Code refreshes in ${remaining}s`;
         if (Date.now() - lastFetch > 4000) { lastFetch = Date.now(); fetchLive(); }
       }
       sel.addEventListener("change", () => { lastFetch = 0; tick(); });
@@ -420,11 +475,16 @@ const AttendancePage = (() => {
 
       card.appendChild(el("div", { class: "field" }, [el("label", {}, "Session"), sel]));
       card.appendChild(el("div", { class: "live-grid" }, [
-        el("div", {}, [codeEl, statusEl, countEl]),
+        el("div", {}, [codeEl, statusEl, countEl, tickEl]),
         qrHost,
       ]));
       card.appendChild(el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-10)" },
         "Project this screen. Students scan the code, or you scan their badges."));
+      /* The door is said out loud here because it is the one thing a student in the room
+         cannot see: the code on the wall looks the same at 7:00 and three days later. */
+      card.appendChild(el("div", { class: "muted", style: "font-size:var(--t-meta);margin-top:var(--sp-4)" },
+        "Once the door opens it stays open. A student who checks in late — or days later — "
+        + "is still counted, marked late."));
       card.appendChild(el("button", { class: "btn secondary sm", style: "margin-top:var(--sp-10)",
         onclick: () => badgeScan(+sel.value) }, [icon("qr", 15), "Scan student badges"]));
       wrap.appendChild(card);
@@ -437,7 +497,8 @@ const AttendancePage = (() => {
       let stop = null;
       const m = modal({
         title: "Scan student badges",
-        sub: "Each successful scan marks that student present or late.",
+        sub: "Each successful scan marks that student on time, or late if they came after "
+           + "the class started.",
         body: el("div", {}, [video, feed]),
         actions: [{ label: "Done", kind: "secondary", onClick: c => { if (stop) stop(); c(); } }],
       });
@@ -685,11 +746,12 @@ const AttendancePage = (() => {
       return m;
     }
 
-    /* One form books a sitting and moves one, because they are the same three answers:
-       the day, the hour it runs from and to, and whether the door stays open to
-       latecomers while the class is still going. A class can have several sittings on one
-       day, so the hour is what tells them apart — the server refuses two that overlap and
-       says which one is already booked. */
+    /* One form books a sitting and moves one, because they are the same answers: the day
+       and the hour it runs from and to. A class can have several sittings on one day, so
+       the hour is what tells them apart — the server refuses two that overlap and says
+       which one is already booked. The door is not a question here any more: check-in
+       opens a few minutes before the class and never closes, so a teacher cannot shut a
+       student out of the record of their own attendance by forgetting a box. */
     function sittingModal(session) {
       const adding = !session;
       const d = el("input", { type: "date", value: adding ? "" : session.scheduled_date });
@@ -699,8 +761,6 @@ const AttendancePage = (() => {
       const e = el("input", { type: "time",
         value: adding ? (course.end_time || "").slice(0, 5)
                       : (session.end_time || "").slice(0, 5) });
-      const door = el("input", { type: "checkbox", style: "width:auto",
-        checked: (adding ? true : session.checkin_open_until_end !== false) ? "checked" : null });
       modal({
         title: adding ? "Book a sitting" : "Change this sitting",
         sub: adding ? course.title
@@ -711,12 +771,9 @@ const AttendancePage = (() => {
             el("div", { class: "field" }, [el("label", {}, "Starts"), t]),
             el("div", { class: "field" }, [el("label", {}, "Ends"), e]),
           ]),
-          el("div", { class: "field", style: "display:flex;gap:var(--sp-10);align-items:center" }, [
-            door, el("label", { style: "margin:0" }, "Check-in stays open until the class ends"),
-          ]),
           el("div", { class: "hint" },
-            "Either way the door closes an hour after the class finishes, so someone on " +
-            "their way is still counted. Leaving the end blank keeps the class's own hours."),
+            "Check-in opens a few minutes before the class and never closes. Leaving the end "
+            + "blank keeps the class's own hours."),
         ]),
         actions: [
           { label: "Cancel", kind: "secondary", onClick: c => c() },
@@ -727,14 +784,12 @@ const AttendancePage = (() => {
               if (adding) {
                 await API.post(`/api/stakes/${stakeId}/courses/${courseId}/sessions`, {
                   scheduled_date: d.value, start_time: hhmm(t.value), end_time: hhmm(e.value),
-                  checkin_open_until_end: door.checked,
                 });
                 toast("Sitting booked");
               } else {
                 const q = new URLSearchParams({ new_date: d.value });
                 if (t.value) q.set("new_time", hhmm(t.value));
                 if (e.value) q.set("new_end", hhmm(e.value));
-                q.set("open_until_end", door.checked ? "true" : "false");
                 await API.patch(`/api/stakes/${stakeId}/sessions/${session.id}?${q}`);
                 toast("Sitting updated");
               }
@@ -849,7 +904,7 @@ const AttendancePage = (() => {
   }
 
   async function memberView(target, stakeId, courseId, course, f, ready) {
-    const user = API.getUser();
+    const user = API.getUser() || {};
     /* `ready` is the set already asked for beside the class. If that pass did not arrive
        — a member who also teaches, or a dropped connection — the same four are asked
        here, and this time a failure is shown rather than swallowed. */
@@ -866,9 +921,17 @@ const AttendancePage = (() => {
                    + `-${String(today.getDate()).padStart(2, "0")}`;
     const now = Date.now();
     const booked = sessions.filter(s => s.status !== "cancelled");
-    const upcoming = booked.filter(s => startsAt(s) >= now).sort((a, b) => startsAt(a) - startsAt(b));
-    const past = sessions.filter(s => s.status !== "cancelled" && startsAt(s) < now)
-                         .sort((a, b) => startsAt(b) - startsAt(a));
+    /* A sitting that was called off is still on the member's calendar. "There is no class
+       this week" is news a member needs before they set out, and leaving it off the page
+       leaves the class looking as though it had simply stopped. */
+    const ahead = sessions.filter(s => startsAt(s) >= now).sort((a, b) => startsAt(a) - startsAt(b));
+    const upcoming = ahead.filter(s => s.status !== "cancelled");
+    const off = ahead.filter(s => s.status === "cancelled");
+    /* Everything that has gone by, called off or not. A sitting that was called off is
+       still part of what happened to this class, and a member who turns up to a class that
+       was never held is owed the truth about which dates were the ones. */
+    const past = sessions.filter(s => startsAt(s) < now).sort((a, b) => startsAt(b) - startsAt(a));
+    const pastOff = past.filter(s => s.status === "cancelled");
     const heldCount = sessions.filter(s => s.status === "completed").length;
     const next = upcoming[0] || null;
     // A code exists only around the sitting itself, so the camera is offered on the day —
@@ -948,6 +1011,13 @@ const AttendancePage = (() => {
         (meetsToday ? "Meets today at " : "Next sitting " + fmtDate(next.scheduled_date) + " at ")
           + hoursText(next),
       ]));
+    } else if (off.length) {
+      /* The class is not over — its next date has been called off. Saying that is better
+         than saying nothing, which reads as though the class had quietly ended. */
+      hero.appendChild(el("div", { class: "cd-next off" }, [
+        icon("ban", 14),
+        "The sitting on " + fmtDate(off[0].scheduled_date) + " has been called off",
+      ]));
     }
     content.appendChild(hero);
 
@@ -975,13 +1045,24 @@ const AttendancePage = (() => {
           s.notes ? el("span", { class: "muted" }, " — " + s.notes) : null]),
       ]),
     ]));
-    upcoming.slice(0, 4).forEach(row);
+    if (upcoming.length) {
+      scard.appendChild(el("div", { class: "cd-sub first" }, "Still to come"));
+      upcoming.slice(0, 4).forEach(row);
+    }
+    if (off.length) {
+      /* A called-off sitting keeps its own heading. Filed under "still to come" it would
+         be a date the member sets out for that has already been cancelled. */
+      scard.appendChild(el("div", { class: "cd-sub" },
+        off.length === 1 ? "Called off" : "Called off · " + off.length + " sittings"));
+      off.slice(0, 4).forEach(row);
+    }
     if (past.length) {
       scard.appendChild(el("div", { class: "cd-sub" },
-        past.length + (past.length === 1 ? " sitting held" : " sittings held")));
+        past.length + (past.length === 1 ? " earlier sitting" : " earlier sittings")
+        + (pastOff.length ? " · " + pastOff.length + " called off" : "")));
       past.slice(0, 8).forEach(row);
       if (past.length > 8) scard.appendChild(el("div", { class: "hint" },
-        `${past.length - 8} earlier sitting(s) are on your full record.`));
+        `The full record holds ${UI.plural(past.length - 8, "earlier sitting")}.`));
     }
     content.appendChild(scard);
 
