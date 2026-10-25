@@ -20,35 +20,35 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/gabarito-600.woff2?v=112") format("woff2");
+  src: url("../fonts/gabarito-600.woff2?v=113") format("woff2");
 }
 @font-face {
   font-family: "Gabarito";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/gabarito-700.woff2?v=112") format("woff2");
+  src: url("../fonts/gabarito-700.woff2?v=113") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("../fonts/figtree-400.woff2?v=112") format("woff2");
+  src: url("../fonts/figtree-400.woff2?v=113") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/figtree-600.woff2?v=112") format("woff2");
+  src: url("../fonts/figtree-600.woff2?v=113") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/figtree-700.woff2?v=112") format("woff2");
+  src: url("../fonts/figtree-700.woff2?v=113") format("woff2");
 }
 
 :root {
