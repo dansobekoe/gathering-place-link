@@ -6,7 +6,8 @@
    broadcast he cannot send, a student is never shown a class he does not teach. */
 const MessagesPage = (() => {
   const { el, icon, toast, shell, loading, empty, render, fmtDate, fmtTime,
-          modal, roleLabel, avatar, draftSave, draftRead, draftDrop } = UI;
+          modal, roleLabel, avatar, draftSave, draftRead, draftDrop,
+          notice } = UI;
 
   let box = "inbox";
   let opts = null;        // this person's send options for the stake in view
@@ -19,7 +20,8 @@ const MessagesPage = (() => {
     const stake = ctx.stake;
     if (!stake) {
       return render(target, shell("messages",
-        empty("Messages live inside a stake — pick one to begin.", "home"), App.nav(), ctx));
+        notice("Messages", "Messages live inside a stake — pick one to begin.", "home"),
+        App.nav(), ctx));
     }
     const content = el("div");
     content.appendChild(head(stake, ctx.unread));
@@ -64,7 +66,7 @@ const MessagesPage = (() => {
     const wrap = el("div");
     const rows = data.messages;
     wrap.appendChild(el("div", { class: "page-sub msg-count", style: "margin-bottom:var(--sp-10)" },
-      `${rows.length} message(s)` +
+      UI.plural(rows.length, "message") +
       (box === "inbox" && unreadHere ? ` · ${unreadHere} unread` : "")));
     if (!rows.length) {
       wrap.appendChild(el("div", { class: "card" }, [empty(
@@ -95,6 +97,17 @@ const MessagesPage = (() => {
     });
   }
 
+  /* A preview that stops in the middle of a word reads as a mistake rather than as a
+     preview, so the cut falls at the last whole word and the reader is told there is
+     more to come. */
+  function preview(text, max) {
+    const t = String(text || "").replace(/\s+/g, " ").trim();
+    if (t.length <= max) return t;
+    const cut = t.slice(0, max);
+    const at = cut.lastIndexOf(" ");
+    return (at > 40 ? cut.slice(0, at) : cut).trim() + "…";
+  }
+
   function row(m, ctx) {
     const when = m.created_at ? new Date(String(m.created_at)) : null;
     const unread = box === "inbox" && !m.read && !m.mine;
@@ -104,7 +117,7 @@ const MessagesPage = (() => {
       avatar(face),
       el("div", { class: "grow" }, [
         el("div", { class: "subject" }, (m.mine ? "→ " : "") + m.subject),
-        el("div", { class: "snippet" }, String(m.body || "").slice(0, 120)),
+        el("div", { class: "snippet" }, preview(m.body, 120)),
         el("div", { class: "foot" }, [
           el("span", { style: "font-weight:600;color:var(--ink-2)" },
             m.mine ? "You" : m.sender_name),
