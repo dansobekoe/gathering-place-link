@@ -294,9 +294,14 @@ const ProfilePage = (() => {
       if (lastNote) {
         body.appendChild(el("div", { class: "rights-note" }, [icon("mail", 16), lastNote]));
       }
-      body.appendChild(status(p.email_verified_at
-        ? "Address confirmed on " + fmtDate(p.email_verified_at)
-        : "This address has not been confirmed yet", !p.email_verified_at));
+      /* A person with no mailbox has no address to confirm, so the line says what is
+         true of them instead of leaving a confirmation that can never arrive. */
+      body.appendChild(status(p.email
+        ? (p.email_verified_at
+            ? "Address confirmed on " + fmtDate(p.email_verified_at)
+            : "This address has not been confirmed yet")
+        : "You sign in with your phone number, so there is no address to confirm",
+        p.email ? !p.email_verified_at : false));
       body.appendChild(status(d.consent_required
         ? "Version " + (d.policy_version || "—") + " of the policy is not accepted yet"
         : "You accepted version " + (p.consent_version || d.policy_version) +
