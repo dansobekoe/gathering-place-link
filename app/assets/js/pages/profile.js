@@ -12,7 +12,7 @@ const ProfilePage = (() => {
   const { el, toast, icon, statusPill, avatar, modal, loading, fmtDate, announce } = UI;
 
   async function mount(target) {
-    const user = API.getUser();
+    const user = API.getUser() || {};
     const content = el("div");
     content.appendChild(el("div", { class: "page-head" }, [
       el("h1", { class: "page-title" }, "My profile"),
@@ -90,7 +90,7 @@ const ProfilePage = (() => {
         toast("Picture saved — it will show on your badge and roster");
         mount(target);           // the whole page, so the chip and sidebar change too
       } catch (e) {
-        drawFace(API.getUser().photo_url);   // back to the picture that is really filed
+        drawFace((API.getUser() || {}).photo_url);   // back to the picture that is really filed
         toast(e.message, "err");
         pick.disabled = false;
       } finally {
