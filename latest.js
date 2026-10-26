@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://girls-mary-dolls-transform.trycloudflare.com","updated_at":"2026-10-26T18:26:00Z"};
+window.GATHERING_PLACE = {"url":"https://reform-programmes-salaries-publishers.trycloudflare.com","updated_at":"2026-10-26T18:31:38Z"};
