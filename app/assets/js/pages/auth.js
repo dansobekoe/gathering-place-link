@@ -392,7 +392,89 @@ const AuthPage = (() => {
           "On a phone or computer other people use, leave this unchecked — the portal " +
           "then forgets you when this tab closes. Ticked, it keeps you signed in here."),
         btn,
+        /* A person who cannot get in often does not know whether they are on the portal
+           at all. This is the way to ask without a password. */
+        el("div", { class: "rc-open" }, [
+          el("button", { class: "linkbtn", type: "button", onclick: rosterCheck },
+            "Not sure you are on the portal? Check your name"),
+        ]),
       ]);
+    }
+
+    /* Is this person on the portal?
+
+       A name and a telephone number together, because the answer is about a person and
+       one of the two on its own is not enough to say which person. The answer never says
+       which half was wrong: somebody who mistypes their own name is told the same
+       thing as somebody who was never on the list, because a door that says "your name
+       is right but your number is not" is a list of who is on the portal, told to anyone
+       who asks twice. */
+    function rosterCheck() {
+      const name = el("input", { type: "text", placeholder: "Your full name",
+                                 autocomplete: "name" });
+      const phone = el("input", { type: "tel", placeholder: "024 123 4567",
+                                  autocomplete: "tel", inputmode: "tel" });
+      const answer = el("div", { class: "rc" });
+      const btn = el("button", { class: "btn" }, [icon("search", 17), "Check my name"]);
+
+      async function check() {
+        if (!name.value.trim()) return toast("Type the name you registered with", "err");
+        if (!phone.value.trim()) return toast("Type the phone number you registered with", "err");
+        await UI.act(btn, "Checking…", async () => {
+          answer.innerHTML = "";
+          try {
+            const r = await API.post("/api/auth/roster-check",
+                                     { name: name.value.trim(), phone: phone.value.trim() });
+            answer.appendChild(r.found ? found(r) : missing(r, m));
+          } catch (e) {
+            answer.appendChild(el("div", { class: "rc-box" }, [
+              el("div", { class: "rc-msg" }, e.message),
+            ]));
+          }
+        });
+      }
+      btn.addEventListener("click", check);
+      phone.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+      name.addEventListener("keydown", e => { if (e.key === "Enter") phone.focus(); });
+
+      function found(r) {
+        const facts = [];
+        if (r.stake) facts.push(["Place", r.stake]);
+        if (r.ward) facts.push(["Ward or branch", r.ward]);
+        if (r.classes && r.classes.length) facts.push(["Classes", r.classes.join(", ")]);
+        facts.push(["Your sign-in", r.has_account
+          ? "Yes — sign in with your phone number and your password."
+          : "Not yet — you were written down by a leader, so you do not have one."]);
+        return el("div", { class: "rc-box found" }, [
+          el("div", { class: "rc-title" }, "Yes — you are on the portal"),
+          el("div", { class: "rc-msg" }, r.message),
+          el("div", { class: "rc-facts" }, facts.map(f =>
+            el("div", { class: "rc-fact" }, [
+              el("span", { class: "k" }, f[0]),
+              el("span", { class: "v" }, f[1]),
+            ]))),
+        ]);
+      }
+      function missing(r, dialog) {
+        return el("div", { class: "rc-box" }, [
+          el("div", { class: "rc-title" }, "We could not find you"),
+          el("div", { class: "rc-msg" }, r.message),
+          el("button", { class: "btn secondary", style: "margin-top:var(--sp-14)",
+            onclick: () => { dialog.close(); mode = "signup"; draw(); } },
+            [icon("userplus", 17), "Create an account"]),
+        ]);
+      }
+
+      const m = modal({
+        title: "Are you on the portal?",
+        sub: "Your name and the phone number you registered with.",
+        body: el("div", {}, [
+          el("div", { class: "field" }, [el("label", {}, "Your full name"), name]),
+          el("div", { class: "field" }, [el("label", {}, "Phone number"), phone]),
+          btn,
+          answer,
+        ]),
+      });
     }
 
     // ---- password reset (two-step modal) ----
@@ -636,8 +718,10 @@ const AuthPage = (() => {
                                      phone: "", whatsapp: "", choice: "", invite: "",
                                      companion: "", gender: "", member: "",
                                      ward: null, stakeId: null, stakeName: "",
-                                     stakeKind: "stake", stakeAddr: "" }, keptForm || {});
+                                     stakeKind: "stake", stakeAddr: "", classes: [] },
+                                   keptForm || {});
       form.choice = choiceFromDraft(form);
+      if (!Array.isArray(form.classes)) form.classes = [];
       const name = el("input", { placeholder: "Full name", autocomplete: "name", value: form.name });
       const email = el("input", { type: "email", placeholder: "you@example.org",
                                   autocomplete: "email", value: form.email,
@@ -703,6 +787,7 @@ const AuthPage = (() => {
 
       // per-choice references, cleared and reassigned by buildJoin / buildRegister
       let joinPicker, joinInvite, joinCompanion, joinCompanionField, joinLeaderNote, joinWard;
+      let joinClasses, classTimer = null;
       let regName, regKind, regAddr;
       let built = null;          // "join" | "register" — which block `extra` is holding
 
@@ -734,6 +819,134 @@ const AuthPage = (() => {
         if (want === "join") buildJoin(); else buildRegister();
       }
 
+      /* The classes this person wants to join. They are asked for here, on the same screen
+         as everything else about them, because a roster and a badge are cut the day the
+         account opens — a class that has to be found again afterwards is a class nobody
+         finds.
+
+         The list belongs to a place, so it arrives when the place does: a place found in
+         the directory, or a code a leader handed over. Until one of those is known there
+         is nothing to show, and the block stays out of the way rather than sitting there
+         empty. */
+      function classPicker() {
+        const node = el("div", { class: "cp" });
+        const list = el("div", { class: "cp-list" });
+        let seq = 0;
+        let key = "";        // the place the list on screen belongs to
+        let painted = "";    // the place whose list has actually been drawn
+        let wanted = false;  // a student is the one being asked
+        node.style.display = "none";
+        node.appendChild(el("div", { class: "cp-head" }, [
+          el("div", { class: "cp-title" }, "Classes you want to join"),
+          el("div", { class: "hint" }, "Tick as many as you like. A class that is already "
+            + "full puts you on the waiting list instead of turning you away."),
+        ]));
+        node.appendChild(list);
+
+        function refresh() { node.style.display = (key && wanted) ? "" : "none"; }
+
+        function load(stakeId, inviteCode) {
+          key = inviteCode ? "i:" + inviteCode : stakeId ? "s:" + stakeId : "";
+          list.innerHTML = "";
+          refresh();
+          if (!key || !wanted) return;
+          if (painted === key) { paint(paintedRows); return; }
+          fetchList(key);
+        }
+
+        function fetchList(what) {
+          const my = ++seq;
+          list.innerHTML = "";
+          list.appendChild(el("div", { class: "picker-empty" }, "Loading the classes…"));
+          const url = what.slice(0, 2) === "i:"
+            ? "/api/auth/invite/" + encodeURIComponent(what.slice(2)) + "/open-courses"
+            : "/api/auth/stakes/" + what.slice(2) + "/open-courses";
+          API.get(url).then(r => {
+            if (my !== seq) return;
+            painted = what;
+            paintedRows = Array.isArray(r.courses) ? r.courses : [];
+            paint(paintedRows);
+          }).catch(() => {
+            if (my !== seq) return;
+            list.innerHTML = "";
+            list.appendChild(el("div", { class: "picker-empty" },
+              "The classes at this place could not be listed just now. You can still "
+              + "register — a leader will put you in the class you ask for."));
+          });
+        }
+
+        let paintedRows = [];
+
+        function paint(rows) {
+          list.innerHTML = "";
+          /* A tick from another place is not a seat here, so a list that has just arrived
+             takes away the ticks it does not contain. A person who changes their mind
+             about the place never carries a class across with them, and one who has
+             already chosen their classes keeps them when the list is drawn again. */
+          const here = new Set(rows.map(r => r.id));
+          form.classes = (form.classes || []).filter(id => here.has(id));
+          if (!rows.length) {
+            list.appendChild(el("div", { class: "picker-empty" },
+              "No classes are open at this place at the moment. Register anyway — a "
+              + "leader will open one, and you can join it afterwards."));
+            return;
+          }
+          rows.forEach(c => list.appendChild(row(c)));
+        }
+
+        function row(c) {
+          const box = el("input", { type: "checkbox", value: String(c.id) });
+          box.checked = (form.classes || []).indexOf(c.id) >= 0;
+          box.addEventListener("change", () => {
+            const set = new Set(form.classes || []);
+            if (box.checked) set.add(c.id); else set.delete(c.id);
+            form.classes = Array.from(set);
+            remember();
+          });
+          const facts = [];
+          if (c.meets) facts.push(c.meets);
+          const where = [c.place, c.room].filter(Boolean).join(" · ");
+          if (where) facts.push(where);
+          const seats = c.full
+            ? "Waiting list"
+            : c.seats_left + (c.seats_left === 1 ? " seat left" : " seats left");
+          return el("label", { class: "cp-row" }, [
+            box,
+            el("div", { class: "cp-body" }, [
+              el("div", { class: "cp-top" }, [
+                el("span", { class: "cp-name" }, c.title),
+                el("span", { class: "cp-seats" + (c.full ? " full" : "") }, seats),
+              ]),
+              facts.length ? el("div", { class: "cp-facts" }, facts.join(" · ")) : null,
+            ]),
+          ]);
+        }
+
+        /* Turning the question off and on again must not lose the list that is already
+           on the screen, so the block is only hidden — the classes are still fetched the
+           moment somebody asks for them. */
+        function setWanted(on) {
+          wanted = on;
+          refresh();
+          if (wanted && key && painted !== key) fetchList(key);
+        }
+
+        return { node, load, setWanted };
+      }
+
+      /* The list follows whichever of the two the person will actually join with: a code
+         beats a searched place, because that is what the server is told too. */
+      function loadClasses() {
+        if (!joinClasses) return;
+        const code = joinInvite ? joinInvite.value.trim() : "";
+        const id = joinPicker ? joinPicker.get() : null;
+        joinClasses.load(code ? null : id, code || null);
+      }
+      function scheduleClasses() {
+        if (classTimer) clearTimeout(classTimer);
+        classTimer = setTimeout(loadClasses, 400);
+      }
+
       function buildJoin() {
         joinPicker = makeSearchPicker({ placeholder: "Stake or district name",
           // A join link already names the place, so the list is handed its answer; and a
@@ -742,16 +955,17 @@ const AuthPage = (() => {
           /* The place is an answer in the half-written form like any other, so it goes
              into the draft as soon as it is chosen: switching to "new stake" and back,
              or reloading the tab, must not make the person find it again. */
-          onPick: t => { if (joinWard) joinWard.load(t.id); remember(); },
+          onPick: t => { if (joinWard) joinWard.load(t.id); loadClasses(); remember(); },
           // Back to the search box means no tenant picked, so there is no ward list to
           // show — the box goes back to taking the ward's words.
-          onClear: () => { if (joinWard) joinWard.load(null); remember(); } });
+          onClear: () => { if (joinWard) joinWard.load(null); loadClasses(); remember(); } });
         joinInvite = el("input", { placeholder: "Invite code from your leader", value: form.invite });
         joinInvite.addEventListener("input", () => {
           // A code names a tenant the browser has not seen a list for, so the ward is
           // written out and the stake puts it on its own list.
           remember();
           joinWard.load(joinInvite.value.trim() ? null : joinPicker.get());
+          scheduleClasses();
         });
         joinWard = UI.wardField({ label: "Ward or branch (optional)" });
         if (form.ward) {
@@ -772,15 +986,18 @@ const AuthPage = (() => {
           "A presidency is never opened by a code: the portal admin confirms who you are "
           + "before the seat is yours.",
         ]);
+        joinClasses = classPicker();
 
         extra.appendChild(field("Search your stake or district", joinPicker.node));
         extra.appendChild(el("div", { class: "hint",
           style: "margin:-6px 0 var(--sp-12)" }, "Searching sends a request the portal admin confirms. An invite code from your leader opens the seat right away."));
         extra.appendChild(field("Invite code (optional)", joinInvite));
         extra.appendChild(joinWard.node);
+        extra.appendChild(joinClasses.node);
         extra.appendChild(joinLeaderNote);
         extra.appendChild(joinCompanionField);
         syncCompanion();
+        loadClasses();
       }
       function syncCompanion() {
         if (!joinCompanionField) return;
@@ -788,6 +1005,10 @@ const AuthPage = (() => {
           form.choice === "service_missionary" ? "" : "none";
         if (joinLeaderNote)
           joinLeaderNote.style.display = form.choice === "leader" ? "" : "none";
+        /* Only a student is asked which classes they want. A teacher is given one, a
+           leader is given the place's, and asking everybody the same question makes
+           the question mean nothing. */
+        if (joinClasses) joinClasses.setWanted(form.choice === "student");
       }
 
       function buildRegister() {
@@ -835,11 +1056,16 @@ const AuthPage = (() => {
           if (code) p.invite_code = code.toUpperCase();      // invite takes precedence over a searched stake
           else { const id = joinPicker.get(); if (id) p.stake_id = id; }
           if (p.role === "service_missionary") put(p, "companion_name", joinCompanion.value);
-          // Only an answer that names a ward is sent. Leaving the box on "None recorded"
-          // is the same as not saying: nothing is written on the new account.
+          /* Only an answer that names a ward is sent. Leaving the box on "None recorded"
+             is the same as not saying: nothing is written on the new account. */
           const ward = joinWard.payload();
           if (ward.ward_id) p.ward_id = ward.ward_id;
           else if (ward.ward_name) p.ward_name = ward.ward_name;
+          /* The classes the person ticked. Only a student is asked, so only a student
+             sends any: a teacher who was a student a moment ago does not carry their
+             old ticks into a seat they never asked for. */
+          if (p.role === "student" && form.classes && form.classes.length)
+            p.course_ids = form.classes.slice();
         } else {
           p.stake_name = regName.value.trim();
           p.stake_kind = regKind.value;
