@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://reform-programmes-salaries-publishers.trycloudflare.com","updated_at":"2026-10-26T18:49:51Z"};
+window.GATHERING_PLACE = {"url":"https://reform-programmes-salaries-publishers.trycloudflare.com","updated_at":"2026-10-26T18:50:29Z"};
