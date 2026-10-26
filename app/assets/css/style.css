@@ -20,35 +20,35 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/gabarito-600.woff2?v=117") format("woff2");
+  src: url("../fonts/gabarito-600.woff2?v=118") format("woff2");
 }
 @font-face {
   font-family: "Gabarito";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/gabarito-700.woff2?v=117") format("woff2");
+  src: url("../fonts/gabarito-700.woff2?v=118") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("../fonts/figtree-400.woff2?v=117") format("woff2");
+  src: url("../fonts/figtree-400.woff2?v=118") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("../fonts/figtree-600.woff2?v=117") format("woff2");
+  src: url("../fonts/figtree-600.woff2?v=118") format("woff2");
 }
 @font-face {
   font-family: "Figtree";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("../fonts/figtree-700.woff2?v=117") format("woff2");
+  src: url("../fonts/figtree-700.woff2?v=118") format("woff2");
 }
 
 :root {
@@ -1260,6 +1260,48 @@ tbody tr.is-today td { background: var(--accent-soft); }
   font-size: var(--t-ui); font-weight: 600; color: var(--accent);
 }
 .picked .grow { flex: 1; min-width: 0; }
+
+/* The classes a person ticks while registering. Each one is a row that says when it
+   meets, where it meets and how many seats are left, because a class chosen blind is a
+   class somebody has to unpick later. */
+.cp { margin-bottom: var(--sp-16); }
+.cp-title { font-size: var(--t-meta); font-weight: 600; color: var(--ink-2); margin-bottom: var(--sp-6); }
+.cp-list { display: flex; flex-direction: column; gap: var(--sp-8); margin-top: var(--sp-10); }
+.cp-row {
+  display: flex; align-items: flex-start; gap: var(--sp-12); margin: 0; cursor: pointer;
+  padding: var(--sp-12) var(--sp-14); border-radius: var(--r-md);
+  border: 1px solid var(--hairline); background: var(--subcard-bg);
+  transition: border-color .15s, background .15s;
+}
+.cp-row:hover { border-color: var(--accent-line); }
+.cp-row:has(input:checked) { border-color: var(--accent-line); background: var(--accent-soft); }
+.cp-row input[type="checkbox"] {
+  flex: none; width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--accent);
+  cursor: pointer;
+}
+.cp-body { flex: 1; min-width: 0; }
+.cp-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-12); }
+.cp-name { font-family: var(--font-display); font-size: var(--t-ui); font-weight: 600;
+           color: var(--ink); min-width: 0; }
+.cp-facts { font-size: var(--t-fine); color: var(--ink-2); margin-top: var(--sp-2); line-height: 1.4; }
+.cp-seats { flex: none; font-size: var(--t-fine); font-weight: 600; color: var(--accent);
+            font-variant-numeric: tabular-nums; }
+.cp-seats.full { color: var(--warn-ink); }
+
+/* The answer to "am I on the portal?" — one box, and the facts that go with it. */
+.rc-open { margin-top: var(--sp-16); padding-top: var(--sp-14); text-align: center;
+           border-top: 1px solid var(--hairline); }
+.rc { margin-top: var(--sp-16); }
+.rc-box { padding: var(--sp-14); border-radius: var(--r-md); border: 1px solid var(--hairline);
+          background: var(--subcard-bg); }
+.rc-box.found { border-color: var(--accent-line); background: var(--accent-soft); }
+.rc-title { font-family: var(--font-display); font-size: var(--t-ui); font-weight: 700;
+            color: var(--ink); }
+.rc-msg { font-size: var(--t-meta); color: var(--ink-2); line-height: 1.5; margin-top: var(--sp-6); }
+.rc-facts { margin-top: var(--sp-12); display: flex; flex-direction: column; gap: var(--sp-8); }
+.rc-fact { display: flex; gap: var(--sp-10); font-size: var(--t-meta); line-height: 1.45; }
+.rc-fact .k { flex: none; width: 92px; color: var(--ink-fine); font-weight: 600; }
+.rc-fact .v { flex: 1; min-width: 0; color: var(--ink); }
 
 /* How full a class is, in one line. */
 .meter { height: 6px; border-radius: 999px; background: var(--track);
