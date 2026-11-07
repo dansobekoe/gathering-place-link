@@ -1,1 +1,1 @@
-window.GATHERING_PLACE = {"url":"https://headed-curtis-got-deutschland.trycloudflare.com","updated_at":"2026-10-31T14:45:07Z"};
+window.GATHERING_PLACE = {"url":"https://footwear-picnic-isolation-spouse.trycloudflare.com","updated_at":"2026-11-07T13:31:31Z"};
